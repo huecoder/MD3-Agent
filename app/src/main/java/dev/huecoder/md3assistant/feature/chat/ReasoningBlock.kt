@@ -6,14 +6,16 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Neurology
+import dev.huecoder.md3assistant.R
 import dev.huecoder.md3assistant.ui.components.ExpandableBlock
 
 @Composable
 fun ReasoningBlock(reasoning: String, isStreaming: Boolean) {
     ExpandableBlock(
-        title = if (isStreaming) "Думает…" else "Размышления",
+        title = stringResource(if (isStreaming) R.string.chat_reasoning_streaming else R.string.chat_reasoning),
         leading = {
             Icon(
                 MaterialSymbols.Rounded.Neurology,

@@ -21,11 +21,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Edit_square
 import com.composables.icons.materialsymbols.rounded.Settings
+import dev.huecoder.md3assistant.R
 import dev.huecoder.md3assistant.ui.components.appViewModel
 import dev.huecoder.md3assistant.ui.theme.heroTitle
 
@@ -43,11 +45,11 @@ fun HomeScreen(
         modifier = Modifier.nestedScroll(topBarScroll.nestedScrollConnection),
         topBar = {
             LargeFlexibleTopAppBar(
-                title = { Text("Чаты", style = MaterialTheme.typography.heroTitle) },
+                title = { Text(stringResource(R.string.home_title), style = MaterialTheme.typography.heroTitle) },
                 subtitle = state.activeModel?.let { model -> { Text(model, maxLines = 1, overflow = TextOverflow.Ellipsis) } },
                 actions = {
                     IconButton(onClick = onOpenSettings, shapes = IconButtonDefaults.shapes()) {
-                        Icon(MaterialSymbols.Rounded.Settings, contentDescription = "Настройки")
+                        Icon(MaterialSymbols.Rounded.Settings, contentDescription = stringResource(R.string.settings_title))
                     }
                 },
                 scrollBehavior = topBarScroll,
@@ -58,7 +60,7 @@ fun HomeScreen(
                 ExtendedFloatingActionButton(
                     onClick = { onOpenChat(null) },
                     icon = { Icon(MaterialSymbols.Rounded.Edit_square, contentDescription = null) },
-                    text = { Text("Новый чат") },
+                    text = { Text(stringResource(R.string.home_new_chat)) },
                 )
             }
         },
@@ -81,12 +83,12 @@ fun HomeScreen(
     pendingDeletion?.let { chatId ->
         AlertDialog(
             onDismissRequest = { pendingDeletion = null },
-            title = { Text("Удалить чат?") },
-            text = { Text("Сообщения удалятся без возможности восстановления.") },
+            title = { Text(stringResource(R.string.home_delete_chat_title)) },
+            text = { Text(stringResource(R.string.home_delete_chat_body)) },
             confirmButton = {
-                TextButton(onClick = { viewModel.delete(chatId); pendingDeletion = null }) { Text("Удалить") }
+                TextButton(onClick = { viewModel.delete(chatId); pendingDeletion = null }) { Text(stringResource(R.string.home_delete_chat)) }
             },
-            dismissButton = { TextButton(onClick = { pendingDeletion = null }) { Text("Отмена") } },
+            dismissButton = { TextButton(onClick = { pendingDeletion = null }) { Text(stringResource(R.string.home_delete_chat_cancel)) } },
         )
     }
 }

@@ -18,10 +18,12 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Arrow_back
+import dev.huecoder.md3assistant.R
 import dev.huecoder.md3assistant.ui.theme.heroTitle
 
 @Composable
@@ -49,7 +51,7 @@ fun SettingsScaffold(
 @Composable
 fun BackButton(onBack: () -> Unit) {
     IconButton(onClick = onBack, shapes = IconButtonDefaults.shapes(), modifier = Modifier.padding(start = 4.dp)) {
-        Icon(MaterialSymbols.Rounded.Arrow_back, contentDescription = "Назад")
+        Icon(MaterialSymbols.Rounded.Arrow_back, contentDescription = stringResource(R.string.common_back))
     }
 }
 

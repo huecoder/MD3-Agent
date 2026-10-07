@@ -3,16 +3,20 @@ package dev.huecoder.md3assistant.feature.chat
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dev.huecoder.md3assistant.R
 import dev.huecoder.md3assistant.conversation.ConversationRunner
 import dev.huecoder.md3assistant.conversation.NoModelConfiguredException
 import dev.huecoder.md3assistant.conversation.StreamingDraft
 import dev.huecoder.md3assistant.data.attachments.Attachment
 import dev.huecoder.md3assistant.data.attachments.AttachmentStore
+import dev.huecoder.md3assistant.data.attachments.AttachmentTooLargeException
+import dev.huecoder.md3assistant.data.attachments.UnsupportedAttachmentException
 import dev.huecoder.md3assistant.data.chat.ChatRepository
 import dev.huecoder.md3assistant.data.db.ChatEntity
 import dev.huecoder.md3assistant.data.db.MessageEntity
 import dev.huecoder.md3assistant.data.settings.AgentProfile
 import dev.huecoder.md3assistant.data.settings.SettingsRepository
+import dev.huecoder.md3assistant.ui.text.UiText
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,7 +34,7 @@ import java.io.IOException
 
 data class ChatUiState(
     val chatId: String? = null,
-    val title: String = NEW_CHAT_TITLE,
+    val title: UiText = NEW_CHAT_TITLE,
     val agentName: String = AgentProfile.DEFAULT_AGENT_NAME,
     val modelId: String? = null,
     val messages: List<ChatItem> = emptyList(),
@@ -42,7 +46,7 @@ data class ChatUiState(
     fun canSend(text: String): Boolean = (text.isNotBlank() || pendingAttachments.isNotEmpty()) && !isImporting
 
     companion object {
-        const val NEW_CHAT_TITLE = "Новый чат"
+        val NEW_CHAT_TITLE = UiText.Resource(R.string.home_new_chat)
     }
 }
 
@@ -56,10 +60,10 @@ class ChatViewModel(
     private val appScope: CoroutineScope,
 ) : ViewModel() {
     private val chatId = MutableStateFlow(initialChatId)
-    private val _errors = MutableStateFlow<String?>(null)
+    private val _errors = MutableStateFlow<UiText?>(null)
     private val pending = MutableStateFlow(PendingAttachments())
 
-    val errors: StateFlow<String?> = _errors.asStateFlow()
+    val errors: StateFlow<UiText?> = _errors.asStateFlow()
 
     private val appSettings = settings.settings
 
@@ -87,7 +91,7 @@ class ChatViewModel(
                 if (id == null) chatId.value = runner.startChat(text, attached).id else runner.send(id, text, attached)
             } catch (e: NoModelConfiguredException) {
                 pending.update { it.copy(items = attached + it.items) }
-                _errors.value = e.message
+                _errors.value = UiText.Resource(R.string.chat_error_no_model)
             }
         }
     }
@@ -99,10 +103,14 @@ class ChatViewModel(
                 try {
                     val attachment = attachments.import(uri)
                     pending.update { it.copy(items = it.items + attachment) }
+                } catch (e: UnsupportedAttachmentException) {
+                    _errors.value = UiText.Resource(R.string.chat_attachment_unsupported, listOf(e.fileName))
+                } catch (e: AttachmentTooLargeException) {
+                    _errors.value = UiText.Resource(R.string.chat_attachment_too_large, listOf(e.limitKb))
                 } catch (e: IOException) {
-                    _errors.value = e.message ?: "Не удалось прикрепить файл"
+                    _errors.value = UiText.Resource(R.string.chat_attachment_failed)
                 } catch (e: IllegalArgumentException) {
-                    _errors.value = "Не удалось прочитать картинку"
+                    _errors.value = UiText.Resource(R.string.chat_attachment_image_unreadable)
                 } finally {
                     pending.update { it.copy(importing = it.importing - 1) }
                 }
@@ -129,7 +137,7 @@ class ChatViewModel(
 
     private fun buildState(id: String, chat: ChatEntity?, messages: List<MessageEntity>, draft: StreamingDraft?) = ChatUiState(
         chatId = id,
-        title = chat?.title ?: ChatUiState.NEW_CHAT_TITLE,
+        title = chat?.title?.let(UiText::Raw) ?: ChatUiState.NEW_CHAT_TITLE,
         modelId = chat?.modelId,
         messages = ChatTimeline.build(messages, draft),
         isStreaming = draft != null,

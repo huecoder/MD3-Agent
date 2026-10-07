@@ -15,6 +15,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import dev.huecoder.md3assistant.R
 
 private const val MAX_SUGGESTIONS = 50
 
@@ -34,7 +36,7 @@ fun ModelPicker(selected: String, models: List<String>, onSelect: (String) -> Un
                 onSelect(it)
                 expanded = true
             },
-            label = { Text("ID модели") },
+            label = { Text(stringResource(R.string.provider_model_id)) },
             shape = MaterialTheme.shapes.medium,
             singleLine = true,
             trailingIcon = { if (models.isNotEmpty()) ExposedDropdownMenuDefaults.TrailingIcon(expanded) },

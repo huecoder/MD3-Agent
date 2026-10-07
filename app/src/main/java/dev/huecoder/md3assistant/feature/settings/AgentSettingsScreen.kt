@@ -26,10 +26,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import dev.huecoder.md3assistant.App
+import dev.huecoder.md3assistant.R
 import dev.huecoder.md3assistant.data.settings.AgentProfile
 import dev.huecoder.md3assistant.ui.components.FormField
 import dev.huecoder.md3assistant.ui.components.SettingsScaffold
@@ -49,7 +51,7 @@ fun AgentSettingsScreen(onBack: () -> Unit) {
         prompt = TextFieldValue(agent.systemPromptTemplate)
     }
 
-    SettingsScaffold("Агент", onBack) { padding ->
+    SettingsScaffold(stringResource(R.string.settings_agent), onBack) { padding ->
         val currentName = name ?: return@SettingsScaffold
         Column(
             modifier = Modifier
@@ -63,18 +65,18 @@ fun AgentSettingsScreen(onBack: () -> Unit) {
             FormField(
                 value = currentName,
                 onValueChange = { name = it },
-                label = "Имя агента",
+                label = stringResource(R.string.agent_name),
                 modifier = Modifier.fillMaxWidth(),
             )
             OutlinedTextField(
                 value = prompt,
                 onValueChange = { prompt = it },
-                label = { Text("Системный промпт") },
+                label = { Text(stringResource(R.string.agent_system_prompt)) },
                 shape = MaterialTheme.shapes.medium,
                 modifier = Modifier.fillMaxWidth().heightIn(min = 200.dp),
             )
             Text(
-                "Переменные подставляются при каждом запросе. Тап вставит её в позицию курсора.",
+                stringResource(R.string.agent_variables_hint),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -85,9 +87,9 @@ fun AgentSettingsScreen(onBack: () -> Unit) {
             }
             TextButton(onClick = {
                 preview = container.systemPrompt.render(AgentProfile(currentName, prompt.text))
-            }) { Text("Показать результат") }
+            }) { Text(stringResource(R.string.agent_preview_prompt)) }
             preview?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-            TextButton(onClick = { prompt = TextFieldValue(AgentProfile.DEFAULT_SYSTEM_PROMPT) }) { Text("Сбросить промпт") }
+            TextButton(onClick = { prompt = TextFieldValue(AgentProfile.DEFAULT_SYSTEM_PROMPT) }) { Text(stringResource(R.string.agent_reset_prompt)) }
 
             Button(
                 onClick = {
@@ -98,7 +100,7 @@ fun AgentSettingsScreen(onBack: () -> Unit) {
                 },
                 shapes = ButtonDefaults.shapes(),
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 24.dp),
-            ) { Text("Сохранить") }
+            ) { Text(stringResource(R.string.settings_save)) }
         }
     }
 }

@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.animation.core.LinearEasing
@@ -31,14 +32,15 @@ import androidx.graphics.shapes.Morph
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Forum
 import com.composables.icons.materialsymbols.rounded.Key
+import dev.huecoder.md3assistant.R
 import dev.huecoder.md3assistant.ui.components.MorphShape
 
 @Composable
 fun EmptyChats(modifier: Modifier = Modifier) {
     Placeholder(
         icon = MaterialSymbols.Rounded.Forum,
-        title = "Пока пусто",
-        body = "Начни новый чат, и он появится здесь.",
+        title = stringResource(R.string.home_empty_title),
+        body = stringResource(R.string.home_empty_body),
         modifier = modifier,
     )
 }
@@ -47,11 +49,11 @@ fun EmptyChats(modifier: Modifier = Modifier) {
 fun SetupPrompt(onOpenSettings: () -> Unit, modifier: Modifier = Modifier) {
     Placeholder(
         icon = MaterialSymbols.Rounded.Key,
-        title = "Подключи модель",
-        body = "Добавь любой OpenAI-совместимый эндпоинт: адрес, ключ и модель.",
+        title = stringResource(R.string.home_setup_title),
+        body = stringResource(R.string.home_setup_body),
         modifier = modifier,
     ) {
-        Button(onClick = onOpenSettings, shapes = ButtonDefaults.shapes()) { Text("Открыть настройки") }
+        Button(onClick = onOpenSettings, shapes = ButtonDefaults.shapes()) { Text(stringResource(R.string.home_setup_open_settings)) }
     }
 }
 

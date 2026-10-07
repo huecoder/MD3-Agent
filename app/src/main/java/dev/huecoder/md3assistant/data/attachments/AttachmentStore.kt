@@ -39,7 +39,9 @@ sealed interface AttachmentContent {
     data class Text(val name: String, val text: String) : AttachmentContent
 }
 
-class UnsupportedAttachmentException(message: String) : IOException(message)
+class UnsupportedAttachmentException(val fileName: String) : IOException("Unsupported attachment type: $fileName")
+
+class AttachmentTooLargeException(val limitKb: Int) : IOException("Attachment is larger than $limitKb KB")
 
 class AttachmentStore(private val context: Context) {
     private val directory: File get() = File(context.filesDir, DIRECTORY).apply { mkdirs() }
@@ -53,7 +55,7 @@ class AttachmentStore(private val context: Context) {
         when {
             mimeType.startsWith("image/") -> importImage(uri, target)
             TextFormats.isText(mimeType, name) -> importText(resolver, uri, target)
-            else -> throw UnsupportedAttachmentException("«$name»: пока поддерживаются только картинки и текстовые файлы")
+            else -> throw UnsupportedAttachmentException(name)
         }
         val storedMime = if (mimeType.startsWith("image/")) STORED_IMAGE_MIME else mimeType
         Attachment(id, name, storedMime, target.length())
@@ -90,11 +92,11 @@ class AttachmentStore(private val context: Context) {
     }
 
     private fun importText(resolver: ContentResolver, uri: Uri, target: File) {
-        val input = resolver.openInputStream(uri) ?: throw IOException("Не удалось открыть файл")
+        val input = resolver.openInputStream(uri) ?: throw IOException("Could not open the file")
         input.use { stream ->
             val bytes = readAtMost(stream, MAX_TEXT_BYTES + 1)
             if (bytes.size > MAX_TEXT_BYTES) {
-                throw UnsupportedAttachmentException("Файл больше ${MAX_TEXT_BYTES / BYTES_PER_KB} КБ, это слишком много для контекста модели")
+                throw AttachmentTooLargeException(MAX_TEXT_BYTES / BYTES_PER_KB)
             }
             target.writeBytes(bytes)
         }
@@ -118,7 +120,7 @@ class AttachmentStore(private val context: Context) {
 
     private companion object {
         const val DIRECTORY = "attachments"
-        const val FALLBACK_NAME = "файл"
+        const val FALLBACK_NAME = "file"
         const val STORED_IMAGE_MIME = "image/jpeg"
         const val MAX_IMAGE_SIDE_PX = 1600
         const val JPEG_QUALITY = 85

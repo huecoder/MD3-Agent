@@ -18,8 +18,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.huecoder.md3assistant.App
+import dev.huecoder.md3assistant.R
 import dev.huecoder.md3assistant.data.settings.NetworkSettings
 import dev.huecoder.md3assistant.net.DohUrl
 import dev.huecoder.md3assistant.ui.components.LabeledSwitch
@@ -35,7 +37,7 @@ fun NetworkSettingsScreen(onBack: () -> Unit) {
 
     LaunchedEffect(Unit) { network = container.settings.current().network }
 
-    SettingsScaffold("Сеть", onBack) { padding ->
+    SettingsScaffold(stringResource(R.string.settings_network), onBack) { padding ->
         val current = network ?: return@SettingsScaffold
         val resolvedUrl = DohUrl.parse(current.dohUrl)
         val urlError = current.dohEnabled && current.dohUrl.isNotBlank() && resolvedUrl == null
@@ -44,28 +46,27 @@ fun NetworkSettingsScreen(onBack: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             LabeledSwitch(
-                title = "Свой DNS (DoH)",
-                summary = "Все запросы приложения резолвятся через DNS-over-HTTPS. " +
-                    "Помогает, когда сервис режет доступ по региону на уровне DNS.",
+                title = stringResource(R.string.network_doh_title),
+                summary = stringResource(R.string.network_doh_summary),
                 checked = current.dohEnabled,
                 onCheckedChange = { network = current.copy(dohEnabled = it) },
             )
             FormField(
                 value = current.dohUrl,
                 onValueChange = { network = current.copy(dohUrl = it) },
-                label = "DoH-сервер",
-                placeholder = "dns.example.com или https://host/dns-query",
+                label = stringResource(R.string.network_doh_server),
+                placeholder = stringResource(R.string.network_doh_server_placeholder),
                 enabled = current.dohEnabled,
                 isError = urlError,
                 supportingText = when {
-                    urlError -> "Нужен https-адрес"
-                    resolvedUrl != null -> "Запросы пойдут на $resolvedUrl"
+                    urlError -> stringResource(R.string.network_doh_https_required)
+                    resolvedUrl != null -> stringResource(R.string.network_doh_resolved, resolvedUrl)
                     else -> null
                 },
                 modifier = Modifier.fillMaxWidth(),
             )
             Text(
-                "Сам DoH-сервер находится через системный DNS, дальше всё идёт через него.",
+                stringResource(R.string.network_doh_bootstrap_note),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -79,7 +80,7 @@ fun NetworkSettingsScreen(onBack: () -> Unit) {
                 enabled = !urlError && !(current.dohEnabled && resolvedUrl == null),
                 shapes = ButtonDefaults.shapes(),
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-            ) { Text("Сохранить") }
+            ) { Text(stringResource(R.string.settings_save)) }
         }
     }
 }

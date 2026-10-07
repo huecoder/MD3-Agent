@@ -22,13 +22,13 @@ data class AgentProfile(
     val systemPromptTemplate: String = DEFAULT_SYSTEM_PROMPT,
 ) {
     companion object {
-        const val DEFAULT_AGENT_NAME = "Ассистент"
+        const val DEFAULT_AGENT_NAME = "Assistant"
 
         val DEFAULT_SYSTEM_PROMPT = """
-            Ты {agent_name}, персональный ассистент на Android-устройстве пользователя.
-            Сейчас {weekday}, {date}, {time} ({timezone}).
-            Устройство: {device}, Android {android}, батарея {battery}, язык {locale}.
-            Отвечай по делу и используй markdown, когда он помогает читать ответ.
+            You are {agent_name}, a personal assistant on the user's Android device.
+            It is {weekday}, {date}, {time} ({timezone}).
+            Device: {device}, Android {android}, battery {battery}, language {locale}.
+            Keep answers to the point, reply in the user's language, and use markdown when it makes the answer easier to read.
         """.trimIndent()
     }
 }

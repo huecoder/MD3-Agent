@@ -28,23 +28,23 @@ class ToolRegistry(private val tools: List<Tool>) {
 
     suspend fun run(call: ToolCall, settings: ToolSettings): ToolOutcome {
         val tool = byName[call.name]?.takeIf { settings.isEnabled(call.name) }
-            ?: return ToolOutcome.error("Инструмент «${call.name}» недоступен")
+            ?: return ToolOutcome.error("Tool \"${call.name}\" is not available")
         val arguments = parseArguments(call.arguments)
-            ?: return ToolOutcome.error("Аргументы не являются JSON-объектом: ${call.arguments.take(ARGUMENT_PREVIEW_CHARS)}")
+            ?: return ToolOutcome.error("Arguments are not a JSON object: ${call.arguments.take(ARGUMENT_PREVIEW_CHARS)}")
         return try {
             withTimeout(TIMEOUT_MS) { tool.execute(arguments, settings) }
         } catch (e: TimeoutCancellationException) {
-            ToolOutcome.error("Инструмент не ответил за ${TIMEOUT_MS / MS_PER_SECOND} с")
+            ToolOutcome.error("Tool did not respond within ${TIMEOUT_MS / MS_PER_SECOND} s")
         } catch (e: CancellationException) {
             throw e
         } catch (e: ToolArgumentException) {
             ToolOutcome.error(e.message.orEmpty())
         } catch (e: HttpStatusException) {
-            ToolOutcome.error("Сервис ответил ошибкой: ${e.message}")
+            ToolOutcome.error("Service responded with an error: ${e.message}")
         } catch (e: IOException) {
-            ToolOutcome.error("Сетевая ошибка: ${e.message ?: e.javaClass.simpleName}")
+            ToolOutcome.error("Network error: ${e.message ?: e.javaClass.simpleName}")
         } catch (e: SerializationException) {
-            ToolOutcome.error("Сервис вернул неожиданный ответ: ${e.message}")
+            ToolOutcome.error("Service returned an unexpected response: ${e.message}")
         } catch (e: IllegalStateException) {
             ToolOutcome.error(e.message ?: e.javaClass.simpleName)
         }

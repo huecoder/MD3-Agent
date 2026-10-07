@@ -2,10 +2,12 @@ package dev.huecoder.md3assistant.voice
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dev.huecoder.md3assistant.R
 import dev.huecoder.md3assistant.data.settings.AppSettings
 import dev.huecoder.md3assistant.data.settings.SettingsRepository
 import dev.huecoder.md3assistant.llm.ProviderException
 import dev.huecoder.md3assistant.llm.TranscriptionClient
+import dev.huecoder.md3assistant.ui.text.UiText
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -25,7 +27,7 @@ sealed interface DictationState {
 
     data object Transcribing : DictationState
 
-    data class Failed(val message: String) : DictationState
+    data class Failed(val message: UiText) : DictationState
 }
 
 class DictationViewModel(
@@ -47,7 +49,7 @@ class DictationViewModel(
         try {
             recorder.start()
         } catch (e: IOException) {
-            _state.value = DictationState.Failed(e.message ?: "Микрофон недоступен")
+            _state.value = DictationState.Failed(UiText.Resource(R.string.dictation_error_microphone_unavailable))
             return
         }
         job = viewModelScope.launch { trackRecording(startedAt = clock()) }
@@ -58,8 +60,11 @@ class DictationViewModel(
         job?.cancel()
         val audio = try {
             recorder.stop()
+        } catch (e: RecordingTooShortException) {
+            _state.value = DictationState.Failed(UiText.Resource(R.string.dictation_error_too_short))
+            return
         } catch (e: IOException) {
-            _state.value = DictationState.Failed(e.message ?: "Запись не получилась")
+            _state.value = DictationState.Failed(UiText.Resource(R.string.dictation_error_recording_failed))
             return
         }
         _state.value = DictationState.Transcribing
@@ -67,11 +72,15 @@ class DictationViewModel(
             try {
                 val text = transcribe(audio)
                 if (text.isNotEmpty()) _transcripts.send(text)
-                _state.value = if (text.isEmpty()) DictationState.Failed("Речь не распознана") else DictationState.Idle
+                _state.value = if (text.isEmpty()) DictationState.Failed(UiText.Resource(R.string.dictation_error_no_speech)) else DictationState.Idle
+            } catch (e: NoSpeechProviderException) {
+                _state.value = DictationState.Failed(UiText.Resource(R.string.dictation_error_no_provider))
             } catch (e: IOException) {
-                _state.value = DictationState.Failed("Распознавание не удалось: ${e.message}")
+                _state.value = DictationState.Failed(
+                    UiText.Resource(R.string.dictation_error_transcription_failed_reason, listOf(e.message ?: e.javaClass.simpleName)),
+                )
             } catch (e: ProviderException) {
-                _state.value = DictationState.Failed(e.message ?: "Распознавание не удалось")
+                _state.value = DictationState.Failed(e.message?.let(UiText::Raw) ?: UiText.Resource(R.string.dictation_error_transcription_failed))
             } finally {
                 audio.delete()
             }
@@ -84,7 +93,7 @@ class DictationViewModel(
         _state.value = DictationState.Idle
     }
 
-    fun fail(message: String) {
+    fun fail(message: UiText) {
         _state.value = DictationState.Failed(message)
     }
 
@@ -106,7 +115,7 @@ class DictationViewModel(
     private suspend fun transcribe(audio: File): String {
         val current = settings.current()
         val speech = current.speech
-        val provider = speechProvider(current) ?: throw ProviderException.InvalidConfiguration("Добавь провайдера для распознавания речи в настройках")
+        val provider = speechProvider(current) ?: throw NoSpeechProviderException()
         return transcriber.transcribe(provider, speech.model, speech.language, audio, VoiceRecorder.MIME_TYPE)
     }
 
@@ -123,3 +132,5 @@ class DictationViewModel(
         private const val MAX_RECORDING_MS = 5 * 60 * 1_000L
     }
 }
+
+class NoSpeechProviderException : IllegalStateException("No speech recognition provider configured")

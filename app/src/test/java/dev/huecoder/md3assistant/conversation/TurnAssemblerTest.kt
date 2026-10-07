@@ -112,6 +112,6 @@ class TurnAssemblerTest {
         )
         val user = turns[1]
         assertEquals(listOf("data:image/jpeg;base64,AAA"), user.imageUrls)
-        assertTrue(user.content.startsWith("глянь\n\nФайл «notes.md»:\n```\n# заметки\n```"))
+        assertTrue(user.content.startsWith("глянь\n\nFile \"notes.md\":\n```\n# заметки\n```"))
     }
 }

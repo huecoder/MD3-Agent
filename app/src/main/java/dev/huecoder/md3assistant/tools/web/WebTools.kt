@@ -22,11 +22,11 @@ class WebSearchTool(private val searcher: WebSearcher) : Tool {
 
     override val spec = ToolSpec(
         name = NAME,
-        description = "Поиск в интернете. Возвращает заголовки, ссылки и сниппеты. " +
-            "Для подробностей открой нужную ссылку через ${ReadWebpageTool.NAME}. Ссылайся на источники в ответе.",
+        description = "Searches the web. Returns titles, links and snippets. " +
+            "For details, open the relevant link with ${ReadWebpageTool.NAME}. Cite sources in your answer.",
         parameters = objectSchema(required = listOf("query")) {
-            stringProperty("query", "Поисковый запрос: только суть, без лишних слов")
-            integerProperty("count", "Сколько результатов вернуть", minimum = 1, maximum = MAX_RESULTS)
+            stringProperty("query", "Search query: just the core terms, no filler words")
+            integerProperty("count", "How many results to return", minimum = 1, maximum = MAX_RESULTS)
         },
     )
 
@@ -34,7 +34,7 @@ class WebSearchTool(private val searcher: WebSearcher) : Tool {
         val query = arguments.requireString("query")
         val count = (arguments.optionalInt("count") ?: DEFAULT_RESULTS).coerceIn(1, MAX_RESULTS)
         val hits = searcher.search(query, count, settings.search)
-        if (hits.isEmpty()) return ToolOutcome.error("По запросу «$query» ничего не найдено")
+        if (hits.isEmpty()) return ToolOutcome.error("Nothing found for \"$query\"")
         return ToolOutcome(json.encodeToString(SearchResults.serializer(), SearchResults(query, hits)))
     }
 
@@ -48,21 +48,21 @@ class WebSearchTool(private val searcher: WebSearcher) : Tool {
 class ReadWebpageTool(private val httpClients: HttpClientProvider) : Tool {
     override val spec = ToolSpec(
         name = NAME,
-        description = "Открывает веб-страницу по ссылке и возвращает её текст.",
+        description = "Opens a web page by URL and returns its text.",
         parameters = objectSchema(required = listOf("url")) {
-            stringProperty("url", "Полный http(s) адрес страницы")
+            stringProperty("url", "Full http(s) address of the page")
         },
     )
 
     override suspend fun execute(arguments: JsonObject, settings: ToolSettings): ToolOutcome {
         val raw = arguments.requireString("url")
-        val url = raw.toHttpUrlOrNull() ?: throw ToolArgumentException("Это не http(s) адрес: «$raw»")
+        val url = raw.toHttpUrlOrNull() ?: throw ToolArgumentException("Not an http(s) address: \"$raw\"")
         val request = Request.Builder().url(url).header("Accept", "text/html,text/plain;q=0.9,*/*;q=0.5").build()
         val html = httpClients.current().fetchText(request)
         val text = HtmlText.document(html)
-        if (text.isBlank()) return ToolOutcome.error("На странице нет текста (возможно, она рисуется скриптами)")
+        if (text.isBlank()) return ToolOutcome.error("The page has no text (it may be rendered by scripts)")
         val title = HtmlText.title(html)
-        val clipped = if (text.length > MAX_TEXT_CHARS) text.take(MAX_TEXT_CHARS) + "\n…[обрезано]" else text
+        val clipped = if (text.length > MAX_TEXT_CHARS) text.take(MAX_TEXT_CHARS) + "\n…[truncated]" else text
         return ToolOutcome(listOfNotNull(title?.let { "# $it" }, url.toString(), clipped).joinToString("\n\n"))
     }
 

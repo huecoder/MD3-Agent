@@ -2,12 +2,14 @@ package dev.huecoder.md3assistant.feature.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dev.huecoder.md3assistant.R
 import dev.huecoder.md3assistant.data.settings.HeaderEntry
 import dev.huecoder.md3assistant.data.settings.ModelSelection
 import dev.huecoder.md3assistant.data.settings.ProviderProfile
 import dev.huecoder.md3assistant.data.settings.SettingsRepository
 import dev.huecoder.md3assistant.llm.ModelCatalogClient
 import dev.huecoder.md3assistant.llm.ProviderException
+import dev.huecoder.md3assistant.ui.text.UiText
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,8 +28,8 @@ data class ProviderForm(
     val defaultModel: String = "",
     val makeActive: Boolean = true,
 ) {
-    val baseUrlError: String?
-        get() = if (baseUrl.isBlank() || baseUrl.trim().toHttpUrlOrNull() != null) null else "Нужен адрес вида https://host/v1"
+    val baseUrlError: UiText?
+        get() = if (baseUrl.isBlank() || baseUrl.trim().toHttpUrlOrNull() != null) null else UiText.Resource(R.string.provider_base_url_invalid)
 
     val canSave: Boolean
         get() = name.isNotBlank() && baseUrl.isNotBlank() && baseUrlError == null && defaultModel.isNotBlank()
@@ -46,7 +48,7 @@ data class ProviderForm(
 sealed interface ModelFetchState {
     data object Idle : ModelFetchState
     data object Loading : ModelFetchState
-    data class Failed(val message: String) : ModelFetchState
+    data class Failed(val message: UiText) : ModelFetchState
 }
 
 class ProviderEditorViewModel(
@@ -93,7 +95,7 @@ class ProviderEditorViewModel(
                 edit { form -> form.copy(models = models, defaultModel = form.defaultModel.ifBlank { models.firstOrNull().orEmpty() }) }
                 ModelFetchState.Idle
             } catch (e: ProviderException) {
-                ModelFetchState.Failed(e.message ?: "Не удалось получить список моделей")
+                ModelFetchState.Failed(e.message?.let(UiText::Raw) ?: UiText.Resource(R.string.provider_models_fetch_failed))
             }
         }
     }

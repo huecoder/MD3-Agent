@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
@@ -18,6 +19,7 @@ import com.composables.icons.materialsymbols.rounded.Cancel
 import com.composables.icons.materialsymbols.rounded.Check
 import com.composables.icons.materialsymbols.rounded.Error
 import com.composables.icons.materialsymbols.rounded.Handyman
+import dev.huecoder.md3assistant.R
 import dev.huecoder.md3assistant.tools.ReadScreenTool
 import dev.huecoder.md3assistant.tools.optionalString
 import dev.huecoder.md3assistant.tools.weather.WeatherTool
@@ -25,8 +27,9 @@ import dev.huecoder.md3assistant.tools.web.ReadWebpageTool
 import dev.huecoder.md3assistant.tools.web.SearchResults
 import dev.huecoder.md3assistant.tools.web.WebSearchTool
 import dev.huecoder.md3assistant.ui.components.ExpandableBlock
-import dev.huecoder.md3assistant.ui.components.RussianPlural
 import dev.huecoder.md3assistant.ui.components.ToolCatalog
+import dev.huecoder.md3assistant.ui.text.UiText
+import dev.huecoder.md3assistant.ui.text.asString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
 import java.net.URI
@@ -36,9 +39,9 @@ fun ToolGroup(calls: List<ToolCallUi>, modifier: Modifier = Modifier) {
     val current = calls.firstOrNull { it.status == ToolStatus.RUNNING }
     val single = calls.singleOrNull()
     val title = when {
-        current != null -> ToolLook.of(current).title
-        single != null -> ToolLook.of(single).title
-        else -> groupSummary(calls)
+        current != null -> ToolLook.of(current).titleText()
+        single != null -> ToolLook.of(single).titleText()
+        else -> groupSummary(calls).asString()
     }
     ExpandableBlock(
         title = title,
@@ -62,7 +65,7 @@ fun ToolGroup(calls: List<ToolCallUi>, modifier: Modifier = Modifier) {
 @Composable
 private fun ToolStep(call: ToolCallUi) {
     val look = ToolLook.of(call)
-    ExpandableBlock(title = look.title, leading = { StatusMark(call.status) }) { ToolDetails(call) }
+    ExpandableBlock(title = look.titleText(), leading = { StatusMark(call.status) }) { ToolDetails(call) }
 }
 
 @Composable
@@ -71,18 +74,21 @@ private fun ToolDetails(call: ToolCallUi) {
         val arguments = call.arguments.entries.joinToString("\n") { (key, value) ->
             "$key: ${(value as? JsonPrimitive)?.content ?: value.toString()}"
         }
-        if (arguments.isNotEmpty()) Detail(label = "Аргументы", text = arguments)
+        if (arguments.isNotEmpty()) Detail(label = stringResource(R.string.chat_tool_arguments), text = arguments)
         when {
-            call.result != null -> Detail(label = "Результат", text = ToolLook.readableResult(call))
-            call.status == ToolStatus.CANCELLED -> Detail(label = "Результат", text = "Не выполнен: ответ был остановлен")
+            call.result != null -> Detail(label = stringResource(R.string.chat_tool_result), text = ToolLook.readableResult(call))
+            call.status == ToolStatus.CANCELLED -> Detail(
+                label = stringResource(R.string.chat_tool_result),
+                text = stringResource(R.string.chat_tool_cancelled_result),
+            )
         }
     }
 }
 
-private fun groupSummary(calls: List<ToolCallUi>): String {
+private fun groupSummary(calls: List<ToolCallUi>): UiText {
     val failed = calls.count { it.status == ToolStatus.ERROR }
-    val base = "${calls.size} ${RussianPlural.of(calls.size, "действие", "действия", "действий")}"
-    return if (failed == 0) base else "$base · $failed с ошибкой"
+    val base = UiText.Plural(R.plurals.chat_tool_group_actions, calls.size, listOf(calls.size))
+    return if (failed == 0) base else UiText.Resource(R.string.chat_tool_group_with_failures, listOf(base, failed))
 }
 
 @Composable
@@ -95,9 +101,9 @@ private fun StatusMark(status: ToolStatus) {
     val scheme = MaterialTheme.colorScheme
     when (status) {
         ToolStatus.RUNNING -> CircularProgressIndicator(modifier = Modifier.size(StepIconSize), strokeWidth = 2.dp)
-        ToolStatus.DONE -> Icon(MaterialSymbols.Rounded.Check, contentDescription = "Готово", tint = scheme.primary, modifier = Modifier.size(StepIconSize))
-        ToolStatus.ERROR -> Icon(MaterialSymbols.Rounded.Error, contentDescription = "Ошибка", tint = scheme.error, modifier = Modifier.size(StepIconSize))
-        ToolStatus.CANCELLED -> Icon(MaterialSymbols.Rounded.Cancel, contentDescription = "Отменён", tint = scheme.onSurfaceVariant, modifier = Modifier.size(StepIconSize))
+        ToolStatus.DONE -> Icon(MaterialSymbols.Rounded.Check, contentDescription = stringResource(R.string.chat_tool_status_done), tint = scheme.primary, modifier = Modifier.size(StepIconSize))
+        ToolStatus.ERROR -> Icon(MaterialSymbols.Rounded.Error, contentDescription = stringResource(R.string.chat_tool_status_error), tint = scheme.error, modifier = Modifier.size(StepIconSize))
+        ToolStatus.CANCELLED -> Icon(MaterialSymbols.Rounded.Cancel, contentDescription = stringResource(R.string.chat_tool_status_cancelled), tint = scheme.onSurfaceVariant, modifier = Modifier.size(StepIconSize))
     }
 }
 
@@ -115,7 +121,10 @@ private fun Detail(label: String, text: String) {
 
 internal val StepIconSize = 16.dp
 
-private data class ToolLook(val icon: ImageVector, val title: String) {
+@Composable
+private fun ToolLook.titleText(): String = title.asString().trim()
+
+private data class ToolLook(val icon: ImageVector, val title: UiText) {
     companion object {
         private const val MAX_RESULT_CHARS = 3_000
         private val json = Json { ignoreUnknownKeys = true }
@@ -124,13 +133,19 @@ private data class ToolLook(val icon: ImageVector, val title: String) {
             val running = call.status == ToolStatus.RUNNING
             val args = call.arguments
             val title = when (call.name) {
-                WebSearchTool.NAME -> (if (running) "Ищу " else "Поиск ") + quoted(args.optionalString("query"))
-                ReadWebpageTool.NAME -> (if (running) "Читаю " else "Страница ") + (args.optionalString("url")?.let(::hostOf) ?: "")
-                WeatherTool.NAME -> "Погода " + (args.optionalString("location") ?: "")
-                ReadScreenTool.NAME -> if (running) "Читаю экран" else "Экран"
-                else -> call.name
+                WebSearchTool.NAME -> UiText.Resource(
+                    if (running) R.string.chat_tool_searching else R.string.chat_tool_search,
+                    listOf(quoted(args.optionalString("query"))),
+                )
+                ReadWebpageTool.NAME -> UiText.Resource(
+                    if (running) R.string.chat_tool_reading_page else R.string.chat_tool_page,
+                    listOf(args.optionalString("url")?.let(::hostOf).orEmpty()),
+                )
+                WeatherTool.NAME -> UiText.Resource(R.string.chat_tool_weather, listOf(args.optionalString("location").orEmpty()))
+                ReadScreenTool.NAME -> UiText.Resource(if (running) R.string.chat_tool_reading_screen else R.string.chat_tool_screen)
+                else -> UiText.Raw(call.name)
             }
-            return ToolLook(ToolCatalog.of(call.name).icon, title.trim())
+            return ToolLook(ToolCatalog.of(call.name).icon, title)
         }
 
         fun readableResult(call: ToolCallUi): String {
@@ -140,7 +155,7 @@ private data class ToolLook(val icon: ImageVector, val title: String) {
             return if (text.length > MAX_RESULT_CHARS) text.take(MAX_RESULT_CHARS) + "…" else text
         }
 
-        private fun quoted(value: String?) = value?.let { "«$it»" }.orEmpty()
+        private fun quoted(value: String?): UiText = value?.let { UiText.Resource(R.string.chat_tool_quoted, listOf(it)) } ?: UiText.Raw("")
 
         private fun hostOf(url: String) = runCatching { URI(url).host?.removePrefix("www.") }.getOrNull() ?: url
     }

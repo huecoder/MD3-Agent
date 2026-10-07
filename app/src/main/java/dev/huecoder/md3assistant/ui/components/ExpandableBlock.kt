@@ -33,10 +33,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Expand_more
+import dev.huecoder.md3assistant.R
 import dev.huecoder.md3assistant.ui.theme.LayoutMotion
 
 @Composable
@@ -75,7 +77,7 @@ fun ExpandableBlock(
             )
             Icon(
                 MaterialSymbols.Rounded.Expand_more,
-                contentDescription = if (expanded) "Свернуть" else "Развернуть",
+                contentDescription = stringResource(if (expanded) R.string.common_collapse else R.string.common_expand),
                 tint = tint,
                 modifier = Modifier.size(CHEVRON_SIZE).rotate(chevronRotation),
             )

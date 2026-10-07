@@ -1,5 +1,6 @@
 package dev.huecoder.md3assistant.feature.home
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,10 +12,13 @@ import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Chat
+import dev.huecoder.md3assistant.R
 import dev.huecoder.md3assistant.data.db.ChatSummary
 import dev.huecoder.md3assistant.ui.components.SectionHeader
 import dev.huecoder.md3assistant.ui.components.ShapeBadge
@@ -40,7 +44,7 @@ fun ChatList(
         verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
     ) {
         groups.forEach { group ->
-            item(key = "header-${group.age}") { SectionHeader(group.age.label) }
+            item(key = "header-${group.age}") { SectionHeader(stringResource(group.age.label)) }
             itemsIndexed(group.chats, key = { _, chat -> chat.id }) { index, chat ->
                 ChatRow(
                     chat = chat,
@@ -67,7 +71,7 @@ private fun ChatRow(
     SegmentedListItem(
         onClick = onClick,
         onLongClick = onLongClick,
-        onLongClickLabel = "Удалить",
+        onLongClickLabel = stringResource(R.string.home_delete_chat),
         shapes = ListItemDefaults.segmentedShapes(index = index, count = count),
         colors = groupedListColors(),
         modifier = modifier,
@@ -84,7 +88,7 @@ private fun ChatRow(
         },
         trailingContent = {
             Text(
-                RelativeTime.format(chat.updatedAt),
+                RelativeTime.format(chat.updatedAt, LocalConfiguration.current.locales[0]),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -94,10 +98,11 @@ private fun ChatRow(
     }
 }
 
-val ChatAge.label: String
+@get:StringRes
+val ChatAge.label: Int
     get() = when (this) {
-        ChatAge.TODAY -> "Сегодня"
-        ChatAge.YESTERDAY -> "Вчера"
-        ChatAge.THIS_WEEK -> "На этой неделе"
-        ChatAge.EARLIER -> "Ранее"
+        ChatAge.TODAY -> R.string.home_age_today
+        ChatAge.YESTERDAY -> R.string.home_age_yesterday
+        ChatAge.THIS_WEEK -> R.string.home_age_this_week
+        ChatAge.EARLIER -> R.string.home_age_earlier
     }

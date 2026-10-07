@@ -27,7 +27,7 @@ class VoiceRecorder(private val context: Context) {
         } catch (e: RuntimeException) {
             created.release()
             file.delete()
-            throw IOException("Микрофон недоступен", e)
+            throw IOException(MICROPHONE_UNAVAILABLE, e)
         }
         recorder = created
         output = file
@@ -36,15 +36,15 @@ class VoiceRecorder(private val context: Context) {
     fun level(): Float = (recorder?.maxAmplitude ?: 0).toFloat() / MAX_AMPLITUDE
 
     fun stop(): File {
-        val active = recorder ?: throw IOException("Запись не идёт")
-        val file = output ?: throw IOException("Запись не идёт")
+        val active = recorder ?: throw IOException(NOT_RECORDING)
+        val file = output ?: throw IOException(NOT_RECORDING)
         recorder = null
         output = null
         try {
             active.stop()
         } catch (e: RuntimeException) {
             file.delete()
-            throw IOException("Запись слишком короткая", e)
+            throw RecordingTooShortException(e)
         } finally {
             active.release()
         }
@@ -71,5 +71,9 @@ class VoiceRecorder(private val context: Context) {
         private const val SAMPLE_RATE_HZ = 16_000
         private const val BIT_RATE_BPS = 24_000
         private const val MAX_AMPLITUDE = 32_767f
+        private const val MICROPHONE_UNAVAILABLE = "Microphone is unavailable"
+        private const val NOT_RECORDING = "Recording is not in progress"
     }
 }
+
+class RecordingTooShortException(cause: Throwable) : IOException("Recording is too short", cause)

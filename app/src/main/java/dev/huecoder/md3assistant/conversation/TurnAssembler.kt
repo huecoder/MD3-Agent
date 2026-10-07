@@ -54,7 +54,7 @@ object TurnAssembler {
             append(message.content)
             files.forEach { file ->
                 if (isNotEmpty()) append("\n\n")
-                append("Файл «").append(file.name).append("»:\n```\n").append(file.text.trimEnd()).append("\n```")
+                append("File \"").append(file.name).append("\":\n```\n").append(file.text.trimEnd()).append("\n```")
             }
         }
         return ChatTurn(

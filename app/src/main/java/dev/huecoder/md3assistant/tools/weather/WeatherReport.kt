@@ -6,11 +6,11 @@ internal object WeatherReport {
     fun format(place: Place, forecast: ForecastResponse): String = buildString {
         appendLine(listOfNotNull(place.name, place.admin1, place.country).distinct().joinToString(", "))
         forecast.current?.let { now ->
-            append("Сейчас: ").append(describe(now.code))
+            append("Now: ").append(describe(now.code))
             now.temperature?.let { append(", ").append(degrees(it)) }
-            now.feelsLike?.let { append(" (ощущается ").append(degrees(it)).append(')') }
-            now.humidity?.let { append(", влажность ").append(it).append('%') }
-            now.wind?.let { append(", ветер ").append(it.roundToInt()).append(" м/с") }
+            now.feelsLike?.let { append(" (feels like ").append(degrees(it)).append(')') }
+            now.humidity?.let { append(", humidity ").append(it).append('%') }
+            now.wind?.let { append(", wind ").append(it.roundToInt()).append(" m/s") }
             appendLine()
         }
         forecast.daily?.let { daily ->
@@ -19,7 +19,7 @@ internal object WeatherReport {
                 val min = daily.min.getOrNull(day)
                 val max = daily.max.getOrNull(day)
                 if (min != null && max != null) append(", ").append(degrees(min)).append("…").append(degrees(max))
-                daily.precipitation.getOrNull(day)?.let { append(", осадки ").append(it).append('%') }
+                daily.precipitation.getOrNull(day)?.let { append(", precipitation ").append(it).append('%') }
                 appendLine()
             }
         }
@@ -28,26 +28,26 @@ internal object WeatherReport {
     private fun degrees(value: Double) = "${value.roundToInt()}°C"
 
     fun describe(code: Int?): String = when (code) {
-        0 -> "ясно"
-        1 -> "преимущественно ясно"
-        2 -> "переменная облачность"
-        3 -> "пасмурно"
-        45, 48 -> "туман"
-        51, 53, 55 -> "морось"
-        56, 57 -> "ледяная морось"
-        61 -> "небольшой дождь"
-        63 -> "дождь"
-        65 -> "сильный дождь"
-        66, 67 -> "ледяной дождь"
-        71 -> "небольшой снег"
-        73 -> "снег"
-        75 -> "сильный снег"
-        77 -> "снежная крупа"
-        80, 81 -> "ливень"
-        82 -> "сильный ливень"
-        85, 86 -> "снегопад"
-        95 -> "гроза"
-        96, 99 -> "гроза с градом"
-        else -> "нет данных"
+        0 -> "clear"
+        1 -> "mostly clear"
+        2 -> "partly cloudy"
+        3 -> "overcast"
+        45, 48 -> "fog"
+        51, 53, 55 -> "drizzle"
+        56, 57 -> "freezing drizzle"
+        61 -> "light rain"
+        63 -> "rain"
+        65 -> "heavy rain"
+        66, 67 -> "freezing rain"
+        71 -> "light snow"
+        73 -> "snow"
+        75 -> "heavy snow"
+        77 -> "snow grains"
+        80, 81 -> "rain showers"
+        82 -> "heavy rain showers"
+        85, 86 -> "snow showers"
+        95 -> "thunderstorm"
+        96, 99 -> "thunderstorm with hail"
+        else -> "no data"
     }
 }

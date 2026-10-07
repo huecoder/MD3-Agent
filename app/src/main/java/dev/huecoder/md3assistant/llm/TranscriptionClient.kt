@@ -29,9 +29,9 @@ class TranscriptionClient(private val httpClients: HttpClientProvider) {
 
     private fun textOf(raw: String): String {
         val parsed = runCatching { json.parseToJsonElement(raw).jsonObject }.getOrNull()
-            ?: throw ProviderException.MalformedResponse("Сервер распознавания вернул не JSON: ${raw.take(ERROR_PREVIEW_CHARS)}")
+            ?: throw ProviderException.MalformedResponse("Transcription server returned non-JSON: ${raw.take(ERROR_PREVIEW_CHARS)}")
         return (parsed["text"] as? JsonPrimitive)?.contentOrNull?.trim()
-            ?: throw ProviderException.MalformedResponse("В ответе распознавания нет поля text")
+            ?: throw ProviderException.MalformedResponse("Transcription response has no text field")
     }
 
     private companion object {

@@ -30,7 +30,7 @@ data class ToolOutcome(val content: String, val isError: Boolean = false) {
 class ToolArgumentException(message: String) : IllegalArgumentException(message)
 
 fun JsonObject.requireString(name: String): String =
-    optionalString(name) ?: throw ToolArgumentException("Нужен непустой строковый параметр '$name'")
+    optionalString(name) ?: throw ToolArgumentException("A non-empty string parameter '$name' is required")
 
 fun JsonObject.optionalString(name: String): String? =
     (this[name] as? JsonPrimitive)?.contentOrNull?.trim()?.takeIf { it.isNotEmpty() }

@@ -19,6 +19,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -35,6 +36,7 @@ import com.composables.icons.materialsymbols.rounded.Hub
 import com.composables.icons.materialsymbols.rounded.Mic
 import com.composables.icons.materialsymbols.roundedfilled.Check_circle
 import dev.huecoder.md3assistant.App
+import dev.huecoder.md3assistant.R
 import dev.huecoder.md3assistant.assistant.AssistantRole
 import dev.huecoder.md3assistant.data.settings.AppSettings
 import dev.huecoder.md3assistant.ui.components.SectionHeader
@@ -59,63 +61,62 @@ fun SettingsScreen(
     var isAssistant by remember { mutableStateOf(AssistantRole.isHeld(context)) }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { isAssistant = AssistantRole.isHeld(context) }
 
-    SettingsScaffold("Настройки", onBack) { padding ->
+    SettingsScaffold(stringResource(R.string.settings_title), onBack) { padding ->
         val current = settings ?: return@SettingsScaffold
+        val assistantEntries = listOf(
+            SettingsEntry(
+                icon = MaterialSymbols.Rounded.Assistant,
+                title = stringResource(R.string.settings_default_assistant),
+                summary = stringResource(
+                    if (isAssistant) R.string.settings_default_assistant_held else R.string.settings_default_assistant_not_held,
+                ),
+                onClick = { AssistantRole.openSystemPicker(context) },
+            ),
+            SettingsEntry(
+                icon = MaterialSymbols.Rounded.Face,
+                title = stringResource(R.string.settings_agent),
+                summary = stringResource(R.string.settings_agent_summary, current.agent.name),
+                onClick = onOpenAgent,
+            ),
+        )
+        val capabilityEntries = listOf(
+            SettingsEntry(
+                icon = MaterialSymbols.Rounded.Handyman,
+                title = stringResource(R.string.settings_tools),
+                summary = toolsSummary(current, toolNames),
+                onClick = onOpenTools,
+            ),
+            SettingsEntry(
+                icon = MaterialSymbols.Rounded.Mic,
+                title = stringResource(R.string.settings_chat_and_voice),
+                summary = chatSummary(current),
+                onClick = onOpenChat,
+            ),
+        )
+        val systemEntries = listOf(
+            SettingsEntry(
+                icon = MaterialSymbols.Rounded.Dns,
+                title = stringResource(R.string.settings_network),
+                summary = networkSummary(current),
+                onClick = onOpenNetwork,
+            ),
+        )
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = padding.calculateTopPadding(), bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
         ) {
-            item { SectionHeader("Ассистент") }
-            entryGroup(
-                listOf(
-                    SettingsEntry(
-                        icon = MaterialSymbols.Rounded.Assistant,
-                        title = "Ассистент по умолчанию",
-                        summary = if (isAssistant) "Включён, вызов зажатием кнопки" else "Не назначен, нажми чтобы выбрать",
-                        onClick = { AssistantRole.openSystemPicker(context) },
-                    ),
-                    SettingsEntry(
-                        icon = MaterialSymbols.Rounded.Face,
-                        title = "Агент",
-                        summary = "${current.agent.name} · системный промпт",
-                        onClick = onOpenAgent,
-                    ),
-                ),
-            )
+            item { SectionHeader(stringResource(R.string.settings_section_assistant)) }
+            entryGroup(assistantEntries)
 
-            item { SectionHeader("Возможности") }
-            entryGroup(
-                listOf(
-                    SettingsEntry(
-                        icon = MaterialSymbols.Rounded.Handyman,
-                        title = "Инструменты",
-                        summary = toolsSummary(current, toolNames),
-                        onClick = onOpenTools,
-                    ),
-                    SettingsEntry(
-                        icon = MaterialSymbols.Rounded.Mic,
-                        title = "Чат и голос",
-                        summary = chatSummary(current),
-                        onClick = onOpenChat,
-                    ),
-                ),
-            )
+            item { SectionHeader(stringResource(R.string.settings_section_capabilities)) }
+            entryGroup(capabilityEntries)
 
-            item { SectionHeader("Провайдеры") }
+            item { SectionHeader(stringResource(R.string.settings_section_providers)) }
             providerItems(current, onEditProvider)
 
-            item { SectionHeader("Система") }
-            entryGroup(
-                listOf(
-                    SettingsEntry(
-                        icon = MaterialSymbols.Rounded.Dns,
-                        title = "Сеть",
-                        summary = networkSummary(current),
-                        onClick = onOpenNetwork,
-                    ),
-                ),
-            )
+            item { SectionHeader(stringResource(R.string.settings_section_system)) }
+            entryGroup(systemEntries)
         }
     }
 }
@@ -137,7 +138,7 @@ private fun LazyListScope.providerItems(settings: AppSettings, onEditProvider: (
                 )
             },
             trailingContent = if (isActive) {
-                { Icon(MaterialSymbols.RoundedFilled.Check_circle, contentDescription = "Активный", tint = MaterialTheme.colorScheme.primary) }
+                { Icon(MaterialSymbols.RoundedFilled.Check_circle, contentDescription = stringResource(R.string.settings_provider_active), tint = MaterialTheme.colorScheme.primary) }
             } else {
                 null
             },
@@ -155,21 +156,28 @@ private fun LazyListScope.providerItems(settings: AppSettings, onEditProvider: (
                     contentColor = MaterialTheme.colorScheme.onSurface,
                 )
             },
-        ) { Text("Добавить провайдера", style = MaterialTheme.typography.titleMediumEmphasized) }
+        ) { Text(stringResource(R.string.settings_add_provider), style = MaterialTheme.typography.titleMediumEmphasized) }
     }
 }
 
+@Composable
 private fun toolsSummary(settings: AppSettings, toolNames: List<String>): String =
-    "Включено ${toolNames.count(settings.tools::isEnabled)} из ${toolNames.size} · поиск, погода, экран"
+    stringResource(R.string.settings_tools_summary, toolNames.count(settings.tools::isEnabled), toolNames.size)
 
+@Composable
 private fun chatSummary(settings: AppSettings): String {
-    val speechProvider = settings.provider(settings.speech.providerId)?.name ?: "как у чата"
-    val tokens = if (settings.chat.showTokenUsage) "токены видны" else "токены скрыты"
-    return "Диктовка: ${settings.speech.model} · $speechProvider · $tokens"
+    val speechProvider = settings.provider(settings.speech.providerId)?.name ?: stringResource(R.string.settings_speech_provider_follows_chat)
+    val tokens = stringResource(if (settings.chat.showTokenUsage) R.string.settings_tokens_shown else R.string.settings_tokens_hidden)
+    return stringResource(R.string.settings_chat_summary, settings.speech.model, speechProvider, tokens)
 }
 
+@Composable
 private fun networkSummary(settings: AppSettings): String =
-    if (settings.network.dohEnabled && settings.network.dohUrl.isNotBlank()) "DoH: ${settings.network.dohUrl}" else "Системный DNS"
+    if (settings.network.dohEnabled && settings.network.dohUrl.isNotBlank()) {
+        stringResource(R.string.settings_network_summary_doh, settings.network.dohUrl)
+    } else {
+        stringResource(R.string.settings_network_summary_system)
+    }
 
 data class SettingsEntry(
     val icon: ImageVector,

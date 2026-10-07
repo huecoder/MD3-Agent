@@ -7,7 +7,7 @@ import okhttp3.Request
 
 class ProviderEndpoint(private val provider: ProviderProfile) {
     private val base: HttpUrl = normalizeBase(provider.baseUrl)
-        ?: throw ProviderException.InvalidConfiguration("Некорректный адрес провайдера: ${provider.baseUrl}")
+        ?: throw ProviderException.InvalidConfiguration("Invalid provider address: ${provider.baseUrl}")
 
     fun url(path: String): HttpUrl = base.newBuilder().addPathSegments(path).build()
 
@@ -32,6 +32,6 @@ class ProviderEndpoint(private val provider: ProviderProfile) {
 sealed class ProviderException(message: String, cause: Throwable? = null) : Exception(message, cause) {
     class InvalidConfiguration(message: String) : ProviderException(message)
     class Http(val code: Int, message: String) : ProviderException(message)
-    class Network(cause: Throwable) : ProviderException(cause.message ?: "Сетевая ошибка", cause)
+    class Network(cause: Throwable) : ProviderException(cause.message ?: "Network error", cause)
     class MalformedResponse(message: String) : ProviderException(message)
 }

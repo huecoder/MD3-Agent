@@ -1,5 +1,6 @@
 package dev.huecoder.md3assistant.feature.settings
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -26,10 +27,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import dev.huecoder.md3assistant.App
+import dev.huecoder.md3assistant.R
 import dev.huecoder.md3assistant.data.settings.SearchBackend
 import dev.huecoder.md3assistant.data.settings.SearchSettings
 import dev.huecoder.md3assistant.data.settings.ToolSettings
@@ -40,6 +43,7 @@ import dev.huecoder.md3assistant.ui.components.SectionHeader
 import dev.huecoder.md3assistant.ui.components.SettingsScaffold
 import dev.huecoder.md3assistant.ui.components.ShapeBadge
 import dev.huecoder.md3assistant.ui.components.ToolCatalog
+import dev.huecoder.md3assistant.ui.text.asString
 import kotlinx.coroutines.launch
 
 @Composable
@@ -50,7 +54,7 @@ fun ToolSettingsScreen(onBack: () -> Unit) {
 
     LaunchedEffect(Unit) { tools = container.settings.current().tools }
 
-    SettingsScaffold("Инструменты", onBack) { padding ->
+    SettingsScaffold(stringResource(R.string.settings_tools), onBack) { padding ->
         val current = tools ?: return@SettingsScaffold
         Column(
             modifier = Modifier
@@ -60,15 +64,15 @@ fun ToolSettingsScreen(onBack: () -> Unit) {
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            SectionHeader("Доступны модели")
+            SectionHeader(stringResource(R.string.tools_section_available))
             container.tools.all.forEach { tool ->
                 val name = tool.spec.name
                 val info = ToolCatalog.of(name)
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     ShapeBadge(info.icon, size = BADGE_SIZE)
                     LabeledSwitch(
-                        title = info.title,
-                        summary = info.summary,
+                        title = info.title.asString(),
+                        summary = info.summary.asString(),
                         checked = current.isEnabled(name),
                         onCheckedChange = { enabled ->
                             tools = current.copy(disabledTools = if (enabled) current.disabledTools - name else current.disabledTools + name)
@@ -77,10 +81,10 @@ fun ToolSettingsScreen(onBack: () -> Unit) {
                 }
             }
 
-            SectionHeader("Поиск")
+            SectionHeader(stringResource(R.string.tools_section_search))
             SearchSection(current.search) { tools = current.copy(search = it) }
 
-            SectionHeader("Погода")
+            SectionHeader(stringResource(R.string.tools_weather_title))
             WeatherSection(current.weather) { tools = current.copy(weather = it) }
 
             Button(
@@ -93,7 +97,7 @@ fun ToolSettingsScreen(onBack: () -> Unit) {
                 enabled = current.search.isComplete(),
                 shapes = ButtonDefaults.shapes(),
                 modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 24.dp),
-            ) { Text("Сохранить") }
+            ) { Text(stringResource(R.string.settings_save)) }
         }
     }
 }
@@ -108,25 +112,25 @@ private fun SearchSection(search: SearchSettings, onChange: (SearchSettings) -> 
                     selected = search.backend == backend,
                     onClick = { onChange(search.copy(backend = backend)) },
                     shape = SegmentedButtonDefaults.itemShape(index, backends.size),
-                    label = { Text(backend.label) },
+                    label = { Text(stringResource(backend.label)) },
                 )
             }
         }
-        Text(search.backend.hint, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(stringResource(search.backend.hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         when (search.backend) {
             SearchBackend.HTML_SCRAPE -> Unit
             SearchBackend.SEARXNG -> FormField(
                 value = search.searxngUrl,
                 onValueChange = { onChange(search.copy(searxngUrl = it)) },
-                label = "Адрес SearXNG",
-                placeholder = "https://searx.example.com или http://127.0.0.1:8888",
+                label = stringResource(R.string.tools_searxng_url),
+                placeholder = stringResource(R.string.tools_searxng_url_placeholder),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                 modifier = Modifier.fillMaxWidth(),
             )
             SearchBackend.BRAVE_API -> FormField(
                 value = search.apiKey,
                 onValueChange = { onChange(search.copy(apiKey = it)) },
-                label = "API-ключ",
+                label = stringResource(R.string.tools_search_api_key),
                 visualTransformation = PasswordVisualTransformation(),
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -138,39 +142,41 @@ private fun SearchSection(search: SearchSettings, onChange: (SearchSettings) -> 
 private fun WeatherSection(weather: WeatherSettings, onChange: (WeatherSettings) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
-            "Любой сервис с API как у Open-Meteo: публичный или свой. Ключ не нужен.",
+            stringResource(R.string.tools_weather_hint),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         FormField(
             value = weather.forecastUrl,
             onValueChange = { onChange(weather.copy(forecastUrl = it)) },
-            label = "Адрес прогноза",
+            label = stringResource(R.string.tools_weather_forecast_url),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
             modifier = Modifier.fillMaxWidth(),
         )
         FormField(
             value = weather.geocodingUrl,
             onValueChange = { onChange(weather.copy(geocodingUrl = it)) },
-            label = "Адрес поиска городов",
+            label = stringResource(R.string.tools_weather_geocoding_url),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
             modifier = Modifier.fillMaxWidth(),
         )
     }
 }
 
-private val SearchBackend.label: String
+@get:StringRes
+private val SearchBackend.label: Int
     get() = when (this) {
-        SearchBackend.HTML_SCRAPE -> "Без ключа"
-        SearchBackend.SEARXNG -> "SearXNG"
-        SearchBackend.BRAVE_API -> "Brave API"
+        SearchBackend.HTML_SCRAPE -> R.string.tools_search_backend_html
+        SearchBackend.SEARXNG -> R.string.tools_search_backend_searxng
+        SearchBackend.BRAVE_API -> R.string.tools_search_backend_brave
     }
 
-private val SearchBackend.hint: String
+@get:StringRes
+private val SearchBackend.hint: Int
     get() = when (this) {
-        SearchBackend.HTML_SCRAPE -> "Парсит HTML-выдачу DuckDuckGo. Работает сразу, но иногда упирается в капчу."
-        SearchBackend.SEARXNG -> "Свой или публичный инстанс. В его настройках должен быть включён формат JSON."
-        SearchBackend.BRAVE_API -> "Официальный API с ключом: стабильно и без капч."
+        SearchBackend.HTML_SCRAPE -> R.string.tools_search_backend_html_hint
+        SearchBackend.SEARXNG -> R.string.tools_search_backend_searxng_hint
+        SearchBackend.BRAVE_API -> R.string.tools_search_backend_brave_hint
     }
 
 private fun SearchSettings.isComplete(): Boolean = when (backend) {

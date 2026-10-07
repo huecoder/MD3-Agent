@@ -51,28 +51,28 @@ class ShowUiTool : Tool {
 
     override val spec = ToolSpec(
         name = NAME,
-        description = "Показывает пользователю под твоим ответом варианты быстрого ответа (чипы) и/или кнопки. " +
-            "Вызывай в самом конце, после текста ответа, когда есть очевидные следующие шаги. " +
-            "Чип при нажатии отправляет свой текст от имени пользователя.",
+        description = "Shows the user quick reply options (chips) and/or buttons below your answer. " +
+            "Call it at the very end, after the answer text, when there are obvious next steps. " +
+            "Tapping a chip sends its text as the user's message.",
         parameters = objectSchema(required = emptyList()) {
             putJsonObject("suggestions") {
                 put("type", "array")
-                put("description", "До 4 коротких вариантов ответа от лица пользователя")
+                put("description", "Up to 4 short replies written as the user")
                 putJsonObject("items") { put("type", "string") }
             }
             putJsonObject("buttons") {
                 put("type", "array")
-                put("description", "До 4 кнопок с действиями")
+                put("description", "Up to 4 action buttons")
                 putJsonObject("items") {
                     put("type", "object")
                     putJsonObject("properties") {
-                        stringProperty("label", "Текст на кнопке")
+                        stringProperty("label", "Button text")
                         putJsonObject("action") {
                             put("type", "string")
                             putJsonArray("enum") { ButtonAction.entries.forEach { add(JsonPrimitive(it.wireName)) } }
-                            put("description", "open_url открывает ссылку, copy копирует value, send отправляет value как сообщение")
+                            put("description", "open_url opens a link, copy copies value, send sends value as a message")
                         }
-                        stringProperty("value", "URL, текст для копирования или сообщение")
+                        stringProperty("value", "URL, text to copy, or message")
                     }
                     putJsonArray("required") { listOf("label", "action", "value").forEach { add(JsonPrimitive(it)) } }
                 }
@@ -82,7 +82,7 @@ class ShowUiTool : Tool {
 
     override suspend fun execute(arguments: JsonObject, settings: ToolSettings): ToolOutcome {
         val ui = ReplyUi.parse(arguments)
-        return if (ui.isEmpty) ToolOutcome.error("Нечего показывать: нет ни корректных вариантов, ни кнопок") else ToolOutcome("Показано пользователю")
+        return if (ui.isEmpty) ToolOutcome.error("Nothing to show: no valid suggestions or buttons") else ToolOutcome("Shown to the user")
     }
 
     companion object {

@@ -38,10 +38,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Open_in_new
+import dev.huecoder.md3assistant.R
 import dev.huecoder.md3assistant.feature.chat.ChatInput
 import dev.huecoder.md3assistant.feature.chat.ChatViewModel
 import dev.huecoder.md3assistant.feature.chat.MessageList
@@ -49,6 +51,7 @@ import dev.huecoder.md3assistant.feature.chat.appendDictated
 import dev.huecoder.md3assistant.feature.chat.rememberDictationControls
 import dev.huecoder.md3assistant.ui.components.AgentAvatar
 import dev.huecoder.md3assistant.ui.components.appViewModel
+import dev.huecoder.md3assistant.ui.text.UiText
 import dev.huecoder.md3assistant.voice.DictationViewModel
 
 private val SheetShape = RoundedCornerShape(36.dp)
@@ -64,7 +67,7 @@ fun AssistantOverlay(activation: Int, onDismiss: () -> Unit, onOpenInApp: (chatI
     val dictation = rememberDictationControls(
         model = dictationModel,
         onTranscript = { input = appendDictated(input, it) },
-        onPermissionMissing = { dictationModel.fail("Нет доступа к микрофону: открой приложение и нажми микрофон в чате") },
+        onPermissionMissing = { dictationModel.fail(UiText.Resource(R.string.overlay_microphone_denied)) },
     )
     val focusRequester = remember { FocusRequester() }
     val visibility = remember(activation) { MutableTransitionState(false).apply { targetState = true } }
@@ -140,7 +143,7 @@ private fun OverlayHeader(agentName: String, isWorking: Boolean, canOpen: Boolea
         AgentAvatar(isWorking = isWorking, size = 40.dp)
         Text(agentName, style = MaterialTheme.typography.titleLargeEmphasized, modifier = Modifier.weight(1f))
         IconButton(onClick = onOpenInApp, enabled = canOpen, shapes = IconButtonDefaults.shapes()) {
-            Icon(MaterialSymbols.Rounded.Open_in_new, contentDescription = "Открыть в приложении")
+            Icon(MaterialSymbols.Rounded.Open_in_new, contentDescription = stringResource(R.string.overlay_open_in_app))
         }
     }
 }

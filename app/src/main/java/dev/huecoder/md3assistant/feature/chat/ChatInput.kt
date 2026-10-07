@@ -1,5 +1,6 @@
 package dev.huecoder.md3assistant.feature.chat
 
+import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
@@ -32,6 +33,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
@@ -41,6 +43,7 @@ import com.composables.icons.materialsymbols.rounded.Check
 import com.composables.icons.materialsymbols.rounded.Close
 import com.composables.icons.materialsymbols.rounded.Mic
 import com.composables.icons.materialsymbols.roundedfilled.Stop
+import dev.huecoder.md3assistant.R
 import dev.huecoder.md3assistant.data.attachments.Attachment
 import dev.huecoder.md3assistant.voice.DictationState
 
@@ -97,9 +100,9 @@ fun ChatInput(
                         modifier = Modifier.padding(bottom = ATTACH_BUTTON_BOTTOM_INSET),
                     ) {
                         if (isDictating) {
-                            Icon(MaterialSymbols.Rounded.Close, contentDescription = "Отменить диктовку")
+                            Icon(MaterialSymbols.Rounded.Close, contentDescription = stringResource(R.string.dictation_cancel))
                         } else {
-                            Icon(MaterialSymbols.Rounded.Attach_file, contentDescription = "Прикрепить файл")
+                            Icon(MaterialSymbols.Rounded.Attach_file, contentDescription = stringResource(R.string.chat_attach_file))
                         }
                     }
                 }
@@ -133,7 +136,7 @@ private fun MessageField(text: String, onTextChange: (String) -> Unit, focusRequ
     TextField(
         value = text,
         onValueChange = onTextChange,
-        placeholder = { Text("Спроси что-нибудь", style = MaterialTheme.typography.bodyLarge) },
+        placeholder = { Text(stringResource(R.string.chat_input_placeholder), style = MaterialTheme.typography.bodyLarge) },
         textStyle = MaterialTheme.typography.bodyLarge,
         maxLines = MAX_VISIBLE_LINES,
         keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
@@ -151,11 +154,11 @@ private fun MessageField(text: String, onTextChange: (String) -> Unit, focusRequ
 
 private val ATTACH_BUTTON_BOTTOM_INSET = 4.dp
 
-private enum class ComposerAction(val icon: ImageVector, val description: String) {
-    SEND(MaterialSymbols.Rounded.Arrow_upward, "Отправить"),
-    STOP(MaterialSymbols.RoundedFilled.Stop, "Остановить"),
-    DICTATE(MaterialSymbols.Rounded.Mic, "Диктовать"),
-    FINISH_DICTATION(MaterialSymbols.Rounded.Check, "Готово, распознать"),
+private enum class ComposerAction(val icon: ImageVector, @StringRes val description: Int) {
+    SEND(MaterialSymbols.Rounded.Arrow_upward, R.string.chat_send),
+    STOP(MaterialSymbols.RoundedFilled.Stop, R.string.chat_stop),
+    DICTATE(MaterialSymbols.Rounded.Mic, R.string.dictation_start),
+    FINISH_DICTATION(MaterialSymbols.Rounded.Check, R.string.dictation_finish),
 }
 
 @Composable
@@ -176,7 +179,7 @@ private fun ActionButton(action: ComposerAction, enabled: Boolean, onClick: () -
             transitionSpec = { scaleIn() togetherWith scaleOut() },
             label = "composer-action-icon",
         ) { shown ->
-            Icon(shown.icon, contentDescription = shown.description)
+            Icon(shown.icon, contentDescription = stringResource(shown.description))
         }
     }
 }

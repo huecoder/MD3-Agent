@@ -44,14 +44,14 @@ class WebSearcher(private val httpClients: HttpClientProvider) {
         val html = httpClients.current().fetchText(request)
         val hits = DuckDuckGoHtml.parse(html)
         if (hits.isEmpty() && html.contains("anomaly", ignoreCase = true)) {
-            throw IllegalStateException("Поисковик попросил капчу. Попробуй позже или переключи поиск на SearXNG в настройках")
+            throw IllegalStateException("The search engine asked for a captcha. Try again later or switch search to SearXNG in settings")
         }
         return hits
     }
 
     private suspend fun searxng(query: String, settings: SearchSettings): List<SearchHit> {
         val base = settings.searxngUrl.trim().toHttpUrlOrNull()
-            ?: throw ToolArgumentException("Не задан адрес SearXNG в настройках инструментов")
+            ?: throw ToolArgumentException("SearXNG address is not set in tool settings")
         val url = base.newBuilder().addPathSegment("search")
             .addQueryParameter("q", query)
             .addQueryParameter("format", "json")
@@ -62,7 +62,7 @@ class WebSearcher(private val httpClients: HttpClientProvider) {
     }
 
     private suspend fun braveApi(query: String, settings: SearchSettings): List<SearchHit> {
-        if (settings.apiKey.isBlank()) throw ToolArgumentException("Не задан API-ключ поиска в настройках инструментов")
+        if (settings.apiKey.isBlank()) throw ToolArgumentException("Search API key is not set in tool settings")
         val url = BRAVE_SEARCH_URL.toHttpUrl().newBuilder()
             .addQueryParameter("q", query)
             .addQueryParameter("count", MAX_API_RESULTS.toString())

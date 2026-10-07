@@ -24,14 +24,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Content_copy
 import com.composables.icons.materialsymbols.rounded.Error
 import com.composables.icons.materialsymbols.rounded.Refresh
+import dev.huecoder.md3assistant.R
 import dev.huecoder.md3assistant.ui.components.AgentAvatar
 import dev.huecoder.md3assistant.ui.components.MarkdownContent
 import dev.huecoder.md3assistant.ui.components.copyText
+import dev.huecoder.md3assistant.ui.text.asString
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -80,7 +83,7 @@ fun AssistantReply(
                     is ReplyPart.Reasoning -> ReasoningBlock(part.text, part.isStreaming)
                     is ReplyPart.Text -> SelectionContainer { MarkdownContent(part.content) }
                     is ReplyPart.Tools -> ToolGroup(part.calls)
-                    is ReplyPart.Error -> ErrorNotice(part.text)
+                    is ReplyPart.Error -> ErrorNotice(part.text.asString())
                 }
             }
         }
@@ -104,14 +107,14 @@ private fun ReplyFooter(reply: ChatItem.Reply, showUsage: Boolean, onRegenerate:
     val end = reply.end
     Row(verticalAlignment = Alignment.CenterVertically) {
         if (end != null && end.fullText.isNotEmpty()) {
-            ActionIcon(MaterialSymbols.Rounded.Content_copy, "Копировать") { scope.launch { clipboard.copyText(end.fullText) } }
+            ActionIcon(MaterialSymbols.Rounded.Content_copy, stringResource(R.string.chat_copy)) { scope.launch { clipboard.copyText(end.fullText) } }
         }
         if (end != null && end.isLatest) {
-            ActionIcon(MaterialSymbols.Rounded.Refresh, "Сгенерировать заново", onRegenerate)
+            ActionIcon(MaterialSymbols.Rounded.Refresh, stringResource(R.string.chat_regenerate), onRegenerate)
         }
         val meta = listOfNotNull(
-            replyDuration(reply)?.let(ReplyMetaFormat::duration),
-            reply.usage?.takeIf { showUsage }?.let(ReplyMetaFormat::usage),
+            replyDuration(reply)?.let(ReplyMetaFormat::duration)?.asString(),
+            reply.usage?.takeIf { showUsage }?.let(ReplyMetaFormat::usage)?.asString(),
         )
         if (meta.isNotEmpty()) {
             Text(

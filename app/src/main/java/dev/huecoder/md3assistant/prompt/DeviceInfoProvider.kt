@@ -18,10 +18,10 @@ class DeviceInfoProvider(private val context: Context) {
         val battery = context.getSystemService(BatteryManager::class.java) ?: return UNKNOWN
         val level = battery.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
         if (level !in 0..100) return UNKNOWN
-        return if (battery.isCharging) "$level%, заряжается" else "$level%"
+        return if (battery.isCharging) "$level%, charging" else "$level%"
     }
 
     private companion object {
-        const val UNKNOWN = "неизвестно"
+        const val UNKNOWN = "unknown"
     }
 }

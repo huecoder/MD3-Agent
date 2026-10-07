@@ -88,7 +88,7 @@ class ConversationRunner(
     private suspend fun generateReply(chatId: String) {
         val current = settings.current()
         val (provider, model) = resolveModel(chatId, current)
-            ?: return chats.save(errorMessage(chatId, "Модель не выбрана. Добавь провайдера в настройках."))
+            ?: return chats.save(errorMessage(chatId, NO_MODEL_SELECTED))
         try {
             repeat(MAX_TOOL_ROUNDS) {
                 val round = streamRound(chatId, provider, model, current) ?: return
@@ -96,7 +96,7 @@ class ConversationRunner(
                 val endsTurn = runTools(chatId, round, current)
                 if (endsTurn) return
             }
-            chats.save(errorMessage(chatId, "Модель сделала $MAX_TOOL_ROUNDS кругов вызовов инструментов подряд и была остановлена"))
+            chats.save(errorMessage(chatId, "The model was stopped after $MAX_TOOL_ROUNDS consecutive rounds of tool calls"))
         } finally {
             val self = currentCoroutineContext()[Job]
             _drafts.update { drafts -> if (jobs[chatId].let { it == null || it === self }) drafts - chatId else drafts }
@@ -183,6 +183,7 @@ class ConversationRunner(
     private companion object {
         const val MAX_TOOL_ROUNDS = 8
         const val TITLE_MAX_CHARS = 48
+        const val NO_MODEL_SELECTED = "No model selected. Add a provider in settings."
         val WHITESPACE = Regex("""\s+""")
     }
 }
@@ -196,4 +197,4 @@ data class StreamingDraft(
     val usage: TokenUsage?,
 )
 
-class NoModelConfiguredException : IllegalStateException("Сначала добавь провайдера и выбери модель в настройках")
+class NoModelConfiguredException : IllegalStateException("Add a provider and choose a model in settings first")

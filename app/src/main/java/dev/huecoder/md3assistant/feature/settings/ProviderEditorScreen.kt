@@ -27,6 +27,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.foundation.text.KeyboardOptions
@@ -40,12 +41,14 @@ import com.composables.icons.materialsymbols.rounded.Delete
 import com.composables.icons.materialsymbols.rounded.Sync
 import com.composables.icons.materialsymbols.rounded.Visibility
 import com.composables.icons.materialsymbols.rounded.Visibility_off
+import dev.huecoder.md3assistant.R
 import dev.huecoder.md3assistant.data.settings.HeaderEntry
 import dev.huecoder.md3assistant.ui.components.LabeledSwitch
 import dev.huecoder.md3assistant.ui.components.SectionHeader
 import dev.huecoder.md3assistant.ui.components.FormField
 import dev.huecoder.md3assistant.ui.components.SettingsScaffold
 import dev.huecoder.md3assistant.ui.components.appViewModel
+import dev.huecoder.md3assistant.ui.text.asString
 
 @Composable
 fun ProviderEditorScreen(providerId: String?, onDone: () -> Unit) {
@@ -54,12 +57,12 @@ fun ProviderEditorScreen(providerId: String?, onDone: () -> Unit) {
     val fetch by viewModel.modelFetch.collectAsStateWithLifecycle()
 
     SettingsScaffold(
-        title = if (form?.isNew == false) "Провайдер" else "Новый провайдер",
+        title = stringResource(if (form?.isNew == false) R.string.provider_title else R.string.provider_title_new),
         onBack = onDone,
         actions = {
             if (form?.isNew == false) {
                 IconButton(onClick = { viewModel.delete(onDone) }, shapes = IconButtonDefaults.shapes()) {
-                    Icon(MaterialSymbols.Rounded.Delete, contentDescription = "Удалить")
+                    Icon(MaterialSymbols.Rounded.Delete, contentDescription = stringResource(R.string.provider_delete))
                 }
             }
         },
@@ -77,26 +80,26 @@ fun ProviderEditorScreen(providerId: String?, onDone: () -> Unit) {
             FormField(
                 value = current.name,
                 onValueChange = { value -> viewModel.edit { it.copy(name = value) } },
-                label = "Название",
+                label = stringResource(R.string.provider_name),
                 modifier = Modifier.fillMaxWidth(),
             )
             FormField(
                 value = current.baseUrl,
                 onValueChange = { value -> viewModel.edit { it.copy(baseUrl = value) } },
-                label = "Base URL",
-                placeholder = "https://api.example.com/v1",
+                label = stringResource(R.string.provider_base_url),
+                placeholder = stringResource(R.string.provider_base_url_placeholder),
                 isError = current.baseUrlError != null,
-                supportingText = current.baseUrlError,
+                supportingText = current.baseUrlError?.asString(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                 modifier = Modifier.fillMaxWidth(),
             )
             SecretField(
                 value = current.apiKey,
                 onValueChange = { value -> viewModel.edit { it.copy(apiKey = value) } },
-                label = "API-ключ (Bearer)",
+                label = stringResource(R.string.provider_api_key),
             )
 
-            SectionHeader("Модель")
+            SectionHeader(stringResource(R.string.provider_section_model))
             ModelPicker(
                 selected = current.defaultModel,
                 models = current.models,
@@ -109,21 +112,21 @@ fun ProviderEditorScreen(providerId: String?, onDone: () -> Unit) {
                     shapes = ButtonDefaults.shapes(),
                 ) {
                     Icon(MaterialSymbols.Rounded.Sync, contentDescription = null, modifier = Modifier.size(ButtonDefaults.IconSize))
-                    Text("Загрузить модели", Modifier.padding(start = ButtonDefaults.IconSpacing))
+                    Text(stringResource(R.string.provider_fetch_models), Modifier.padding(start = ButtonDefaults.IconSpacing))
                 }
                 if (fetch == ModelFetchState.Loading) LoadingIndicator(Modifier.size(32.dp))
             }
             (fetch as? ModelFetchState.Failed)?.let {
-                Text(it.message, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                Text(it.message.asString(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
             }
             LabeledSwitch(
-                title = "Использовать по умолчанию",
-                summary = "Новые чаты начнутся с этой модели",
+                title = stringResource(R.string.provider_make_active),
+                summary = stringResource(R.string.provider_make_active_summary),
                 checked = current.makeActive,
                 onCheckedChange = { value -> viewModel.edit { it.copy(makeActive = value) } },
             )
 
-            SectionHeader("Дополнительные заголовки")
+            SectionHeader(stringResource(R.string.provider_section_headers))
             HeaderEditor(
                 headers = current.headers,
                 onChange = { headers -> viewModel.edit { it.copy(headers = headers) } },
@@ -134,7 +137,7 @@ fun ProviderEditorScreen(providerId: String?, onDone: () -> Unit) {
                 enabled = current.canSave,
                 shapes = ButtonDefaults.shapes(),
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 24.dp),
-            ) { Text("Сохранить") }
+            ) { Text(stringResource(R.string.settings_save)) }
         }
     }
 }
@@ -151,7 +154,7 @@ private fun SecretField(value: String, onValueChange: (String) -> Unit, label: S
             IconButton(onClick = { revealed = !revealed }) {
                 Icon(
                     if (revealed) MaterialSymbols.Rounded.Visibility_off else MaterialSymbols.Rounded.Visibility,
-                    contentDescription = if (revealed) "Скрыть" else "Показать",
+                    contentDescription = stringResource(if (revealed) R.string.provider_secret_hide else R.string.provider_secret_show),
                 )
             }
         },
@@ -166,22 +169,22 @@ private fun HeaderEditor(headers: List<HeaderEntry>, onChange: (List<HeaderEntry
             FormField(
                 value = header.name,
                 onValueChange = { value -> onChange(headers.toMutableList().also { it[index] = header.copy(name = value) }) },
-                label = "Имя",
+                label = stringResource(R.string.provider_header_name),
                 modifier = Modifier.weight(1f),
             )
             FormField(
                 value = header.value,
                 onValueChange = { value -> onChange(headers.toMutableList().also { it[index] = header.copy(value = value) }) },
-                label = "Значение",
+                label = stringResource(R.string.provider_header_value),
                 modifier = Modifier.weight(1.4f),
             )
             IconButton(onClick = { onChange(headers.filterIndexed { i, _ -> i != index }) }) {
-                Icon(MaterialSymbols.Rounded.Close, contentDescription = "Убрать заголовок")
+                Icon(MaterialSymbols.Rounded.Close, contentDescription = stringResource(R.string.provider_header_remove))
             }
         }
     }
     TextButton(onClick = { onChange(headers + HeaderEntry("", "")) }) {
         Icon(MaterialSymbols.Rounded.Add, contentDescription = null, modifier = Modifier.size(ButtonDefaults.IconSize))
-        Text("Добавить заголовок", Modifier.padding(start = ButtonDefaults.IconSpacing))
+        Text(stringResource(R.string.provider_header_add), Modifier.padding(start = ButtonDefaults.IconSpacing))
     }
 }

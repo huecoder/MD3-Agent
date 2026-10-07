@@ -25,7 +25,7 @@ class ModelCatalogClient(private val httpClients: HttpClientProvider) {
         } catch (e: IOException) {
             throw ProviderException.Network(e)
         } catch (e: SerializationException) {
-            throw ProviderException.MalformedResponse("Сервер вернул список моделей в неизвестном формате")
+            throw ProviderException.MalformedResponse("Server returned the model list in an unknown format")
         }
     }
 

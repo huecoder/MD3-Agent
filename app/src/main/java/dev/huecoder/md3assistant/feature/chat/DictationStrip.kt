@@ -28,7 +28,10 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import dev.huecoder.md3assistant.R
+import dev.huecoder.md3assistant.ui.text.asString
 import dev.huecoder.md3assistant.voice.DictationState
 import dev.huecoder.md3assistant.voice.DictationViewModel
 import java.util.Locale
@@ -48,10 +51,10 @@ fun DictationStrip(state: DictationState, onDismissError: () -> Unit, modifier: 
             }
             DictationState.Transcribing -> {
                 CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-                Text("Распознаю…", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.dictation_transcribing), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             is DictationState.Failed -> Text(
-                state.message,
+                state.message.asString(),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.weight(1f).clickable(onClick = onDismissError).padding(vertical = 8.dp),

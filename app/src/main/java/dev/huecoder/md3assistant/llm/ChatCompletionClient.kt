@@ -82,9 +82,9 @@ class ChatCompletionClient(private val httpClients: HttpClientProvider) {
         val chunk = try {
             json.parseToJsonElement(data).jsonObject
         } catch (e: SerializationException) {
-            throw ProviderException.MalformedResponse("Не удалось разобрать чанк ответа: ${data.take(ERROR_PREVIEW_CHARS)}")
+            throw ProviderException.MalformedResponse("Could not parse response chunk: ${data.take(ERROR_PREVIEW_CHARS)}")
         } catch (e: IllegalArgumentException) {
-            throw ProviderException.MalformedResponse("Чанк ответа не является объектом: ${data.take(ERROR_PREVIEW_CHARS)}")
+            throw ProviderException.MalformedResponse("Response chunk is not a JSON object: ${data.take(ERROR_PREVIEW_CHARS)}")
         }
         chunk["error"]?.let { throw ProviderException.Http(code = 0, message = errorMessageOf(it.toString())) }
 
@@ -195,7 +195,7 @@ class ChatCompletionClient(private val httpClients: HttpClientProvider) {
             is JsonPrimitive -> error.contentOrNull
             else -> (parsed?.get("message") as? JsonPrimitive)?.contentOrNull
         }
-        return message ?: body.take(ERROR_PREVIEW_CHARS).ifBlank { "пустой ответ" }
+        return message ?: body.take(ERROR_PREVIEW_CHARS).ifBlank { "empty response" }
     }
 
     private companion object {

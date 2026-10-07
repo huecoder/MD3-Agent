@@ -1,5 +1,6 @@
 package dev.huecoder.md3assistant.feature.chat
 
+import dev.huecoder.md3assistant.R
 import dev.huecoder.md3assistant.conversation.StreamingDraft
 import dev.huecoder.md3assistant.conversation.TurnAssembler
 import dev.huecoder.md3assistant.data.attachments.Attachment
@@ -13,6 +14,7 @@ import dev.huecoder.md3assistant.tools.ShowUiTool
 import dev.huecoder.md3assistant.tools.web.ReadWebpageTool
 import dev.huecoder.md3assistant.tools.web.SearchResults
 import dev.huecoder.md3assistant.tools.web.WebSearchTool
+import dev.huecoder.md3assistant.ui.text.UiText
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -50,7 +52,7 @@ sealed interface ReplyPart {
 
     data class Tools(val calls: List<ToolCallUi>) : ReplyPart
 
-    data class Error(val text: String) : ReplyPart
+    data class Error(val text: UiText) : ReplyPart
 }
 
 data class ReplyEnd(
@@ -117,8 +119,8 @@ object ChatTimeline {
             if (shown.isNotEmpty()) add(ReplyPart.Tools(shown.map { it.toUi(results[it.id], isLive) }))
             when {
                 isLive -> Unit
-                row.status == MessageStatus.ERROR -> add(ReplyPart.Error(row.errorText ?: "Неизвестная ошибка"))
-                row.status == MessageStatus.COMPLETE && content.isEmpty() && calls.isEmpty() -> add(ReplyPart.Error("Модель вернула пустой ответ"))
+                row.status == MessageStatus.ERROR -> add(ReplyPart.Error(row.errorText?.let(UiText::Raw) ?: UiText.Resource(R.string.chat_error_unknown)))
+                row.status == MessageStatus.COMPLETE && content.isEmpty() && calls.isEmpty() -> add(ReplyPart.Error(UiText.Resource(R.string.chat_error_empty_response)))
             }
         }
 

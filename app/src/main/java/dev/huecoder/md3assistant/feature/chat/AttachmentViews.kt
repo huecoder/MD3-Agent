@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
@@ -28,6 +29,7 @@ import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Close
 import com.composables.icons.materialsymbols.rounded.Description
 import dev.huecoder.md3assistant.App
+import dev.huecoder.md3assistant.R
 import dev.huecoder.md3assistant.data.attachments.Attachment
 
 @Composable
@@ -45,7 +47,7 @@ fun AttachmentStrip(attachments: List<Attachment>, modifier: Modifier = Modifier
                         onClick = { remove(attachment) },
                         modifier = Modifier.align(Alignment.TopEnd).padding(2.dp).size(REMOVE_BUTTON_SIZE),
                     ) {
-                        Icon(MaterialSymbols.Rounded.Close, contentDescription = "Убрать ${attachment.name}", modifier = Modifier.size(14.dp))
+                        Icon(MaterialSymbols.Rounded.Close, contentDescription = stringResource(R.string.chat_attachment_remove, attachment.name), modifier = Modifier.size(14.dp))
                     }
                 }
             }

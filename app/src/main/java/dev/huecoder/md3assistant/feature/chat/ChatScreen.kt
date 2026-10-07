@@ -28,13 +28,19 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.huecoder.md3assistant.R
 import dev.huecoder.md3assistant.ui.components.AgentAvatar
 import dev.huecoder.md3assistant.ui.components.BackButton
 import dev.huecoder.md3assistant.ui.components.appViewModel
+import dev.huecoder.md3assistant.ui.text.UiText
+import dev.huecoder.md3assistant.ui.text.asString
+import dev.huecoder.md3assistant.ui.text.resolve
 import dev.huecoder.md3assistant.voice.DictationViewModel
 
 @Composable
@@ -43,13 +49,14 @@ fun ChatScreen(chatId: String?, onBack: () -> Unit) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val error by viewModel.errors.collectAsStateWithLifecycle()
     val snackbarHost = remember { SnackbarHostState() }
+    val context = LocalContext.current
     var input by rememberSaveable { mutableStateOf("") }
     val pickFiles = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
         if (uris.isNotEmpty()) viewModel.attach(uris)
     }
     val dictationModel = appViewModel(key = "dictation-$chatId") { DictationViewModel(it.newVoiceRecorder(), it.transcriptions, it.settings) }
     val askMicrophone = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) dictationModel.start() else dictationModel.fail(MICROPHONE_DENIED)
+        if (granted) dictationModel.start() else dictationModel.fail(UiText.Resource(R.string.dictation_error_microphone_denied))
     }
     val dictation = rememberDictationControls(
         model = dictationModel,
@@ -59,13 +66,13 @@ fun ChatScreen(chatId: String?, onBack: () -> Unit) {
 
     LaunchedEffect(error) {
         error?.let {
-            snackbarHost.showSnackbar(it)
+            snackbarHost.showSnackbar(it.resolve(context))
             viewModel.consumeError()
         }
     }
 
     Scaffold(
-        topBar = { ChatTopBar(title = state.title, model = state.modelId, onBack = onBack) },
+        topBar = { ChatTopBar(title = state.title.asString(), model = state.modelId, onBack = onBack) },
         snackbarHost = { SnackbarHost(snackbarHost) },
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(top = padding.calculateTopPadding()).imePadding()) {
@@ -157,12 +164,10 @@ fun MessageList(
 private fun EmptyConversation(modifier: Modifier = Modifier) {
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(20.dp)) {
         AgentAvatar(isWorking = false, size = 96.dp)
-        Text("Чем помочь?", style = MaterialTheme.typography.displaySmallEmphasized)
+        Text(stringResource(R.string.chat_empty_greeting), style = MaterialTheme.typography.displaySmallEmphasized)
     }
 }
 
 private val PICKABLE_MIME_TYPES = arrayOf("image/*", "text/*", "application/*")
-
-private const val MICROPHONE_DENIED = "Без доступа к микрофону диктовка не работает"
 
 private val ComposerClearance = 104.dp

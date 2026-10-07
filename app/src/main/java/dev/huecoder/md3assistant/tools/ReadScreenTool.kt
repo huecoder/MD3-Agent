@@ -12,22 +12,22 @@ class ReadScreenTool(
 ) : Tool {
     override val spec = ToolSpec(
         name = NAME,
-        description = "Читает текст с экрана, который был открыт у пользователя в момент вызова ассистента. " +
-            "Используй, когда вопрос про «это», «тут», «на экране».",
+        description = "Reads the text of the screen the user had open when the assistant was invoked. " +
+            "Use it when the question refers to \"this\", \"here\" or \"on the screen\".",
         parameters = objectSchema(required = emptyList()) {},
     )
 
     override suspend fun execute(arguments: JsonObject, settings: ToolSettings): ToolOutcome {
         val snapshot = screen.latest.value
-            ?: return ToolOutcome.error("Экран не захвачен: ассистент открыт не поверх другого приложения")
+            ?: return ToolOutcome.error("No screen captured: the assistant was not opened over another app")
         if (snapshot.text.isBlank()) {
-            return ToolOutcome.error("Приложение ${snapshot.packageName ?: "на экране"} не отдало текст (возможно, защищено от чтения)")
+            return ToolOutcome.error("The app ${snapshot.packageName ?: "on screen"} provided no text (it may be protected from reading)")
         }
         val ageSeconds = TimeUnit.MILLISECONDS.toSeconds(clock() - snapshot.capturedAt)
         return ToolOutcome(
             buildString {
-                appendLine("Приложение: ${snapshot.packageName ?: "неизвестно"}")
-                appendLine("Снято $ageSeconds с назад")
+                appendLine("App: ${snapshot.packageName ?: "unknown"}")
+                appendLine("Captured $ageSeconds s ago")
                 appendLine()
                 append(snapshot.text)
             },

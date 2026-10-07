@@ -25,17 +25,17 @@ class WeatherTool(private val httpClients: HttpClientProvider) : Tool {
 
     override val spec = ToolSpec(
         name = NAME,
-        description = "Текущая погода и прогноз по дням для населённого пункта.",
+        description = "Current weather and daily forecast for a place.",
         parameters = objectSchema(required = listOf("location")) {
-            stringProperty("location", "Город или населённый пункт, например «Екатеринбург»")
-            integerProperty("days", "Сколько дней прогноза вернуть", minimum = 1, maximum = MAX_DAYS)
+            stringProperty("location", "City or town, for example \"Yekaterinburg\"")
+            integerProperty("days", "How many days of forecast to return", minimum = 1, maximum = MAX_DAYS)
         },
     )
 
     override suspend fun execute(arguments: JsonObject, settings: ToolSettings): ToolOutcome {
         val query = arguments.requireString("location")
         val days = (arguments.optionalInt("days") ?: DEFAULT_DAYS).coerceIn(1, MAX_DAYS)
-        val place = geocode(query, settings) ?: return ToolOutcome.error("Не нашёл населённый пункт «$query»")
+        val place = geocode(query, settings) ?: return ToolOutcome.error("Could not find a place called \"$query\"")
         val forecast = forecast(place, days, settings)
         return ToolOutcome(WeatherReport.format(place, forecast))
     }
@@ -44,7 +44,7 @@ class WeatherTool(private val httpClients: HttpClientProvider) : Tool {
         val url = endpoint(settings.weather.geocodingUrl).newBuilder()
             .addQueryParameter("name", query)
             .addQueryParameter("count", "1")
-            .addQueryParameter("language", "ru")
+            .addQueryParameter("language", "en")
             .addQueryParameter("format", "json")
             .build()
         val body = httpClients.current().fetchText(Request.Builder().url(url).build())
@@ -66,7 +66,7 @@ class WeatherTool(private val httpClients: HttpClientProvider) : Tool {
     }
 
     private fun endpoint(raw: String): HttpUrl =
-        raw.trim().toHttpUrlOrNull() ?: throw ToolArgumentException("В настройках погоды неверный адрес: «$raw»")
+        raw.trim().toHttpUrlOrNull() ?: throw ToolArgumentException("Invalid address in weather settings: \"$raw\"")
 
     companion object {
         const val NAME = "get_weather"
