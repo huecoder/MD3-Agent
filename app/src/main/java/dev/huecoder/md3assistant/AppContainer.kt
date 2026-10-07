@@ -21,6 +21,11 @@ import dev.huecoder.md3assistant.tools.weather.WeatherTool
 import dev.huecoder.md3assistant.tools.web.ReadWebpageTool
 import dev.huecoder.md3assistant.tools.web.WebSearchTool
 import dev.huecoder.md3assistant.tools.web.WebSearcher
+import dev.huecoder.md3assistant.data.settings.SpeechOutput
+import dev.huecoder.md3assistant.data.settings.VoiceSettings
+import dev.huecoder.md3assistant.voice.ProviderSpeechSynthesizer
+import dev.huecoder.md3assistant.voice.SpeechSynthesizer
+import dev.huecoder.md3assistant.voice.SystemSpeechSynthesizer
 import dev.huecoder.md3assistant.voice.VoiceRecorder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -55,6 +60,15 @@ class AppContainer(context: Context) {
     )
 
     fun newVoiceRecorder() = VoiceRecorder(appContext)
+
+    fun newSpeechSynthesizer(voice: VoiceSettings): SpeechSynthesizer {
+        val provider = voice.activeProvider
+        return if (voice.speechOutput == SpeechOutput.PROVIDER && provider != null) {
+            ProviderSpeechSynthesizer(httpClients, provider, appContext.cacheDir)
+        } else {
+            SystemSpeechSynthesizer(appContext, voice.language)
+        }
+    }
 
     val conversations = ConversationRunner(chats, settings, completions, systemPrompt, tools, attachments, applicationScope)
 }
