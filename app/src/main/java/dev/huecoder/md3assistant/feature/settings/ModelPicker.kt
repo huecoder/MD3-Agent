@@ -21,7 +21,13 @@ import dev.huecoder.md3assistant.R
 private const val MAX_SUGGESTIONS = 50
 
 @Composable
-fun ModelPicker(selected: String, models: List<String>, onSelect: (String) -> Unit, modifier: Modifier = Modifier) {
+fun ModelPicker(
+    selected: String,
+    models: List<String>,
+    onSelect: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    label: String = stringResource(R.string.provider_model_id),
+) {
     var expanded by remember { mutableStateOf(false) }
     val suggestions = remember(selected, models) {
         val query = selected.trim()
@@ -36,7 +42,7 @@ fun ModelPicker(selected: String, models: List<String>, onSelect: (String) -> Un
                 onSelect(it)
                 expanded = true
             },
-            label = { Text(stringResource(R.string.provider_model_id)) },
+            label = { Text(label) },
             shape = MaterialTheme.shapes.medium,
             singleLine = true,
             trailingIcon = { if (models.isNotEmpty()) ExposedDropdownMenuDefaults.TrailingIcon(expanded) },

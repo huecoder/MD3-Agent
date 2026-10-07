@@ -28,6 +28,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Add
 import com.composables.icons.materialsymbols.rounded.Assistant
+import com.composables.icons.materialsymbols.rounded.Chat
 import com.composables.icons.materialsymbols.rounded.Chevron_right
 import com.composables.icons.materialsymbols.rounded.Dns
 import com.composables.icons.materialsymbols.rounded.Face
@@ -39,6 +40,7 @@ import dev.huecoder.md3assistant.App
 import dev.huecoder.md3assistant.R
 import dev.huecoder.md3assistant.assistant.AssistantRole
 import dev.huecoder.md3assistant.data.settings.AppSettings
+import dev.huecoder.md3assistant.data.settings.SpeakReplies
 import dev.huecoder.md3assistant.ui.components.SectionHeader
 import dev.huecoder.md3assistant.ui.components.SettingsScaffold
 import dev.huecoder.md3assistant.ui.components.ShapeBadge
@@ -53,6 +55,7 @@ fun SettingsScreen(
     onOpenNetwork: () -> Unit,
     onOpenTools: () -> Unit,
     onOpenChat: () -> Unit,
+    onOpenVoice: () -> Unit,
 ) {
     val viewModel = appViewModel { SettingsViewModel(it.settings) }
     val toolNames = (LocalContext.current.applicationContext as App).container.tools.all.map { it.spec.name }
@@ -87,10 +90,16 @@ fun SettingsScreen(
                 onClick = onOpenTools,
             ),
             SettingsEntry(
-                icon = MaterialSymbols.Rounded.Mic,
-                title = stringResource(R.string.settings_chat_and_voice),
+                icon = MaterialSymbols.Rounded.Chat,
+                title = stringResource(R.string.settings_chat),
                 summary = chatSummary(current),
                 onClick = onOpenChat,
+            ),
+            SettingsEntry(
+                icon = MaterialSymbols.Rounded.Mic,
+                title = stringResource(R.string.settings_voice),
+                summary = voiceSummary(current),
+                onClick = onOpenVoice,
             ),
         )
         val systemEntries = listOf(
@@ -165,10 +174,20 @@ private fun toolsSummary(settings: AppSettings, toolNames: List<String>): String
     stringResource(R.string.settings_tools_summary, toolNames.count(settings.tools::isEnabled), toolNames.size)
 
 @Composable
-private fun chatSummary(settings: AppSettings): String {
-    val speechProvider = settings.provider(settings.speech.providerId)?.name ?: stringResource(R.string.settings_speech_provider_follows_chat)
-    val tokens = stringResource(if (settings.chat.showTokenUsage) R.string.settings_tokens_shown else R.string.settings_tokens_hidden)
-    return stringResource(R.string.settings_chat_summary, settings.speech.model, speechProvider, tokens)
+private fun chatSummary(settings: AppSettings): String =
+    stringResource(if (settings.chat.showTokenUsage) R.string.settings_tokens_shown else R.string.settings_tokens_hidden)
+
+@Composable
+private fun voiceSummary(settings: AppSettings): String {
+    val provider = settings.voice.activeProvider?.name ?: stringResource(R.string.settings_voice_no_provider)
+    val speak = stringResource(
+        when (settings.voice.speakReplies) {
+            SpeakReplies.NEVER -> R.string.settings_voice_speak_never
+            SpeakReplies.AFTER_VOICE_INPUT -> R.string.settings_voice_speak_after_voice
+            SpeakReplies.ALWAYS -> R.string.settings_voice_speak_always
+        },
+    )
+    return stringResource(R.string.settings_voice_summary, provider, speak)
 }
 
 @Composable

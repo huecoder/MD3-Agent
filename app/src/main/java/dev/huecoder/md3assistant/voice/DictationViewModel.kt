@@ -3,7 +3,6 @@ package dev.huecoder.md3assistant.voice
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.huecoder.md3assistant.R
-import dev.huecoder.md3assistant.data.settings.AppSettings
 import dev.huecoder.md3assistant.data.settings.SettingsRepository
 import dev.huecoder.md3assistant.llm.ProviderException
 import dev.huecoder.md3assistant.llm.TranscriptionClient
@@ -113,14 +112,10 @@ class DictationViewModel(
     }
 
     private suspend fun transcribe(audio: File): String {
-        val current = settings.current()
-        val speech = current.speech
-        val provider = speechProvider(current) ?: throw NoSpeechProviderException()
-        return transcriber.transcribe(provider, speech.model, speech.language, audio, VoiceRecorder.MIME_TYPE)
+        val voice = settings.current().voice
+        val provider = voice.activeProvider ?: throw NoSpeechProviderException()
+        return transcriber.transcribe(provider.asEndpointProfile(), provider.transcriptionModel, voice.language, audio, VoiceRecorder.MIME_TYPE)
     }
-
-    private fun speechProvider(current: AppSettings) =
-        current.provider(current.speech.providerId) ?: current.provider(current.activeSelection?.providerId)
 
     override fun onCleared() {
         recorder.cancel()

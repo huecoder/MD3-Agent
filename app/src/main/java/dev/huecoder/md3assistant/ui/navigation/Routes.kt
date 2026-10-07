@@ -25,3 +25,9 @@ data object ToolSettingsRoute
 
 @Serializable
 data object ChatSettingsRoute
+
+@Serializable
+data object VoiceSettingsRoute
+
+@Serializable
+data class VoiceProviderEditorRoute(val providerId: String? = null)

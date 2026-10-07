@@ -17,6 +17,8 @@ import dev.huecoder.md3assistant.feature.settings.NetworkSettingsScreen
 import dev.huecoder.md3assistant.feature.settings.ProviderEditorScreen
 import dev.huecoder.md3assistant.feature.settings.SettingsScreen
 import dev.huecoder.md3assistant.feature.settings.ToolSettingsScreen
+import dev.huecoder.md3assistant.feature.settings.VoiceProviderEditorScreen
+import dev.huecoder.md3assistant.feature.settings.VoiceSettingsScreen
 
 @Composable
 fun AppNavHost(chatToOpen: String?, onChatOpened: () -> Unit) {
@@ -51,6 +53,7 @@ fun AppNavHost(chatToOpen: String?, onChatOpened: () -> Unit) {
                 onOpenNetwork = { navController.navigate(NetworkSettingsRoute) },
                 onOpenTools = { navController.navigate(ToolSettingsRoute) },
                 onOpenChat = { navController.navigate(ChatSettingsRoute) },
+                onOpenVoice = { navController.navigate(VoiceSettingsRoute) },
             )
         }
         screen<ProviderEditorRoute>(navController) { entry ->
@@ -60,6 +63,15 @@ fun AppNavHost(chatToOpen: String?, onChatOpened: () -> Unit) {
         screen<NetworkSettingsRoute>(navController) { NetworkSettingsScreen(onBack = navController::popBackStack) }
         screen<ToolSettingsRoute>(navController) { ToolSettingsScreen(onBack = navController::popBackStack) }
         screen<ChatSettingsRoute>(navController) { ChatSettingsScreen(onBack = navController::popBackStack) }
+        screen<VoiceSettingsRoute>(navController) {
+            VoiceSettingsScreen(
+                onBack = navController::popBackStack,
+                onEditProvider = { navController.navigate(VoiceProviderEditorRoute(it)) },
+            )
+        }
+        screen<VoiceProviderEditorRoute>(navController) { entry ->
+            VoiceProviderEditorScreen(providerId = entry.toRoute<VoiceProviderEditorRoute>().providerId, onDone = navController::popBackStack)
+        }
     }
 }
 

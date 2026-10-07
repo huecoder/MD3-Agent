@@ -63,12 +63,15 @@ class SettingsRepository(context: Context, private val cipher: SecretCipher) {
         prefs[Keys.TOOLS_ENCRYPTED] = cipher.encrypt(json.encodeToString(ToolSettings.serializer(), tools))
     }
 
-    suspend fun updateChat(chat: ChatSettings) = store.edit { prefs ->
-        prefs[Keys.CHAT] = json.encodeToString(ChatSettings.serializer(), chat)
+    suspend fun updateChat(transform: (ChatSettings) -> ChatSettings) = store.edit { prefs ->
+        val current = decodeOrDefault(prefs[Keys.CHAT], ChatSettings.serializer(), ChatSettings())
+        prefs[Keys.CHAT] = json.encodeToString(ChatSettings.serializer(), transform(current))
     }
 
-    suspend fun updateSpeech(speech: SpeechSettings) = store.edit { prefs ->
-        prefs[Keys.SPEECH] = json.encodeToString(SpeechSettings.serializer(), speech)
+    suspend fun updateVoice(transform: (VoiceSettings) -> VoiceSettings) = store.edit { prefs ->
+        val updated = transform(decodeVoice(prefs))
+        prefs[Keys.VOICE_ENCRYPTED] = cipher.encrypt(json.encodeToString(VoiceSettings.serializer(), updated))
+        prefs.remove(Keys.LEGACY_SPEECH)
     }
 
     fun newProviderId(): String = UUID.randomUUID().toString()
@@ -96,7 +99,7 @@ class SettingsRepository(context: Context, private val cipher: SecretCipher) {
             network = decodeOrDefault(prefs[Keys.NETWORK], NetworkSettings.serializer(), NetworkSettings()),
             tools = decodeTools(prefs[Keys.TOOLS_ENCRYPTED]),
             chat = decodeOrDefault(prefs[Keys.CHAT], ChatSettings.serializer(), ChatSettings()),
-            speech = decodeOrDefault(prefs[Keys.SPEECH], SpeechSettings.serializer(), SpeechSettings()),
+            voice = decodeVoice(prefs, providers, activeProvider),
         )
     }
 
@@ -111,6 +114,29 @@ class SettingsRepository(context: Context, private val cipher: SecretCipher) {
             Log.e(TAG, "Provider profiles are corrupted, starting empty", e)
             emptyList()
         }
+    }
+
+    private fun decodeVoice(
+        prefs: Preferences,
+        providers: List<ProviderProfile> = decodeProviders(prefs[Keys.PROVIDERS_ENCRYPTED]),
+        activeProviderId: String? = prefs[Keys.ACTIVE_PROVIDER],
+    ): VoiceSettings {
+        val encrypted = prefs[Keys.VOICE_ENCRYPTED]
+        if (encrypted == null) {
+            val legacy = prefs[Keys.LEGACY_SPEECH] ?: return VoiceSettings()
+            return LegacySpeechMigration.toVoice(
+                decodeOrDefault(legacy, LegacySpeechSettings.serializer(), LegacySpeechSettings()),
+                providers,
+                activeProviderId,
+            )
+        }
+        val plain = try {
+            cipher.decrypt(encrypted)
+        } catch (e: GeneralSecurityException) {
+            Log.e(TAG, "Voice settings could not be decrypted, using defaults", e)
+            return VoiceSettings()
+        }
+        return decodeOrDefault(plain, VoiceSettings.serializer(), VoiceSettings())
     }
 
     private fun decodeTools(encrypted: String?): ToolSettings {
@@ -142,7 +168,8 @@ class SettingsRepository(context: Context, private val cipher: SecretCipher) {
         val NETWORK = stringPreferencesKey("network")
         val TOOLS_ENCRYPTED = stringPreferencesKey("tools_encrypted")
         val CHAT = stringPreferencesKey("chat")
-        val SPEECH = stringPreferencesKey("speech")
+        val LEGACY_SPEECH = stringPreferencesKey("speech")
+        val VOICE_ENCRYPTED = stringPreferencesKey("voice_encrypted")
     }
 
     private companion object {
