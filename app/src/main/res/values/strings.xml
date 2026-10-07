@@ -193,4 +193,8 @@
     <string name="voice_provider_speech_voice_hint">alloy, nova, shimmer and so on, depends on the provider.</string>
     <string name="voice_provider_make_active">Use for voice</string>
     <string name="voice_provider_make_active_summary">Dictation and reading replies go through this provider.</string>
+    <string name="chat_thinking">Thinking…</string>
+    <string name="chat_speak">Read aloud</string>
+    <string name="chat_stop_speaking">Stop reading</string>
+    <string name="voice_speak_failed">Could not read the reply: %1$s</string>
 </resources>

@@ -188,4 +188,8 @@
     <string name="voice_provider_speech_voice_hint">alloy, nova, shimmer и т.д., зависит от провайдера.</string>
     <string name="voice_provider_make_active">Использовать для голоса</string>
     <string name="voice_provider_make_active_summary">Диктовка и озвучка ответов пойдут через этот провайдер.</string>
+    <string name="chat_thinking">Думаю…</string>
+    <string name="chat_speak">Прочитать вслух</string>
+    <string name="chat_stop_speaking">Остановить озвучку</string>
+    <string name="voice_speak_failed">Не получилось озвучить ответ: %1$s</string>
 </resources>

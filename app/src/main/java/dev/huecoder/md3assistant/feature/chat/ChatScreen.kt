@@ -30,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -45,9 +46,10 @@ import dev.huecoder.md3assistant.voice.DictationViewModel
 
 @Composable
 fun ChatScreen(chatId: String?, onBack: () -> Unit) {
-    val viewModel = appViewModel(key = "chat-$chatId") { ChatViewModel(chatId, it.chats, it.conversations, it.attachments, it.settings, it.applicationScope) }
+    val viewModel = appViewModel(key = "chat-$chatId") { ChatViewModel(chatId, it.chats, it.conversations, it.attachments, it.settings, it.applicationScope, it::newSpeechSynthesizer) }
     val state by viewModel.state.collectAsStateWithLifecycle()
     val error by viewModel.errors.collectAsStateWithLifecycle()
+    val speakingId by viewModel.speakingId.collectAsStateWithLifecycle()
     val snackbarHost = remember { SnackbarHostState() }
     val context = LocalContext.current
     var input by rememberSaveable { mutableStateOf("") }
@@ -60,7 +62,10 @@ fun ChatScreen(chatId: String?, onBack: () -> Unit) {
     }
     val dictation = rememberDictationControls(
         model = dictationModel,
-        onTranscript = { input = appendDictated(input, it) },
+        onTranscript = {
+            input = appendDictated(input, it)
+            viewModel.noteDictation()
+        },
         onPermissionMissing = { askMicrophone.launch(Manifest.permission.RECORD_AUDIO) },
     )
 
@@ -79,7 +84,14 @@ fun ChatScreen(chatId: String?, onBack: () -> Unit) {
             if (state.messages.isEmpty()) {
                 EmptyConversation(Modifier.align(Alignment.Center))
             } else {
-                MessageList(state.messages, showUsage = state.showTokenUsage, onRegenerate = viewModel::regenerate, onSend = viewModel::send)
+                MessageList(
+                    messages = state.messages,
+                    showUsage = state.showTokenUsage,
+                    speakingId = speakingId,
+                    onRegenerate = viewModel::regenerate,
+                    onToggleSpeech = viewModel::toggleSpeech,
+                    onSend = viewModel::send,
+                )
             }
             ChatInput(
                 text = input,
@@ -134,7 +146,9 @@ private fun ChatTopBar(title: String, model: String?, onBack: () -> Unit) {
 fun MessageList(
     messages: List<ChatItem>,
     showUsage: Boolean,
+    speakingId: String?,
     onRegenerate: (ChatItem.Reply) -> Unit,
+    onToggleSpeech: (ChatItem.Reply) -> Unit,
     onSend: (String) -> Unit,
     modifier: Modifier = Modifier.fillMaxSize(),
     bottomPadding: Dp = ComposerClearance,
@@ -151,7 +165,9 @@ fun MessageList(
                 is ChatItem.Reply -> AssistantReply(
                     item,
                     showUsage = showUsage,
+                    isSpeaking = item.id == speakingId,
                     onRegenerate = { onRegenerate(item) },
+                    onToggleSpeech = { onToggleSpeech(item) },
                     onSend = onSend,
                     modifier = Modifier.animateItem(placementSpec = null),
                 )
@@ -161,10 +177,10 @@ fun MessageList(
 }
 
 @Composable
-private fun EmptyConversation(modifier: Modifier = Modifier) {
+fun EmptyConversation(modifier: Modifier = Modifier, avatarSize: Dp = 96.dp, style: TextStyle = MaterialTheme.typography.displaySmallEmphasized) {
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(20.dp)) {
-        AgentAvatar(isWorking = false, size = 96.dp)
-        Text(stringResource(R.string.chat_empty_greeting), style = MaterialTheme.typography.displaySmallEmphasized)
+        AgentAvatar(isWorking = false, size = avatarSize)
+        Text(stringResource(R.string.chat_empty_greeting), style = style)
     }
 }
 

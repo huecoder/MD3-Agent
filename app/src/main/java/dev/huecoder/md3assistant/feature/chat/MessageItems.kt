@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.material3.ContainedLoadingIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -30,9 +29,12 @@ import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Content_copy
 import com.composables.icons.materialsymbols.rounded.Error
 import com.composables.icons.materialsymbols.rounded.Refresh
+import com.composables.icons.materialsymbols.rounded.Stop_circle
+import com.composables.icons.materialsymbols.rounded.Volume_up
 import dev.huecoder.md3assistant.R
 import dev.huecoder.md3assistant.ui.components.AgentAvatar
 import dev.huecoder.md3assistant.ui.components.MarkdownContent
+import dev.huecoder.md3assistant.ui.components.ShimmerText
 import dev.huecoder.md3assistant.ui.components.copyText
 import dev.huecoder.md3assistant.ui.text.asString
 import kotlinx.coroutines.delay
@@ -71,7 +73,9 @@ fun UserMessage(message: ChatItem.User, modifier: Modifier = Modifier) {
 fun AssistantReply(
     reply: ChatItem.Reply,
     showUsage: Boolean,
+    isSpeaking: Boolean,
     onRegenerate: () -> Unit,
+    onToggleSpeech: () -> Unit,
     onSend: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -87,9 +91,9 @@ fun AssistantReply(
                 }
             }
         }
-        if (reply.isWaiting) ContainedLoadingIndicator(modifier = Modifier.size(48.dp))
+        if (reply.isWaiting) ShimmerText(stringResource(R.string.chat_thinking))
         reply.end?.let { end -> ReplyExtras(end, onSend) }
-        ReplyFooter(reply, showUsage, onRegenerate)
+        ReplyFooter(reply, showUsage, isSpeaking, onRegenerate, onToggleSpeech)
     }
 }
 
@@ -101,13 +105,24 @@ private fun ReplyExtras(end: ReplyEnd, onSend: (String) -> Unit) {
 }
 
 @Composable
-private fun ReplyFooter(reply: ChatItem.Reply, showUsage: Boolean, onRegenerate: () -> Unit) {
+private fun ReplyFooter(
+    reply: ChatItem.Reply,
+    showUsage: Boolean,
+    isSpeaking: Boolean,
+    onRegenerate: () -> Unit,
+    onToggleSpeech: () -> Unit,
+) {
     val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
     val end = reply.end
     Row(verticalAlignment = Alignment.CenterVertically) {
         if (end != null && end.fullText.isNotEmpty()) {
             ActionIcon(MaterialSymbols.Rounded.Content_copy, stringResource(R.string.chat_copy)) { scope.launch { clipboard.copyText(end.fullText) } }
+        }
+        if (isSpeaking) {
+            ActionIcon(MaterialSymbols.Rounded.Stop_circle, stringResource(R.string.chat_stop_speaking), onToggleSpeech)
+        } else if (end != null && end.fullText.isNotEmpty()) {
+            ActionIcon(MaterialSymbols.Rounded.Volume_up, stringResource(R.string.chat_speak), onToggleSpeech)
         }
         if (end != null && end.isLatest) {
             ActionIcon(MaterialSymbols.Rounded.Refresh, stringResource(R.string.chat_regenerate), onRegenerate)

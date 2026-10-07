@@ -16,7 +16,11 @@ import dev.huecoder.md3assistant.data.db.ChatEntity
 import dev.huecoder.md3assistant.data.db.MessageEntity
 import dev.huecoder.md3assistant.data.settings.AgentProfile
 import dev.huecoder.md3assistant.data.settings.SettingsRepository
+import dev.huecoder.md3assistant.data.settings.SpeakReplies
+import dev.huecoder.md3assistant.data.settings.VoiceSettings
 import dev.huecoder.md3assistant.ui.text.UiText
+import dev.huecoder.md3assistant.voice.ReplySpeaker
+import dev.huecoder.md3assistant.voice.SpeechSynthesizer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,6 +28,8 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -58,6 +64,7 @@ class ChatViewModel(
     private val attachments: AttachmentStore,
     settings: SettingsRepository,
     private val appScope: CoroutineScope,
+    synthesizers: (VoiceSettings) -> SpeechSynthesizer,
 ) : ViewModel() {
     private val chatId = MutableStateFlow(initialChatId)
     private val _errors = MutableStateFlow<UiText?>(null)
@@ -66,6 +73,12 @@ class ChatViewModel(
     val errors: StateFlow<UiText?> = _errors.asStateFlow()
 
     private val appSettings = settings.settings
+    private val voice = appSettings.map { it.voice }.stateIn(viewModelScope, SharingStarted.Eagerly, VoiceSettings())
+    private val speaker = ReplySpeaker(viewModelScope) { synthesizers(voice.value) }
+    private val narration = ReplyNarration(speaker)
+    private var inputFromVoice = false
+
+    val speakingId: StateFlow<String?> = speaker.speakingId
 
     val state: StateFlow<ChatUiState> = chatId
         .flatMapLatest { id ->
@@ -80,11 +93,26 @@ class ChatViewModel(
         .combine(pending) { state, attached -> state.copy(pendingAttachments = attached.items, isImporting = attached.importing > 0) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), ChatUiState(chatId = initialChatId))
 
+    init {
+        viewModelScope.launch {
+            state.map { it.messages.lastOrNull() as? ChatItem.Reply }.filterNotNull().distinctUntilChanged().collect(narration::onLatest)
+        }
+        viewModelScope.launch {
+            speaker.failures.collect { _errors.value = UiText.Resource(R.string.voice_speak_failed, listOf(it)) }
+        }
+    }
+
+    fun noteDictation() {
+        inputFromVoice = true
+    }
+
     fun send(text: String) {
         val current = pending.value
         if ((text.isBlank() && current.items.isEmpty()) || current.importing > 0) return
         val attached = pending.value.items
         pending.update { it.copy(items = emptyList()) }
+        if (shouldNarrate(fromVoice = inputFromVoice)) narration.arm(latestReplyId())
+        inputFromVoice = false
         viewModelScope.launch {
             val id = chatId.value
             try {
@@ -125,11 +153,32 @@ class ChatViewModel(
 
     fun stop() {
         chatId.value?.let(runner::cancel)
+        stopSpeaking()
     }
 
     fun regenerate(reply: ChatItem.Reply) {
+        if (shouldNarrate(fromVoice = false)) narration.arm(latestReplyId())
         viewModelScope.launch { runner.regenerate(reply.anchor) }
     }
+
+    fun toggleSpeech(reply: ChatItem.Reply) {
+        if (speakingId.value == reply.id) return stopSpeaking()
+        narration.disarm()
+        speaker.speak(reply.id, reply.spokenText())
+    }
+
+    private fun stopSpeaking() {
+        narration.disarm()
+        speaker.stop()
+    }
+
+    private fun shouldNarrate(fromVoice: Boolean) = when (voice.value.speakReplies) {
+        SpeakReplies.NEVER -> false
+        SpeakReplies.AFTER_VOICE_INPUT -> fromVoice
+        SpeakReplies.ALWAYS -> true
+    }
+
+    private fun latestReplyId(): String? = (state.value.messages.lastOrNull() as? ChatItem.Reply)?.id
 
     fun consumeError() {
         _errors.value = null
@@ -144,6 +193,7 @@ class ChatViewModel(
     )
 
     override fun onCleared() {
+        speaker.stop()
         val unsent = pending.value.items
         if (unsent.isNotEmpty()) appScope.launch { attachments.delete(unsent) }
     }

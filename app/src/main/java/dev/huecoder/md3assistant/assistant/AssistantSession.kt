@@ -7,6 +7,7 @@ import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.service.voice.VoiceInteractionSession
+import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
 import androidx.compose.runtime.mutableIntStateOf
@@ -54,7 +55,9 @@ class AssistantSession(context: Context) :
         window.window?.let { sessionWindow ->
             sessionWindow.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
             WindowCompat.setDecorFitsSystemWindows(sessionWindow, false)
-            sessionWindow.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING)
+            sessionWindow.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT)
+            sessionWindow.setGravity(Gravity.FILL)
+            sessionWindow.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         }
         window.window?.decorView?.let { decor ->
             decor.setViewTreeLifecycleOwner(this)
