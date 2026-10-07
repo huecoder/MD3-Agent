@@ -2,6 +2,9 @@ package dev.huecoder.md3assistant.ui.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.navigation.NavBackStackEntry
+import androidx.navigation.NavController
+import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -31,16 +34,16 @@ fun AppNavHost(chatToOpen: String?, onChatOpened: () -> Unit) {
         popEnterTransition = NavTransitions.popEnter,
         popExitTransition = NavTransitions.popExit,
     ) {
-        composable<HomeRoute> {
+        screen<HomeRoute>(navController) {
             HomeScreen(
                 onOpenChat = { navController.navigate(ChatRoute(it)) },
                 onOpenSettings = { navController.navigate(SettingsRoute) },
             )
         }
-        composable<ChatRoute> { entry ->
+        screen<ChatRoute>(navController) { entry ->
             ChatScreen(chatId = entry.toRoute<ChatRoute>().chatId, onBack = navController::popBackStack)
         }
-        composable<SettingsRoute> {
+        screen<SettingsRoute>(navController) {
             SettingsScreen(
                 onBack = navController::popBackStack,
                 onEditProvider = { navController.navigate(ProviderEditorRoute(it)) },
@@ -50,12 +53,17 @@ fun AppNavHost(chatToOpen: String?, onChatOpened: () -> Unit) {
                 onOpenChat = { navController.navigate(ChatSettingsRoute) },
             )
         }
-        composable<ProviderEditorRoute> { entry ->
+        screen<ProviderEditorRoute>(navController) { entry ->
             ProviderEditorScreen(providerId = entry.toRoute<ProviderEditorRoute>().providerId, onDone = navController::popBackStack)
         }
-        composable<AgentSettingsRoute> { AgentSettingsScreen(onBack = navController::popBackStack) }
-        composable<NetworkSettingsRoute> { NetworkSettingsScreen(onBack = navController::popBackStack) }
-        composable<ToolSettingsRoute> { ToolSettingsScreen(onBack = navController::popBackStack) }
-        composable<ChatSettingsRoute> { ChatSettingsScreen(onBack = navController::popBackStack) }
+        screen<AgentSettingsRoute>(navController) { AgentSettingsScreen(onBack = navController::popBackStack) }
+        screen<NetworkSettingsRoute>(navController) { NetworkSettingsScreen(onBack = navController::popBackStack) }
+        screen<ToolSettingsRoute>(navController) { ToolSettingsScreen(onBack = navController::popBackStack) }
+        screen<ChatSettingsRoute>(navController) { ChatSettingsScreen(onBack = navController::popBackStack) }
     }
 }
+
+private inline fun <reified T : Any> NavGraphBuilder.screen(
+    navController: NavController,
+    crossinline content: @Composable (NavBackStackEntry) -> Unit,
+) = composable<T> { entry -> BackPreviewCard(entry, navController) { content(entry) } }
