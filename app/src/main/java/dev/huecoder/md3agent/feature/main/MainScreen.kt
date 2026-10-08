@@ -1,16 +1,16 @@
 package dev.huecoder.md3agent.feature.main
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,7 +30,10 @@ import dev.huecoder.md3agent.App
 import dev.huecoder.md3agent.feature.home.HomeScreen
 import dev.huecoder.md3agent.feature.settings.SettingsDestinations
 import dev.huecoder.md3agent.feature.settings.SettingsScreen
+import dev.huecoder.md3agent.ui.haptics.rememberHaptics
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.sign
 
@@ -42,29 +45,39 @@ fun MainScreen(
     val container = (LocalContext.current.applicationContext as App).container
     val hasProvider by remember(container) { container.settings.settings.map { it.providers.isNotEmpty() } }
         .collectAsStateWithLifecycle(initialValue = true)
-    var tab by rememberSaveable { mutableStateOf(MainTab.CHATS) }
+    val pager = rememberPagerState { MainTab.entries.size }
+    val scope = rememberCoroutineScope()
+    val haptics = rememberHaptics()
+    val tab = MainTab.entries[pager.targetPage]
+    val open = { target: MainTab -> scope.launch { pager.animateScrollToPage(target.ordinal) } }
     var expanded by rememberSaveable { mutableStateOf(true) }
     val thresholdPx = with(LocalDensity.current) { COLLAPSE_DISTANCE.toPx() }
     val collapseOnScroll = remember(thresholdPx) { CollapseOnScroll(thresholdPx) { expanded = it } }
 
-    BackHandler(enabled = tab != MainTab.CHATS) { tab = MainTab.CHATS }
+    LaunchedEffect(pager) {
+        snapshotFlow { pager.settledPage }.drop(1).collect {
+            haptics.tick()
+            expanded = true
+        }
+    }
+
+    BackHandler(enabled = tab != MainTab.CHATS) { open(MainTab.CHATS) }
 
     Box(Modifier.fillMaxSize().nestedScroll(collapseOnScroll)) {
-        AnimatedContent(
-            targetState = tab,
-            transitionSpec = { fadeIn(tween(TAB_FADE_MS)) togetherWith fadeOut(tween(TAB_FADE_MS)) },
-            label = "mainTab",
-        ) { current ->
-            when (current) {
-                MainTab.CHATS -> HomeScreen(onOpenChat = onOpenChat, onOpenSettings = { tab = MainTab.SETTINGS })
+        HorizontalPager(state = pager, key = { MainTab.entries[it] }, modifier = Modifier.fillMaxSize()) { page ->
+            when (MainTab.entries[page]) {
+                MainTab.CHATS -> HomeScreen(onOpenChat = onOpenChat, onOpenSettings = { open(MainTab.SETTINGS) })
                 MainTab.SETTINGS -> SettingsScreen(destinations = settingsDestinations)
             }
         }
         MainNavBar(
             selected = tab,
             expanded = expanded,
-            onSelect = { selected -> tab = selected; expanded = true },
-            onNewChat = { if (hasProvider) onOpenChat(null) else tab = MainTab.SETTINGS },
+            onSelect = { open(it) },
+            onNewChat = {
+                haptics.tap()
+                if (hasProvider) onOpenChat(null) else open(MainTab.SETTINGS)
+            },
             modifier = Modifier.align(Alignment.BottomEnd).navigationBarsPadding().padding(end = 16.dp, bottom = 16.dp),
         )
     }
@@ -90,4 +103,3 @@ private class CollapseOnScroll(
 }
 
 private val COLLAPSE_DISTANCE = 48.dp
-private const val TAB_FADE_MS = 180
