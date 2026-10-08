@@ -317,4 +317,8 @@
         <item quantity="one">%d server</item>
         <item quantity="other">%d servers</item>
     </plurals>
+    <string name="tools_run_python_title" translatable="false">Python</string>
+    <string name="tools_run_python_summary">Runs Python scripts for calculations and data work</string>
+    <string name="chat_tool_running_python">Running Python</string>
+    <string name="chat_tool_python">Python script</string>
 </resources>

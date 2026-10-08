@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.chaquopy)
 }
 
 val signingProperties = Properties().apply {
@@ -22,6 +23,8 @@ android {
         targetSdk = 36
         versionCode = 5
         versionName = "0.5.0"
+
+        ndk { abiFilters += "arm64-v8a" }
     }
 
     signingConfigs {
@@ -56,6 +59,12 @@ android {
     }
 
     testOptions { unitTests.isReturnDefaultValues = true }
+}
+
+chaquopy {
+    defaultConfig {
+        version = "3.13"
+    }
 }
 
 kotlin {

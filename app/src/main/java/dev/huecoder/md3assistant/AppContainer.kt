@@ -19,9 +19,11 @@ import dev.huecoder.md3assistant.prompt.SystemPromptRenderer
 import dev.huecoder.md3assistant.tools.ReadScreenTool
 import dev.huecoder.md3assistant.tools.ShowUiTool
 import dev.huecoder.md3assistant.tools.system.RunCommandTool
+import dev.huecoder.md3assistant.tools.system.RunPythonTool
 import dev.huecoder.md3assistant.system.shell.ShellAccess
 import dev.huecoder.md3assistant.tools.ToolRegistry
 import dev.huecoder.md3assistant.system.files.DeviceFiles
+import dev.huecoder.md3assistant.system.python.PythonRuntime
 import dev.huecoder.md3assistant.tools.files.ListFilesTool
 import dev.huecoder.md3assistant.tools.files.ReadFileTool
 import dev.huecoder.md3assistant.tools.files.SendFilesTool
@@ -65,6 +67,8 @@ class AppContainer(context: Context) {
     val shellAccess = ShellAccess(appContext)
     val deviceFiles = DeviceFiles(shellAccess.workspace, attachments.directory, File(appContext.cacheDir, FILE_STAGING_DIR))
 
+    val python = PythonRuntime(appContext)
+
     val mcp = McpToolbox(httpClients, attachments, applicationScope)
 
     val tools = ToolRegistry(
@@ -75,6 +79,7 @@ class AppContainer(context: Context) {
             ReadScreenTool(screenContext),
             ShowUiTool(),
             RunCommandTool(shellAccess),
+            RunPythonTool(python, shellAccess.workspace),
             ListFilesTool(deviceFiles),
             ReadFileTool(deviceFiles, attachments),
             WriteFileTool(deviceFiles),

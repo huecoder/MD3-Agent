@@ -314,4 +314,7 @@
         <item quantity="many">%d серверов</item>
         <item quantity="other">%d сервера</item>
     </plurals>
+    <string name="tools_run_python_summary">Запускает скрипты на Python для расчётов и работы с данными</string>
+    <string name="chat_tool_running_python">Выполняю Python</string>
+    <string name="chat_tool_python">Скрипт на Python</string>
 </resources>
