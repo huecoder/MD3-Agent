@@ -63,6 +63,7 @@ class ConversationRunner(
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
     private val jobs = ConcurrentHashMap<String, Job>()
+    private val titler = ChatTitler(chats, completions, catalog)
     private val _drafts = MutableStateFlow<Map<String, StreamingDraft>>(emptyMap())
 
     val drafts: StateFlow<Map<String, StreamingDraft>> = _drafts.asStateFlow()
@@ -119,7 +120,7 @@ class ConversationRunner(
         try {
             while (true) {
                 val round = streamRound(chatId, model, current) ?: return
-                if (round.toolCalls.isEmpty()) return
+                if (round.toolCalls.isEmpty()) return labelLater(chatId, model, current)
                 val endsTurn = runTools(chatId, round, current)
                 if (endsTurn) return
             }
@@ -127,6 +128,10 @@ class ConversationRunner(
             val self = currentCoroutineContext()[Job]
             _drafts.update { drafts -> if (jobs[chatId].let { it == null || it === self }) drafts - chatId else drafts }
         }
+    }
+
+    private fun labelLater(chatId: String, model: ResolvedModel, current: AppSettings) {
+        if (current.chat.autoTitle) scope.launch { titler.labelIfNeeded(chatId, model) }
     }
 
     private suspend fun streamRound(chatId: String, model: ResolvedModel, current: AppSettings): StreamingDraft? {
@@ -261,6 +266,6 @@ data class StreamingDraft(
     val images: List<String> = emptyList(),
 )
 
-private data class ResolvedModel(val provider: ProviderProfile, val modelId: String, val reasoningEffort: ReasoningEffort?)
+data class ResolvedModel(val provider: ProviderProfile, val modelId: String, val reasoningEffort: ReasoningEffort?)
 
 class NoModelConfiguredException : IllegalStateException("Add a provider and choose a model in settings first")

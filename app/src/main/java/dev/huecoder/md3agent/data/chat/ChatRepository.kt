@@ -83,6 +83,11 @@ class ChatRepository(
 
     suspend fun renameByUser(chatId: String, title: String) = chatDao.renameByUser(chatId, title.trim())
 
+    suspend fun applyGeneratedLabel(chatId: String, title: String, look: ChatLook) =
+        chatDao.applyGeneratedLabel(chatId, title.trim(), look.glyph.key, look.tint.key, look.shape.key)
+
+    suspend fun setLook(chatId: String, look: ChatLook) = chatDao.setLook(chatId, look.glyph.key, look.tint.key, look.shape.key)
+
     suspend fun moveToFolder(chatIds: Collection<String>, folderId: String?) = chatDao.moveToFolder(chatIds.toList(), folderId)
 
     suspend fun createFolder(name: String): FolderEntity {

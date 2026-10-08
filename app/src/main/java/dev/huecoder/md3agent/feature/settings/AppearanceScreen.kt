@@ -43,6 +43,12 @@ fun AppearanceScreen(onBack: () -> Unit) {
                 checked = current.chat.showTokenUsage,
                 onCheckedChange = { value -> viewModel.updateChat { it.copy(showTokenUsage = value) } },
             )
+            LabeledSwitch(
+                title = stringResource(R.string.chat_settings_auto_title),
+                summary = stringResource(R.string.chat_settings_auto_title_summary),
+                checked = current.chat.autoTitle,
+                onCheckedChange = { value -> viewModel.updateChat { it.copy(autoTitle = value) } },
+            )
             SectionHeader(stringResource(R.string.chat_settings_section_typing))
             TypingSettingsCard(current.chat.typing, onChange = { style -> viewModel.updateChat { it.copy(typing = style) } })
             SectionHeader(stringResource(R.string.appearance_section_feedback))

@@ -14,13 +14,16 @@ data class ChatSummary(
     val modelId: String?,
     val folderId: String?,
     val lastMessage: String?,
+    val iconKey: String? = null,
+    val colorKey: String? = null,
+    val shapeKey: String? = null,
 )
 
 @Dao
 interface ChatDao {
     @Query(
         """
-        SELECT c.id, c.title, c.updatedAt, c.modelId, c.folderId,
+        SELECT c.id, c.title, c.updatedAt, c.modelId, c.folderId, c.iconKey, c.colorKey, c.shapeKey,
             (SELECT m.content FROM messages m
              WHERE m.chatId = c.id AND m.role IN ('USER', 'ASSISTANT') AND m.content != ''
              ORDER BY m.createdAt DESC LIMIT 1) AS lastMessage
@@ -44,6 +47,22 @@ interface ChatDao {
 
     @Query("UPDATE chats SET title = :title, titleSource = 'USER' WHERE id = :id")
     suspend fun renameByUser(id: String, title: String)
+
+    @Query(
+        """
+        UPDATE chats SET
+            title = CASE WHEN titleSource = 'USER' THEN title ELSE :title END,
+            titleSource = CASE WHEN titleSource = 'USER' THEN titleSource ELSE 'GENERATED' END,
+            iconKey = COALESCE(iconKey, :iconKey),
+            colorKey = COALESCE(colorKey, :colorKey),
+            shapeKey = COALESCE(shapeKey, :shapeKey)
+        WHERE id = :id
+        """,
+    )
+    suspend fun applyGeneratedLabel(id: String, title: String, iconKey: String, colorKey: String, shapeKey: String)
+
+    @Query("UPDATE chats SET iconKey = :iconKey, colorKey = :colorKey, shapeKey = :shapeKey WHERE id = :id")
+    suspend fun setLook(id: String, iconKey: String, colorKey: String, shapeKey: String)
 
     @Query("UPDATE chats SET folderId = :folderId WHERE id IN (:ids)")
     suspend fun moveToFolder(ids: List<String>, folderId: String?)

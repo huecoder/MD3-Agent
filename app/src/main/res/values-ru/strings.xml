@@ -530,4 +530,11 @@
     <string name="about_third_party">Сторонние ресурсы</string>
     <string name="about_third_party_summary">Логотипы вендоров из Simple Icons и Lobe Icons</string>
     <string name="about_private_note">Репозиторий откроется публично с релизом 1.0. До этого ссылки и проверка обновлений могут не работать.</string>
+    <string name="chat_look_title">Иконка и цвет</string>
+    <string name="chat_look_icon">Иконка</string>
+    <string name="chat_look_color">Цвет</string>
+    <string name="chat_look_shape">Форма</string>
+    <string name="chat_look_hint">Агент подбирает это сам после первого ответа. То что выберешь тут вручную, он уже не тронет.</string>
+    <string name="chat_settings_auto_title">Автоназвания чатов</string>
+    <string name="chat_settings_auto_title_summary">После первого ответа модель придумывает короткое название, иконку и цвет. Переименованные тобой чаты не трогает.</string>
 </resources>

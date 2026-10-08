@@ -98,6 +98,7 @@ fun ChatScreen(chatId: String?, onBack: () -> Unit) {
                     onPickModel = { pickingModel = true },
                     onRename = viewModel::rename,
                     onDelete = { viewModel.delete(); onBack() },
+                    onLookChange = viewModel::setLook,
                 )
             },
             snackbarHost = { SnackbarHost(snackbarHost) },

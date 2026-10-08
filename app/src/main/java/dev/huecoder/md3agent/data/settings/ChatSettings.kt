@@ -5,6 +5,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class ChatSettings(
     val showTokenUsage: Boolean = false,
+    val autoTitle: Boolean = true,
     val typing: TypingStyle = TypingStyle(),
 )
 

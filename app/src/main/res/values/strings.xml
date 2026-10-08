@@ -526,4 +526,11 @@
     <string name="about_third_party">Third-party assets</string>
     <string name="about_third_party_summary">Vendor logos from Simple Icons and Lobe Icons</string>
     <string name="about_private_note">The repository opens to the public with the 1.0 release. Until then the links and update checks may not work.</string>
+    <string name="chat_look_title">Icon and color</string>
+    <string name="chat_look_icon">Icon</string>
+    <string name="chat_look_color">Color</string>
+    <string name="chat_look_shape">Shape</string>
+    <string name="chat_look_hint">The agent picks these after the first reply. Anything you set here stays.</string>
+    <string name="chat_settings_auto_title">Name chats automatically</string>
+    <string name="chat_settings_auto_title_summary">After the first reply the model picks a short title, icon and color. Chats you renamed stay as they are.</string>
 </resources>

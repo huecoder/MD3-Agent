@@ -1,5 +1,6 @@
 package dev.huecoder.md3agent.feature.chat
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,6 +26,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -33,14 +35,17 @@ import com.composables.icons.materialsymbols.rounded.Arrow_drop_down
 import com.composables.icons.materialsymbols.rounded.Delete
 import com.composables.icons.materialsymbols.rounded.Edit
 import com.composables.icons.materialsymbols.rounded.More_vert
+import com.composables.icons.materialsymbols.rounded.Palette
 import dev.huecoder.md3agent.R
+import dev.huecoder.md3agent.data.chat.ChatLook
 import dev.huecoder.md3agent.feature.home.DeleteChatsDialog
 import dev.huecoder.md3agent.feature.home.NameDialog
 import dev.huecoder.md3agent.feature.models.label
 import dev.huecoder.md3agent.ui.components.BackButton
+import dev.huecoder.md3agent.ui.components.ChatBadge
 import dev.huecoder.md3agent.ui.components.VendorGlyph
 
-private enum class ChatDialog { RENAME, DELETE }
+private enum class ChatDialog { RENAME, DELETE, LOOK }
 
 @Composable
 fun ChatTopBar(
@@ -50,18 +55,30 @@ fun ChatTopBar(
     onPickModel: () -> Unit,
     onRename: (String) -> Unit,
     onDelete: () -> Unit,
+    onLookChange: (ChatLook) -> Unit,
 ) {
     var dialog by rememberSaveable { mutableStateOf<ChatDialog?>(null) }
     TopAppBar(
         title = {
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(title, style = MaterialTheme.typography.titleMediumEmphasized, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                ModelChip(state, onPickModel)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                if (state.chatId != null) {
+                    ChatBadge(
+                        state.look,
+                        size = BADGE_SIZE,
+                        modifier = Modifier.clip(CircleShape).clickable(onClickLabel = stringResource(R.string.chat_look_title)) { dialog = ChatDialog.LOOK },
+                    )
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(title, style = MaterialTheme.typography.titleMediumEmphasized, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    ModelChip(state, onPickModel)
+                }
             }
         },
         navigationIcon = { BackButton(onBack) },
         actions = {
-            if (state.chatId != null) ChatMenu(onRename = { dialog = ChatDialog.RENAME }, onDelete = { dialog = ChatDialog.DELETE })
+            if (state.chatId != null) {
+                ChatMenu(onRename = { dialog = ChatDialog.RENAME }, onLook = { dialog = ChatDialog.LOOK }, onDelete = { dialog = ChatDialog.DELETE })
+            }
         },
         expandedHeight = TOP_BAR_HEIGHT,
     )
@@ -74,13 +91,14 @@ fun ChatTopBar(
             onConfirm = { onRename(it); dialog = null },
             onDismiss = { dialog = null },
         )
+        ChatDialog.LOOK -> ChatLookSheet(state.look, onChange = onLookChange, onDismiss = { dialog = null })
         ChatDialog.DELETE -> DeleteChatsDialog(count = 1, onConfirm = { dialog = null; onDelete() }, onDismiss = { dialog = null })
         null -> Unit
     }
 }
 
 @Composable
-private fun ChatMenu(onRename: () -> Unit, onDelete: () -> Unit) {
+private fun ChatMenu(onRename: () -> Unit, onLook: () -> Unit, onDelete: () -> Unit) {
     var open by rememberSaveable { mutableStateOf(false) }
     Box {
         IconButton(onClick = { open = true }, shapes = IconButtonDefaults.shapes()) {
@@ -91,6 +109,11 @@ private fun ChatMenu(onRename: () -> Unit, onDelete: () -> Unit) {
                 text = { Text(stringResource(R.string.home_rename)) },
                 leadingIcon = { Icon(MaterialSymbols.Rounded.Edit, contentDescription = null) },
                 onClick = { open = false; onRename() },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.chat_look_title)) },
+                leadingIcon = { Icon(MaterialSymbols.Rounded.Palette, contentDescription = null) },
+                onClick = { open = false; onLook() },
             )
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.home_delete_chat), color = MaterialTheme.colorScheme.error) },
@@ -128,5 +151,6 @@ private fun ModelChip(state: ChatUiState, onClick: () -> Unit) {
 }
 
 private val TOP_BAR_HEIGHT = 72.dp
+private val BADGE_SIZE = 40.dp
 private val MODEL_CHIP_HEIGHT = 24.dp
 private val MODEL_CHIP_MAX_WIDTH = 220.dp

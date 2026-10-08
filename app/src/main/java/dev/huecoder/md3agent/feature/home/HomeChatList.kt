@@ -20,9 +20,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
-import com.composables.icons.materialsymbols.rounded.Chat
 import com.composables.icons.materialsymbols.rounded.Check
 import dev.huecoder.md3agent.R
+import dev.huecoder.md3agent.data.chat.ChatLook
+import dev.huecoder.md3agent.ui.components.ChatBadge
 import dev.huecoder.md3agent.feature.main.MainNavBarClearance
 import dev.huecoder.md3agent.conversation.ChatActivity
 import dev.huecoder.md3agent.ui.components.WorkingBadge
@@ -104,7 +105,7 @@ private fun ChatRow(
             when {
                 selected -> ShapeBadge(icon = MaterialSymbols.Rounded.Check)
                 activity != null -> WorkingBadge(activity)
-                else -> ShapeBadge(icon = MaterialSymbols.Rounded.Chat)
+                else -> ChatBadge(ChatLook.of(chat.iconKey, chat.colorKey, chat.shapeKey))
             }
         },
         supportingContent = chat.lastMessage?.let(ChatPreview::of)?.takeIf { it.isNotEmpty() }?.let { preview ->

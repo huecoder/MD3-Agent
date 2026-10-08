@@ -15,6 +15,7 @@ import dev.huecoder.md3agent.conversation.UserPrompts
 import dev.huecoder.md3agent.data.attachments.Attachment
 import dev.huecoder.md3agent.data.attachments.AttachmentStore
 import dev.huecoder.md3agent.data.attachments.AttachmentTooLargeException
+import dev.huecoder.md3agent.data.chat.ChatLook
 import dev.huecoder.md3agent.data.chat.ChatRepository
 import dev.huecoder.md3agent.data.db.ChatEntity
 import dev.huecoder.md3agent.data.db.MessageEntity
@@ -61,6 +62,7 @@ data class ChatUiState(
     val isStreaming: Boolean = false,
     val pendingAttachments: List<Attachment> = emptyList(),
     val isImporting: Boolean = false,
+    val look: ChatLook = ChatLook.Default,
 ) {
     fun canSend(text: String): Boolean = (text.isNotBlank() || pendingAttachments.isNotEmpty()) && !isImporting
 
@@ -157,6 +159,11 @@ class ChatViewModel(
         viewModelScope.launch { chats.renameByUser(id, title) }
     }
 
+    fun setLook(look: ChatLook) {
+        val id = chatId.value ?: return
+        viewModelScope.launch { chats.setLook(id, look) }
+    }
+
     fun delete() {
         val id = chatId.value ?: return
         runner.cancel(id)
@@ -246,6 +253,7 @@ class ChatViewModel(
         chatId = id,
         title = chat?.title?.let(UiText::Raw) ?: ChatUiState.NEW_CHAT_TITLE,
         modelId = chat?.modelId,
+        look = chat?.let { ChatLook.of(it.iconKey, it.colorKey, it.shapeKey) } ?: ChatLook.Default,
         messages = ChatTimeline.build(messages, draft),
         isStreaming = draft != null,
     )
