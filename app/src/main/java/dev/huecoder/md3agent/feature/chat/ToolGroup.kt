@@ -28,9 +28,12 @@ import dev.huecoder.md3agent.tools.files.ReadFileTool
 import dev.huecoder.md3agent.tools.files.SendFilesTool
 import dev.huecoder.md3agent.tools.files.WriteFileTool
 import dev.huecoder.md3agent.tools.optionalArray
+import dev.huecoder.md3agent.tools.optionalInt
 import dev.huecoder.md3agent.tools.optionalString
 import dev.huecoder.md3agent.tools.ShowChartTool
 import dev.huecoder.md3agent.tools.ShowDiagramTool
+import dev.huecoder.md3agent.tools.phone.PhoneActionTool
+import dev.huecoder.md3agent.tools.phone.PhoneScreenTool
 import dev.huecoder.md3agent.tools.system.RunCommandTool
 import dev.huecoder.md3agent.tools.system.RunPythonTool
 import dev.huecoder.md3agent.tools.weather.WeatherTool
@@ -166,6 +169,8 @@ private data class ToolLook(val icon: ImageVector, val title: UiText) {
                 )
                 WeatherTool.NAME -> UiText.Resource(R.string.chat_tool_weather, listOf(args.optionalString("location").orEmpty()))
                 ReadScreenTool.NAME -> UiText.Resource(if (running) R.string.chat_tool_reading_screen else R.string.chat_tool_screen)
+                PhoneScreenTool.NAME -> UiText.Resource(if (running) R.string.chat_tool_looking_phone else R.string.chat_tool_looked_phone)
+                PhoneActionTool.NAME -> UiText.Resource(R.string.chat_tool_phone_action, listOf(phoneStep(args)))
                 RunCommandTool.NAME -> UiText.Resource(
                     if (running) R.string.chat_tool_running_command else R.string.chat_tool_command,
                     listOf(args.optionalString("command")?.lineSequence()?.first()?.take(COMMAND_PREVIEW_CHARS).orEmpty()),
@@ -194,6 +199,13 @@ private data class ToolLook(val icon: ImageVector, val title: UiText) {
             val text = search?.results?.joinToString("\n") { "• ${it.title}\n  ${it.url}" } ?: raw
             return if (text.length > MAX_RESULT_CHARS) text.take(MAX_RESULT_CHARS) + "…" else text
         }
+
+        private fun phoneStep(args: JsonObject): String = listOfNotNull(
+            args.optionalString("action")?.replace('_', ' '),
+            args.optionalString("app") ?: args.optionalString("key") ?: args.optionalString("direction"),
+            args.optionalInt("element")?.let { "#$it" },
+            args.optionalString("text")?.let { "\"${it.take(COMMAND_PREVIEW_CHARS)}\"" },
+        ).joinToString(" ")
 
         private fun quoted(value: String?): UiText = value?.let { UiText.Resource(R.string.chat_tool_quoted, listOf(it)) } ?: UiText.Raw("")
 

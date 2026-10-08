@@ -543,4 +543,17 @@
     <string name="chat_tool_diagram">Diagram %1$s</string>
     <string name="tools_show_diagram_title">Show a diagram</string>
     <string name="tools_show_diagram_summary">Draws plans and processes as blocks with arrows</string>
+    <string name="phone_control_label">MD3 Agent phone control</string>
+    <string name="phone_control_description">Lets the MD3 Agent assistant read the screen and tap, type and scroll for you when you ask it to. Every action asks for your approval unless you allow it in the tool settings. Nothing from the screen leaves the phone except what is sent to your chosen model.</string>
+    <string name="permission_phone_control">Phone control</string>
+    <string name="permission_phone_control_summary">Accessibility service so the assistant can read the screen and tap for you</string>
+    <string name="access_group_control">Phone control</string>
+    <string name="tools_category_phone">Phone control</string>
+    <string name="tools_phone_screen_title">Look at the phone screen</string>
+    <string name="tools_phone_screen_summary">Reads buttons, texts and fields of the app in front</string>
+    <string name="tools_phone_action_title">Act on the phone</string>
+    <string name="tools_phone_action_summary">Taps, types, scrolls, opens apps and presses system buttons</string>
+    <string name="chat_tool_looking_phone">Looking at the screen</string>
+    <string name="chat_tool_looked_phone">Looked at the screen</string>
+    <string name="chat_tool_phone_action">Phone: %1$s</string>
 </resources>

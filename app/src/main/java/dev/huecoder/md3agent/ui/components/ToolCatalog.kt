@@ -31,6 +31,8 @@ import com.composables.icons.materialsymbols.rounded.Account_tree
 import com.composables.icons.materialsymbols.rounded.Forum
 import com.composables.icons.materialsymbols.rounded.Article
 import com.composables.icons.materialsymbols.rounded.File_save
+import com.composables.icons.materialsymbols.rounded.Phone_android
+import com.composables.icons.materialsymbols.rounded.Touch_app
 import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.mcp.McpTool
 import dev.huecoder.md3agent.tools.AskUserTool
@@ -55,6 +57,8 @@ import dev.huecoder.md3agent.tools.reminders.ListRemindersTool
 import dev.huecoder.md3agent.tools.reminders.SetAlarmTool
 import dev.huecoder.md3agent.tools.reminders.SetReminderTool
 import dev.huecoder.md3agent.tools.reminders.SetTimerTool
+import dev.huecoder.md3agent.tools.phone.PhoneActionTool
+import dev.huecoder.md3agent.tools.phone.PhoneScreenTool
 import dev.huecoder.md3agent.tools.system.RunCommandTool
 import dev.huecoder.md3agent.tools.system.RunPythonTool
 import dev.huecoder.md3agent.tools.weather.WeatherTool
@@ -68,6 +72,7 @@ enum class ToolCategory(@StringRes val title: Int) {
     CHATS(R.string.tools_category_chats),
     WEB(R.string.tools_category_web),
     SCREEN(R.string.tools_category_screen),
+    PHONE(R.string.tools_category_phone),
     FILES(R.string.tools_category_files),
     TIME(R.string.tools_category_time),
     SYSTEM(R.string.tools_category_system),
@@ -94,6 +99,8 @@ object ToolCatalog {
         ShowUiTool.NAME to known(ToolCategory.SCREEN, MaterialSymbols.Rounded.Smart_button, R.string.tools_show_ui_title, R.string.tools_show_ui_summary),
         ShowDiagramTool.NAME to known(ToolCategory.SCREEN, MaterialSymbols.Rounded.Account_tree, R.string.tools_show_diagram_title, R.string.tools_show_diagram_summary),
         ShowChartTool.NAME to known(ToolCategory.SCREEN, MaterialSymbols.Rounded.Bar_chart, R.string.tools_show_chart_title, R.string.tools_show_chart_summary),
+        PhoneScreenTool.NAME to known(ToolCategory.PHONE, MaterialSymbols.Rounded.Phone_android, R.string.tools_phone_screen_title, R.string.tools_phone_screen_summary),
+        PhoneActionTool.NAME to known(ToolCategory.PHONE, MaterialSymbols.Rounded.Touch_app, R.string.tools_phone_action_title, R.string.tools_phone_action_summary),
         RunCommandTool.NAME to known(ToolCategory.SYSTEM, MaterialSymbols.Rounded.Terminal, R.string.tools_run_command_title, R.string.tools_run_command_summary),
         RunPythonTool.NAME to known(ToolCategory.SYSTEM, MaterialSymbols.Rounded.Code, R.string.tools_run_python_title, R.string.tools_run_python_summary),
         ListFilesTool.NAME to known(ToolCategory.FILES, MaterialSymbols.Rounded.Folder_open, R.string.tools_list_files_title, R.string.tools_list_files_summary),

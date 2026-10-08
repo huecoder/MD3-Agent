@@ -2,9 +2,11 @@ package dev.huecoder.md3agent.feature.settings
 
 import android.Manifest
 import android.content.ActivityNotFoundException
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -51,6 +53,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composables.icons.materialsymbols.MaterialSymbols
+import com.composables.icons.materialsymbols.rounded.Touch_app
 import com.composables.icons.materialsymbols.rounded.Adb
 import com.composables.icons.materialsymbols.rounded.Assistant
 import com.composables.icons.materialsymbols.rounded.Content_copy
@@ -66,6 +69,7 @@ import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.assistant.AssistantRole
 import dev.huecoder.md3agent.data.settings.FileScope
 import dev.huecoder.md3agent.data.settings.ShellMode
+import dev.huecoder.md3agent.system.control.PhoneControlService
 import dev.huecoder.md3agent.system.shell.AccessStatus
 import dev.huecoder.md3agent.system.shell.TermuxShell
 import dev.huecoder.md3agent.ui.components.FoldableHeader
@@ -80,7 +84,7 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun DeviceAccessScreen(onBack: () -> Unit) {
-    val viewModel = appViewModel { DeviceAccessViewModel(it.appContext, it.settings, it.shellAccess, it.deviceFiles) }
+    val viewModel = appViewModel { DeviceAccessViewModel(it.appContext, it.settings, it.shellAccess, it.deviceFiles, it.phoneControl) }
     val shellMode by viewModel.shellMode.collectAsStateWithLifecycle()
     val fileScope by viewModel.fileScope.collectAsStateWithLifecycle()
     val permissions by viewModel.permissions.collectAsStateWithLifecycle()
@@ -114,6 +118,7 @@ fun DeviceAccessScreen(onBack: () -> Unit) {
                 PermissionAction(R.string.access_action_grant) { askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS) }
             }
             DevicePermission.ALL_FILES -> PermissionAction(R.string.access_action_open_settings) { context.openAllFilesAccess() }.takeIf { status != AccessStatus.UNAVAILABLE }
+            DevicePermission.PHONE_CONTROL -> PermissionAction(R.string.access_action_open_settings) { context.openAccessibilitySettings() }
             DevicePermission.TERMUX -> when (status) {
                 AccessStatus.NOT_INSTALLED -> PermissionAction(R.string.access_action_install) { context.openUrl(TERMUX_URL) }
                 else -> PermissionAction(R.string.access_action_grant) { askTermux.launch(TermuxShell.PERMISSION) }
@@ -202,6 +207,7 @@ fun DeviceAccessScreen(onBack: () -> Unit) {
 private enum class PermissionGroup(@StringRes val title: Int, val permissions: List<DevicePermission>) {
     ESSENTIALS(R.string.access_group_essentials, listOf(DevicePermission.ASSISTANT, DevicePermission.MICROPHONE, DevicePermission.NOTIFICATIONS)),
     STORAGE(R.string.access_group_storage, listOf(DevicePermission.ALL_FILES)),
+    CONTROL(R.string.access_group_control, listOf(DevicePermission.PHONE_CONTROL)),
     ELEVATED(R.string.access_group_elevated, listOf(DevicePermission.TERMUX, DevicePermission.SHIZUKU, DevicePermission.ROOT)),
 }
 
@@ -347,6 +353,7 @@ private val DevicePermission.presentation: Presentation
         DevicePermission.MICROPHONE -> Presentation(R.string.permission_microphone, R.string.permission_microphone_summary, MaterialSymbols.Rounded.Mic)
         DevicePermission.NOTIFICATIONS -> Presentation(R.string.permission_notifications, R.string.permission_notifications_summary, MaterialSymbols.Rounded.Notifications)
         DevicePermission.ALL_FILES -> Presentation(R.string.permission_all_files, R.string.permission_all_files_summary, MaterialSymbols.Rounded.Storage)
+        DevicePermission.PHONE_CONTROL -> Presentation(R.string.permission_phone_control, R.string.permission_phone_control_summary, MaterialSymbols.Rounded.Touch_app)
         DevicePermission.TERMUX -> Presentation(R.string.access_mode_termux, R.string.permission_termux_summary, MaterialSymbols.Rounded.Terminal)
         DevicePermission.SHIZUKU -> Presentation(R.string.access_mode_shizuku, R.string.permission_shizuku_summary, MaterialSymbols.Rounded.Adb)
         DevicePermission.ROOT -> Presentation(R.string.access_mode_root, R.string.access_mode_root_summary, MaterialSymbols.Rounded.Shield_lock)
@@ -384,6 +391,16 @@ private fun Context.openAllFilesAccess() {
     }
 }
 
+private fun Context.openAccessibilitySettings() {
+    val service = ComponentName(this, PhoneControlService::class.java).flattenToString()
+    val highlighted = Bundle().apply { putString(SETTINGS_FRAGMENT_ARG, service) }
+    startActivity(
+        Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+            .putExtra(SETTINGS_FRAGMENT_ARG, service)
+            .putExtra(SETTINGS_FRAGMENT_ARGS, highlighted),
+    )
+}
+
 private fun Context.openNotificationSettings() =
     startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName))
 
@@ -401,3 +418,5 @@ private val BUSY_INDICATOR_SIZE = 32.dp
 private const val TERMUX_URL = "https://f-droid.org/packages/com.termux/"
 private const val SHIZUKU_PACKAGE = "moe.shizuku.privileged.api"
 private const val SHIZUKU_URL = "https://shizuku.rikka.app/download/"
+private const val SETTINGS_FRAGMENT_ARG = ":settings:fragment_args_key"
+private const val SETTINGS_FRAGMENT_ARGS = ":settings:show_fragment_args"

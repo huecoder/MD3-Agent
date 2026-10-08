@@ -12,6 +12,7 @@ import dev.huecoder.md3agent.assistant.AssistantRole
 import dev.huecoder.md3agent.data.settings.FileScope
 import dev.huecoder.md3agent.data.settings.SettingsRepository
 import dev.huecoder.md3agent.data.settings.ShellMode
+import dev.huecoder.md3agent.system.control.PhoneControl
 import dev.huecoder.md3agent.system.files.DeviceFiles
 import dev.huecoder.md3agent.system.shell.AccessStatus
 import dev.huecoder.md3agent.system.shell.ShellAccess
@@ -24,13 +25,14 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-enum class DevicePermission { ASSISTANT, MICROPHONE, NOTIFICATIONS, ALL_FILES, TERMUX, SHIZUKU, ROOT }
+enum class DevicePermission { ASSISTANT, MICROPHONE, NOTIFICATIONS, ALL_FILES, PHONE_CONTROL, TERMUX, SHIZUKU, ROOT }
 
 class DeviceAccessViewModel(
     private val context: Context,
     private val settings: SettingsRepository,
     private val access: ShellAccess,
     private val files: DeviceFiles,
+    private val phoneControl: PhoneControl,
 ) : ViewModel() {
     private val _permissions = MutableStateFlow<Map<DevicePermission, AccessStatus>>(emptyMap())
     private val _checkingRoot = MutableStateFlow(false)
@@ -51,6 +53,7 @@ class DeviceAccessViewModel(
             DevicePermission.MICROPHONE to readyIf(isGranted(Manifest.permission.RECORD_AUDIO)),
             DevicePermission.NOTIFICATIONS to readyIf(AppNotifications.canPost(context)),
             DevicePermission.ALL_FILES to allFilesStatus(),
+            DevicePermission.PHONE_CONTROL to phoneControlStatus(),
         )
         _permissions.update { it + local }
         viewModelScope.launch {
@@ -99,6 +102,12 @@ class DeviceAccessViewModel(
     private fun allFilesStatus(): AccessStatus = when {
         Build.VERSION.SDK_INT < Build.VERSION_CODES.R -> AccessStatus.UNAVAILABLE
         files.hasSharedStorageAccess() -> AccessStatus.READY
+        else -> AccessStatus.NEEDS_PERMISSION
+    }
+
+    private fun phoneControlStatus(): AccessStatus = when {
+        phoneControl.isReady() -> AccessStatus.READY
+        phoneControl.isEnabledInSettings() -> AccessStatus.NOT_RUNNING
         else -> AccessStatus.NEEDS_PERMISSION
     }
 

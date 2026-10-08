@@ -547,4 +547,17 @@
     <string name="chat_tool_diagram">Схема %1$s</string>
     <string name="tools_show_diagram_title">Показать схему</string>
     <string name="tools_show_diagram_summary">Рисует планы и процессы блоками со стрелками</string>
+    <string name="phone_control_label">Управление телефоном MD3 Agent</string>
+    <string name="phone_control_description">Позволяет ассистенту MD3 Agent читать экран, нажимать, вводить текст и листать по вашей просьбе. Каждое действие требует подтверждения, если вы не разрешили его в настройках инструментов. С экрана ничего не уходит с телефона, кроме того что отправляется выбранной вами модели.</string>
+    <string name="permission_phone_control">Управление телефоном</string>
+    <string name="permission_phone_control_summary">Служба специальных возможностей, чтобы ассистент читал экран и нажимал за вас</string>
+    <string name="access_group_control">Управление телефоном</string>
+    <string name="tools_category_phone">Управление телефоном</string>
+    <string name="tools_phone_screen_title">Смотреть на экран</string>
+    <string name="tools_phone_screen_summary">Читает кнопки, тексты и поля открытого приложения</string>
+    <string name="tools_phone_action_title">Действовать на телефоне</string>
+    <string name="tools_phone_action_summary">Нажимает, вводит текст, листает, открывает приложения и системные кнопки</string>
+    <string name="chat_tool_looking_phone">Смотрю на экран</string>
+    <string name="chat_tool_looked_phone">Посмотрел на экран</string>
+    <string name="chat_tool_phone_action">Телефон: %1$s</string>
 </resources>

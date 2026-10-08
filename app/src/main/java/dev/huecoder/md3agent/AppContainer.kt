@@ -37,6 +37,9 @@ import dev.huecoder.md3agent.net.HttpClientProvider
 import dev.huecoder.md3agent.prompt.DeviceInfoProvider
 import dev.huecoder.md3agent.prompt.SystemPromptRenderer
 import dev.huecoder.md3agent.tools.ReadScreenTool
+import dev.huecoder.md3agent.system.control.PhoneControl
+import dev.huecoder.md3agent.tools.phone.PhoneActionTool
+import dev.huecoder.md3agent.tools.phone.PhoneScreenTool
 import dev.huecoder.md3agent.tools.ShowChartTool
 import dev.huecoder.md3agent.tools.ShowDiagramTool
 import dev.huecoder.md3agent.tools.ShowUiTool
@@ -103,6 +106,7 @@ class AppContainer(context: Context) {
     val deviceFiles = DeviceFiles(shellAccess.workspace, attachments.directory, File(appContext.cacheDir, FILE_STAGING_DIR))
 
     val python = PythonRuntime(appContext)
+    val phoneControl = PhoneControl(appContext)
 
     val prompts = UserPrompts()
     private val clockApp = ClockApp(appContext) { visibility.isVisible.value }
@@ -116,6 +120,8 @@ class AppContainer(context: Context) {
             ReadWebpageTool(PageFetcher(httpClients)),
             WeatherTool(httpClients),
             ReadScreenTool(screenContext),
+            PhoneScreenTool(phoneControl),
+            PhoneActionTool(phoneControl),
             ShowUiTool(),
             ShowChartTool(),
             ShowDiagramTool(),
