@@ -560,4 +560,5 @@
     <string name="chat_tool_looking_phone">Смотрю на экран</string>
     <string name="chat_tool_looked_phone">Посмотрел на экран</string>
     <string name="chat_tool_phone_action">Телефон: %1$s</string>
+    <string name="permission_phone_control_restricted">Переключатель серый? Откройте «О приложении», нажмите три точки и выберите «Разрешить ограниченные настройки», потом вернитесь.</string>
 </resources>

@@ -249,6 +249,9 @@ private fun PermissionItem(
             Column {
                 Text(stringResource(presentation.summary))
                 if (status != AccessStatus.READY) StatusLabel(status)
+                if (permission == DevicePermission.PHONE_CONTROL && status == AccessStatus.NEEDS_PERMISSION && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    Text(stringResource(R.string.permission_phone_control_restricted), style = MaterialTheme.typography.bodySmall)
+                }
             }
         },
         trailingContent = {

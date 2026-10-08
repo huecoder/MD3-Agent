@@ -556,4 +556,5 @@
     <string name="chat_tool_looking_phone">Looking at the screen</string>
     <string name="chat_tool_looked_phone">Looked at the screen</string>
     <string name="chat_tool_phone_action">Phone: %1$s</string>
+    <string name="permission_phone_control_restricted">Switch greyed out? Open App info, tap the three dots and choose Allow restricted settings, then come back.</string>
 </resources>
