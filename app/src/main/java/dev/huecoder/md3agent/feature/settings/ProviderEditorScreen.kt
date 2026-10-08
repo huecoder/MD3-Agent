@@ -5,12 +5,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -35,6 +33,7 @@ import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.ui.components.LabeledSwitch
 import dev.huecoder.md3agent.ui.components.SectionHeader
 import dev.huecoder.md3agent.ui.components.FormField
+import dev.huecoder.md3agent.ui.components.SaveAction
 import dev.huecoder.md3agent.ui.components.SettingsScaffold
 import dev.huecoder.md3agent.ui.components.appViewModel
 import dev.huecoder.md3agent.ui.text.asString
@@ -43,11 +42,13 @@ import dev.huecoder.md3agent.ui.text.asString
 fun ProviderEditorScreen(providerId: String?, onDone: () -> Unit) {
     val viewModel = appViewModel(key = "provider-$providerId") { ProviderEditorViewModel(providerId, it.settings, it.modelCatalog) }
     val form by viewModel.form.collectAsStateWithLifecycle()
+    val isDirty by viewModel.isDirty.collectAsStateWithLifecycle()
     val fetch by viewModel.modelFetch.collectAsStateWithLifecycle()
 
     SettingsScaffold(
         title = stringResource(if (form?.isNew == false) R.string.provider_title else R.string.provider_title_new),
         onBack = onDone,
+        save = SaveAction(isDirty, form?.canSave == true) { viewModel.save(onDone) },
         actions = {
             if (form?.isNew == false) {
                 IconButton(onClick = { viewModel.delete(onDone) }, shapes = IconButtonDefaults.shapes()) {
@@ -61,7 +62,6 @@ fun ProviderEditorScreen(providerId: String?, onDone: () -> Unit) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .imePadding()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -120,13 +120,6 @@ fun ProviderEditorScreen(providerId: String?, onDone: () -> Unit) {
                 headers = current.headers,
                 onChange = { headers -> viewModel.edit { it.copy(headers = headers) } },
             )
-
-            Button(
-                onClick = { viewModel.save(onDone) },
-                enabled = current.canSave,
-                shapes = ButtonDefaults.shapes(),
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 24.dp),
-            ) { Text(stringResource(R.string.settings_save)) }
         }
     }
 }

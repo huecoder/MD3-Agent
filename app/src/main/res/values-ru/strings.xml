@@ -17,6 +17,12 @@
     <string name="settings_network_summary_doh">DoH: %1$s</string>
     <string name="settings_network_summary_system">Системный DNS</string>
     <string name="settings_save">Сохранить</string>
+    <string name="settings_saved">Сохранено</string>
+    <string name="unsaved_title">Выйти без сохранения?</string>
+    <string name="unsaved_body">Есть несохранённые изменения. Если выйти сейчас, они пропадут.</string>
+    <string name="unsaved_body_invalid">Есть несохранённые изменения, но некоторые поля надо исправить, прежде чем сохранять.</string>
+    <string name="unsaved_discard">Не сохранять</string>
+    <string name="unsaved_keep_editing">Остаться</string>
     <string name="network_doh_title">Свой DNS (DoH)</string>
     <string name="network_doh_summary">Все запросы приложения резолвятся через DNS-over-HTTPS. Помогает, когда сервис режет доступ по региону на уровне DNS.</string>
     <string name="network_doh_server">DoH-сервер</string>

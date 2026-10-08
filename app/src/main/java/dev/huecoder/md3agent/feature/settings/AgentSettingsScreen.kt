@@ -6,12 +6,9 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SuggestionChip
@@ -37,6 +34,7 @@ import dev.huecoder.md3agent.data.settings.AvatarRestShape
 import dev.huecoder.md3agent.data.settings.AvatarStyle
 import dev.huecoder.md3agent.ui.components.SectionHeader
 import dev.huecoder.md3agent.ui.components.FormField
+import dev.huecoder.md3agent.ui.components.SaveAction
 import dev.huecoder.md3agent.ui.components.SettingsScaffold
 import kotlinx.coroutines.launch
 
@@ -49,22 +47,34 @@ fun AgentSettingsScreen(onBack: () -> Unit) {
     var preview by remember { mutableStateOf<String?>(null) }
     var avatar by remember { mutableStateOf(AvatarStyle.CLASSIC) }
     var restShape by remember { mutableStateOf(AvatarRestShape.CIRCLE) }
+    var saved by remember { mutableStateOf<AgentProfile?>(null) }
 
     LaunchedEffect(Unit) {
         val agent = container.settings.current().agent
+        saved = agent
         name = agent.name
         prompt = TextFieldValue(agent.systemPromptTemplate)
         avatar = agent.avatar
         restShape = agent.restShape
     }
 
-    SettingsScaffold(stringResource(R.string.settings_agent), onBack) { padding ->
+    val draft = name?.let { AgentProfile(it.trim().ifEmpty { AgentProfile.DEFAULT_AGENT_NAME }, prompt.text, avatar, restShape) }
+    val save = draft?.let { profile ->
+        SaveAction(isDirty = profile != saved, canSave = true) {
+            scope.launch {
+                container.settings.updateAgent(profile)
+                saved = profile
+                onBack()
+            }
+        }
+    }
+
+    SettingsScaffold(stringResource(R.string.settings_agent), onBack, save = save) { padding ->
         val currentName = name ?: return@SettingsScaffold
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .imePadding()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -100,19 +110,6 @@ fun AgentSettingsScreen(onBack: () -> Unit) {
             }) { Text(stringResource(R.string.agent_preview_prompt)) }
             preview?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
             TextButton(onClick = { prompt = TextFieldValue(AgentProfile.DEFAULT_SYSTEM_PROMPT) }) { Text(stringResource(R.string.agent_reset_prompt)) }
-
-            Button(
-                onClick = {
-                    scope.launch {
-                        container.settings.updateAgent(
-                            AgentProfile(currentName.trim().ifEmpty { AgentProfile.DEFAULT_AGENT_NAME }, prompt.text, avatar, restShape),
-                        )
-                        onBack()
-                    }
-                },
-                shapes = ButtonDefaults.shapes(),
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 24.dp),
-            ) { Text(stringResource(R.string.settings_save)) }
         }
     }
 }

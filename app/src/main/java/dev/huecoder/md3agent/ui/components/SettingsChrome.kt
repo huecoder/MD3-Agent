@@ -15,7 +15,12 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
@@ -31,21 +36,35 @@ fun SettingsScaffold(
     title: String,
     onBack: () -> Unit,
     actions: @Composable RowScope.() -> Unit = {},
+    save: SaveAction? = null,
     content: @Composable (PaddingValues) -> Unit,
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    var confirmingLeave by remember { mutableStateOf(false) }
+    val guardsLeave = save?.isDirty == true
+    val requestBack = { if (guardsLeave) confirmingLeave = true else onBack() }
+    BackHandler(enabled = guardsLeave) { confirmingLeave = true }
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             LargeFlexibleTopAppBar(
                 title = { Text(title, style = MaterialTheme.typography.heroTitle) },
-                navigationIcon = { BackButton(onBack) },
+                navigationIcon = { BackButton(requestBack) },
                 actions = actions,
                 scrollBehavior = scrollBehavior,
             )
         },
+        bottomBar = { save?.let { StickySaveBar(it) } },
         content = content,
     )
+    if (confirmingLeave && save != null) {
+        UnsavedChangesDialog(
+            canSave = save.canSave,
+            onSave = { confirmingLeave = false; save.onSave() },
+            onDiscard = { confirmingLeave = false; onBack() },
+            onDismiss = { confirmingLeave = false },
+        )
+    }
 }
 
 @Composable

@@ -10,8 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButton
@@ -45,6 +43,7 @@ import dev.huecoder.md3agent.data.settings.ToolSettings
 import dev.huecoder.md3agent.data.settings.WeatherSettings
 import dev.huecoder.md3agent.ui.components.FormField
 import dev.huecoder.md3agent.ui.components.SectionHeader
+import dev.huecoder.md3agent.ui.components.SaveAction
 import dev.huecoder.md3agent.ui.components.SettingsScaffold
 import dev.huecoder.md3agent.ui.components.ShapeBadge
 import dev.huecoder.md3agent.ui.components.ToolCatalog
@@ -58,10 +57,22 @@ fun ToolSettingsScreen(onBack: () -> Unit) {
     val container = (LocalContext.current.applicationContext as App).container
     val scope = rememberCoroutineScope()
     var tools by remember { mutableStateOf<ToolSettings?>(null) }
+    var saved by remember { mutableStateOf<ToolSettings?>(null) }
 
-    LaunchedEffect(Unit) { tools = container.settings.current().tools }
+    LaunchedEffect(Unit) { container.settings.current().tools.let { saved = it.trimmed(); tools = it } }
 
-    SettingsScaffold(stringResource(R.string.settings_tools), onBack) { padding ->
+    val save = tools?.let { current ->
+        val draft = current.trimmed()
+        SaveAction(isDirty = draft != saved, canSave = current.search.isComplete() && current.fetch.isComplete()) {
+            scope.launch {
+                container.settings.updateTools { persisted -> draft.copy(access = persisted.access) }
+                saved = draft
+                onBack()
+            }
+        }
+    }
+
+    SettingsScaffold(stringResource(R.string.settings_tools), onBack, save = save) { padding ->
         val current = tools ?: return@SettingsScaffold
         Column(
             modifier = Modifier
@@ -97,18 +108,6 @@ fun ToolSettingsScreen(onBack: () -> Unit) {
                     }
                 }
             }
-
-            Button(
-                onClick = {
-                    scope.launch {
-                        container.settings.updateTools { saved -> current.trimmed().copy(access = saved.access) }
-                        onBack()
-                    }
-                },
-                enabled = current.search.isComplete() && current.fetch.isComplete(),
-                shapes = ButtonDefaults.shapes(),
-                modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 24.dp),
-            ) { Text(stringResource(R.string.settings_save)) }
         }
     }
 }

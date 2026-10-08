@@ -20,7 +20,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
@@ -69,11 +68,13 @@ class McpServerEditorViewModel(
     private val toolbox: McpToolbox,
     private val signIn: McpSignIn,
 ) : ViewModel() {
-    private val _form = MutableStateFlow<McpServerForm?>(null)
+    private val draft = FormDraft<McpServerForm>(viewModelScope)
     private val _probe = MutableStateFlow<McpProbeState>(McpProbeState.Idle)
     private var probeJob: Job? = null
 
-    val form: StateFlow<McpServerForm?> = _form.asStateFlow()
+    val form: StateFlow<McpServerForm?> = draft.value
+
+    val isDirty: StateFlow<Boolean> = draft.isDirty
 
     val probe: StateFlow<McpProbeState> = _probe.asStateFlow()
 
@@ -82,25 +83,28 @@ class McpServerEditorViewModel(
     init {
         viewModelScope.launch {
             val existing = settings.current().tools.mcpServers.firstOrNull { it.id == serverId }
-            _form.value = existing?.let {
-                McpServerForm(it.id, isNew = false, name = it.name, url = it.url, apiKey = it.apiKey, headers = it.headers, enabled = it.enabled, oauth = it.oauth)
-            } ?: McpServerForm(id = settings.newProviderId(), isNew = true)
-            settings.settings.map { current -> current.tools.mcpServers.firstOrNull { it.id == _form.value?.id }?.oauth }
+            draft.load(
+                existing?.let {
+                    McpServerForm(it.id, isNew = false, name = it.name, url = it.url, apiKey = it.apiKey, headers = it.headers, enabled = it.enabled, oauth = it.oauth)
+                } ?: McpServerForm(id = settings.newProviderId(), isNew = true),
+            )
+            settings.settings.map { current -> current.tools.mcpServers.firstOrNull { it.id == draft.current?.id }?.oauth }
                 .distinctUntilChanged()
                 .collect { session ->
-                    val signedInNow = session != null && _form.value?.oauth == null
-                    _form.update { it?.copy(oauth = session) }
+                    val signedInNow = session != null && draft.current?.oauth == null
+                    draft.applyPersisted { it.copy(oauth = session) }
                     if (signedInNow) test()
                 }
         }
     }
 
     fun signIn(openBrowser: (String) -> Unit) {
-        val form = _form.value?.takeIf { it.canSave } ?: return
+        val form = draft.current?.takeIf { it.canSave } ?: return
         val resourceMetadata = (_probe.value as? McpProbeState.NeedsSignIn)?.resourceMetadataUrl
         viewModelScope.launch {
             persist(form.toServer())
-            _form.update { it?.copy(isNew = false) }
+            draft.edit { it.copy(isNew = false) }
+            draft.markSaved()
             try {
                 openBrowser(signIn.begin(form.toServer(), resourceMetadata))
             } catch (e: IOException) {
@@ -110,19 +114,23 @@ class McpServerEditorViewModel(
     }
 
     fun signOut() {
-        val form = _form.value ?: return
-        _form.update { it?.copy(oauth = null) }
-        if (!form.isNew) viewModelScope.launch { persist(form.toServer().copy(oauth = null)) }
+        val form = draft.current ?: return
+        if (form.isNew) {
+            draft.edit { it.copy(oauth = null) }
+        } else {
+            draft.applyPersisted { it.copy(oauth = null) }
+            viewModelScope.launch { persist(form.toServer().copy(oauth = null)) }
+        }
     }
 
     fun edit(transform: (McpServerForm) -> McpServerForm) {
-        _form.update { it?.let(transform) }
+        draft.edit(transform)
         probeJob?.cancel()
         _probe.value = McpProbeState.Idle
     }
 
     fun test() {
-        val server = _form.value?.takeIf { it.canSave }?.toServer() ?: return
+        val server = draft.current?.takeIf { it.canSave }?.toServer() ?: return
         probeJob?.cancel()
         _probe.value = McpProbeState.Running
         probeJob = viewModelScope.launch {
@@ -139,9 +147,10 @@ class McpServerEditorViewModel(
     }
 
     fun save(onSaved: () -> Unit) {
-        val server = _form.value?.takeIf { it.canSave }?.toServer() ?: return
+        val server = draft.current?.takeIf { it.canSave }?.toServer() ?: return
         viewModelScope.launch {
             persist(server)
+            draft.markSaved()
             onSaved()
         }
     }

@@ -18,6 +18,12 @@
     <string name="settings_network_summary_doh">DoH: %1$s</string>
     <string name="settings_network_summary_system">System DNS</string>
     <string name="settings_save">Save</string>
+    <string name="settings_saved">Saved</string>
+    <string name="unsaved_title">Leave without saving?</string>
+    <string name="unsaved_body">You have unsaved changes. If you leave now they will be lost.</string>
+    <string name="unsaved_body_invalid">You have unsaved changes, but some fields still need fixing before they can be saved.</string>
+    <string name="unsaved_discard">Discard</string>
+    <string name="unsaved_keep_editing">Keep editing</string>
     <string name="network_doh_title">Custom DNS (DoH)</string>
     <string name="network_doh_summary">All app requests are resolved via DNS-over-HTTPS. Helps when a service blocks access by region at the DNS level.</string>
     <string name="network_doh_server">DoH server</string>

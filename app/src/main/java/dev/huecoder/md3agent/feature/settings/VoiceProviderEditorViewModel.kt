@@ -13,7 +13,6 @@ import dev.huecoder.md3agent.ui.text.UiText
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
@@ -59,8 +58,10 @@ class VoiceProviderEditorViewModel(
     private val settings: SettingsRepository,
     private val catalog: ModelCatalogClient,
 ) : ViewModel() {
-    private val _form = MutableStateFlow<VoiceProviderForm?>(null)
-    val form: StateFlow<VoiceProviderForm?> = _form.asStateFlow()
+    private val draft = FormDraft<VoiceProviderForm>(viewModelScope)
+    val form: StateFlow<VoiceProviderForm?> = draft.value
+
+    val isDirty: StateFlow<Boolean> = draft.isDirty
 
     private val _chatProviders = MutableStateFlow<List<ProviderProfile>>(emptyList())
     val chatProviders: StateFlow<List<ProviderProfile>> = _chatProviders.asStateFlow()
@@ -73,7 +74,7 @@ class VoiceProviderEditorViewModel(
             val current = settings.current()
             _chatProviders.value = current.providers
             val existing = current.voice.providers.firstOrNull { it.id == providerId }
-            _form.value = existing?.let {
+            draft.load(existing?.let {
                 VoiceProviderForm(
                     id = it.id,
                     isNew = false,
@@ -85,14 +86,14 @@ class VoiceProviderEditorViewModel(
                     speechModel = it.speechModel,
                     speechVoice = it.speechVoice,
                 )
-            } ?: VoiceProviderForm(id = settings.newProviderId(), isNew = true)
+            } ?: VoiceProviderForm(id = settings.newProviderId(), isNew = true))
         }
     }
 
-    fun edit(transform: (VoiceProviderForm) -> VoiceProviderForm) = _form.update { it?.let(transform) }
+    fun edit(transform: (VoiceProviderForm) -> VoiceProviderForm) = draft.edit(transform)
 
     fun fetchModels() {
-        val current = _form.value ?: return
+        val current = draft.current ?: return
         _modelFetch.value = ModelFetchState.Loading
         viewModelScope.launch {
             _modelFetch.value = try {
@@ -106,7 +107,7 @@ class VoiceProviderEditorViewModel(
     }
 
     fun save(onSaved: () -> Unit) {
-        val current = _form.value?.takeIf { it.canSave } ?: return
+        val current = draft.current?.takeIf { it.canSave } ?: return
         val provider = current.toProvider()
         viewModelScope.launch {
             settings.updateVoice { voice ->
@@ -114,6 +115,7 @@ class VoiceProviderEditorViewModel(
                 val providers = if (exists) voice.providers.map { if (it.id == provider.id) provider else it } else voice.providers + provider
                 voice.copy(providers = providers)
             }
+            draft.markSaved()
             onSaved()
         }
     }

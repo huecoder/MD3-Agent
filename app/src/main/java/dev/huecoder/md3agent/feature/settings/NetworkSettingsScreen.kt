@@ -5,8 +5,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,6 +24,7 @@ import dev.huecoder.md3agent.data.settings.NetworkSettings
 import dev.huecoder.md3agent.net.DohUrl
 import dev.huecoder.md3agent.ui.components.LabeledSwitch
 import dev.huecoder.md3agent.ui.components.FormField
+import dev.huecoder.md3agent.ui.components.SaveAction
 import dev.huecoder.md3agent.ui.components.SettingsScaffold
 import kotlinx.coroutines.launch
 
@@ -34,10 +33,22 @@ fun NetworkSettingsScreen(onBack: () -> Unit) {
     val container = (LocalContext.current.applicationContext as App).container
     val scope = rememberCoroutineScope()
     var network by remember { mutableStateOf<NetworkSettings?>(null) }
+    var saved by remember { mutableStateOf<NetworkSettings?>(null) }
 
-    LaunchedEffect(Unit) { network = container.settings.current().network }
+    LaunchedEffect(Unit) { container.settings.current().network.let { saved = it; network = it } }
 
-    SettingsScaffold(stringResource(R.string.settings_network), onBack) { padding ->
+    val save = network?.let { current ->
+        val draft = current.copy(dohUrl = current.dohUrl.trim())
+        SaveAction(isDirty = draft != saved, canSave = !current.dohEnabled || DohUrl.parse(current.dohUrl) != null) {
+            scope.launch {
+                container.settings.updateNetwork(draft)
+                saved = draft
+                onBack()
+            }
+        }
+    }
+
+    SettingsScaffold(stringResource(R.string.settings_network), onBack, save = save) { padding ->
         val current = network ?: return@SettingsScaffold
         val resolvedUrl = DohUrl.parse(current.dohUrl)
         val urlError = current.dohEnabled && current.dohUrl.isNotBlank() && resolvedUrl == null
@@ -70,17 +81,6 @@ fun NetworkSettingsScreen(onBack: () -> Unit) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Button(
-                onClick = {
-                    scope.launch {
-                        container.settings.updateNetwork(current.copy(dohUrl = current.dohUrl.trim()))
-                        onBack()
-                    }
-                },
-                enabled = !urlError && !(current.dohEnabled && resolvedUrl == null),
-                shapes = ButtonDefaults.shapes(),
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-            ) { Text(stringResource(R.string.settings_save)) }
         }
     }
 }

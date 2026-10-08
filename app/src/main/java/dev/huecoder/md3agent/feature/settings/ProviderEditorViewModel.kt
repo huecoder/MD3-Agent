@@ -13,7 +13,6 @@ import dev.huecoder.md3agent.ui.text.UiText
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
@@ -56,8 +55,10 @@ class ProviderEditorViewModel(
     private val settings: SettingsRepository,
     private val catalog: ModelCatalog,
 ) : ViewModel() {
-    private val _form = MutableStateFlow<ProviderForm?>(null)
-    val form: StateFlow<ProviderForm?> = _form.asStateFlow()
+    private val draft = FormDraft<ProviderForm>(viewModelScope)
+    val form: StateFlow<ProviderForm?> = draft.value
+
+    val isDirty: StateFlow<Boolean> = draft.isDirty
 
     private val _modelFetch = MutableStateFlow<ModelFetchState>(ModelFetchState.Idle)
     val modelFetch: StateFlow<ModelFetchState> = _modelFetch.asStateFlow()
@@ -66,7 +67,7 @@ class ProviderEditorViewModel(
         viewModelScope.launch {
             val current = settings.current()
             val existing = current.provider(providerId)
-            _form.value = if (existing == null) {
+            draft.load(if (existing == null) {
                 ProviderForm(id = settings.newProviderId(), isNew = true)
             } else {
                 ProviderForm(
@@ -80,14 +81,14 @@ class ProviderEditorViewModel(
                     defaultModel = existing.defaultModel,
                     makeActive = current.activeSelection?.providerId == existing.id,
                 )
-            }
+            })
         }
     }
 
-    fun edit(transform: (ProviderForm) -> ProviderForm) = _form.update { it?.let(transform) }
+    fun edit(transform: (ProviderForm) -> ProviderForm) = draft.edit(transform)
 
     fun fetchModels() {
-        val current = _form.value ?: return
+        val current = draft.current ?: return
         _modelFetch.value = ModelFetchState.Loading
         viewModelScope.launch {
             _modelFetch.value = try {
@@ -101,11 +102,12 @@ class ProviderEditorViewModel(
     }
 
     fun save(onSaved: () -> Unit) {
-        val current = _form.value?.takeIf { it.canSave } ?: return
+        val current = draft.current?.takeIf { it.canSave } ?: return
         viewModelScope.launch {
             val profile = current.toProfile()
             settings.upsertProvider(profile)
             if (current.makeActive) settings.setActiveSelection(ModelSelection(profile.id, profile.defaultModel))
+            draft.markSaved()
             onSaved()
         }
     }
