@@ -28,6 +28,7 @@ import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import dev.huecoder.md3agent.App
 import dev.huecoder.md3agent.MainActivity
 import dev.huecoder.md3agent.ui.avatar.ProvideAgentLook
+import dev.huecoder.md3agent.ui.haptics.ProvideHaptics
 import dev.huecoder.md3agent.ui.theme.AssistantTheme
 
 class AssistantSession(context: Context) :
@@ -70,11 +71,13 @@ class AssistantSession(context: Context) :
             setContent {
                 AssistantTheme {
                     ProvideAgentLook {
-                        AssistantOverlay(
-                            activation = activation.intValue,
-                            onDismiss = ::hide,
-                            onOpenInApp = ::openInApp,
-                        )
+                        ProvideHaptics {
+                            AssistantOverlay(
+                                activation = activation.intValue,
+                                onDismiss = ::hide,
+                                onOpenInApp = ::openInApp,
+                            )
+                        }
                     }
                 }
             }

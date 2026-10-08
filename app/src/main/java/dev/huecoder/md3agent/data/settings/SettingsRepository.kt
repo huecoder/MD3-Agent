@@ -72,6 +72,11 @@ class SettingsRepository(context: Context, private val cipher: SecretCipher) {
         prefs[Keys.CHAT] = json.encodeToString(ChatSettings.serializer(), transform(current))
     }
 
+    suspend fun updateInterface(transform: (InterfaceSettings) -> InterfaceSettings) = store.edit { prefs ->
+        val current = decodeOrDefault(prefs[Keys.INTERFACE], InterfaceSettings.serializer(), InterfaceSettings())
+        prefs[Keys.INTERFACE] = json.encodeToString(InterfaceSettings.serializer(), transform(current))
+    }
+
     suspend fun updateVoice(transform: (VoiceSettings) -> VoiceSettings) = store.edit { prefs ->
         val updated = transform(decodeVoice(prefs))
         prefs[Keys.VOICE_ENCRYPTED] = cipher.encrypt(json.encodeToString(VoiceSettings.serializer(), updated))
@@ -104,6 +109,7 @@ class SettingsRepository(context: Context, private val cipher: SecretCipher) {
             tools = decodeTools(prefs[Keys.TOOLS_ENCRYPTED]),
             chat = decodeOrDefault(prefs[Keys.CHAT], ChatSettings.serializer(), ChatSettings()),
             voice = decodeVoice(prefs, providers, activeProvider),
+            ui = decodeOrDefault(prefs[Keys.INTERFACE], InterfaceSettings.serializer(), InterfaceSettings()),
         )
     }
 
@@ -173,6 +179,7 @@ class SettingsRepository(context: Context, private val cipher: SecretCipher) {
         val NETWORK = stringPreferencesKey("network")
         val TOOLS_ENCRYPTED = stringPreferencesKey("tools_encrypted")
         val CHAT = stringPreferencesKey("chat")
+        val INTERFACE = stringPreferencesKey("interface")
         val LEGACY_SPEECH = stringPreferencesKey("speech")
         val VOICE_ENCRYPTED = stringPreferencesKey("voice_encrypted")
     }

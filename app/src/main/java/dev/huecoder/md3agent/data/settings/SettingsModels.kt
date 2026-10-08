@@ -68,6 +68,7 @@ data class AppSettings(
     val tools: ToolSettings,
     val chat: ChatSettings,
     val voice: VoiceSettings,
+    val ui: InterfaceSettings,
 ) {
     fun provider(id: String?): ProviderProfile? = providers.firstOrNull { it.id == id }
 }
