@@ -23,9 +23,21 @@ import androidx.compose.ui.unit.dp
 import androidx.graphics.shapes.Morph
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.roundedfilled.Auto_awesome
+import dev.huecoder.md3assistant.data.settings.AvatarStyle
+import dev.huecoder.md3assistant.ui.avatar.BotAvatar
+import dev.huecoder.md3assistant.ui.avatar.LocalAgentLook
 
 @Composable
 fun AgentAvatar(isWorking: Boolean, modifier: Modifier = Modifier, size: Dp = 32.dp) {
+    val look = LocalAgentLook.current
+    when (look.style) {
+        AvatarStyle.BOT -> BotAvatar(isWorking, look.restShape, size, modifier)
+        AvatarStyle.CLASSIC -> ClassicAvatar(isWorking, modifier, size)
+    }
+}
+
+@Composable
+fun ClassicAvatar(isWorking: Boolean, modifier: Modifier = Modifier, size: Dp = 32.dp) {
     val morph = remember { Morph(BadgePolygon, MaterialShapes.SoftBurst) }
     val transition = rememberInfiniteTransition(label = "avatar")
     val breath by transition.animateFloat(

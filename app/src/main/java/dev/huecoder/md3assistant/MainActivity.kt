@@ -7,6 +7,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.huecoder.md3assistant.ui.avatar.ProvideAgentLook
 import dev.huecoder.md3assistant.ui.navigation.AppNavHost
 import dev.huecoder.md3assistant.ui.theme.AssistantTheme
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,7 +23,9 @@ class MainActivity : ComponentActivity() {
         setContent {
             val chatToOpen by pendingChatId.collectAsStateWithLifecycle()
             AssistantTheme {
-                AppNavHost(chatToOpen = chatToOpen, onChatOpened = { pendingChatId.value = null })
+                ProvideAgentLook {
+                    AppNavHost(chatToOpen = chatToOpen, onChatOpened = { pendingChatId.value = null })
+                }
             }
         }
     }

@@ -33,6 +33,9 @@ import androidx.compose.ui.unit.dp
 import dev.huecoder.md3assistant.App
 import dev.huecoder.md3assistant.R
 import dev.huecoder.md3assistant.data.settings.AgentProfile
+import dev.huecoder.md3assistant.data.settings.AvatarRestShape
+import dev.huecoder.md3assistant.data.settings.AvatarStyle
+import dev.huecoder.md3assistant.ui.components.SectionHeader
 import dev.huecoder.md3assistant.ui.components.FormField
 import dev.huecoder.md3assistant.ui.components.SettingsScaffold
 import kotlinx.coroutines.launch
@@ -44,11 +47,15 @@ fun AgentSettingsScreen(onBack: () -> Unit) {
     var name by remember { mutableStateOf<String?>(null) }
     var prompt by remember { mutableStateOf(TextFieldValue()) }
     var preview by remember { mutableStateOf<String?>(null) }
+    var avatar by remember { mutableStateOf(AvatarStyle.CLASSIC) }
+    var restShape by remember { mutableStateOf(AvatarRestShape.CIRCLE) }
 
     LaunchedEffect(Unit) {
         val agent = container.settings.current().agent
         name = agent.name
         prompt = TextFieldValue(agent.systemPromptTemplate)
+        avatar = agent.avatar
+        restShape = agent.restShape
     }
 
     SettingsScaffold(stringResource(R.string.settings_agent), onBack) { padding ->
@@ -68,6 +75,9 @@ fun AgentSettingsScreen(onBack: () -> Unit) {
                 label = stringResource(R.string.agent_name),
                 modifier = Modifier.fillMaxWidth(),
             )
+            SectionHeader(stringResource(R.string.agent_avatar))
+            AvatarPicker(avatar, restShape, onStyle = { avatar = it }, onRestShape = { restShape = it })
+            SectionHeader(stringResource(R.string.agent_system_prompt))
             OutlinedTextField(
                 value = prompt,
                 onValueChange = { prompt = it },
@@ -94,7 +104,9 @@ fun AgentSettingsScreen(onBack: () -> Unit) {
             Button(
                 onClick = {
                     scope.launch {
-                        container.settings.updateAgent(AgentProfile(currentName.trim().ifEmpty { AgentProfile.DEFAULT_AGENT_NAME }, prompt.text))
+                        container.settings.updateAgent(
+                            AgentProfile(currentName.trim().ifEmpty { AgentProfile.DEFAULT_AGENT_NAME }, prompt.text, avatar, restShape),
+                        )
                         onBack()
                     }
                 },

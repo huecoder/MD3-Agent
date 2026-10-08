@@ -18,9 +18,17 @@ data class ProviderProfile(
 data class HeaderEntry(val name: String, val value: String)
 
 @Serializable
+enum class AvatarStyle { CLASSIC, BOT }
+
+@Serializable
+enum class AvatarRestShape { CIRCLE, HEXAGON }
+
+@Serializable
 data class AgentProfile(
     val name: String = DEFAULT_AGENT_NAME,
     val systemPromptTemplate: String = DEFAULT_SYSTEM_PROMPT,
+    val avatar: AvatarStyle = AvatarStyle.CLASSIC,
+    val restShape: AvatarRestShape = AvatarRestShape.CIRCLE,
 ) {
     companion object {
         const val DEFAULT_AGENT_NAME = "Assistant"

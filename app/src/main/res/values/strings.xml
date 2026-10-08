@@ -378,4 +378,10 @@
     <string name="mcp_sign_in_needed">This server asks you to sign in</string>
     <string name="mcp_sign_in">Sign in</string>
     <string name="mcp_sign_out">Sign out</string>
+    <string name="agent_avatar">Avatar</string>
+    <string name="agent_avatar_classic">Classic</string>
+    <string name="agent_avatar_bot">GrokBot</string>
+    <string name="agent_avatar_rest_shape">Shape when idle</string>
+    <string name="agent_avatar_rest_circle">Circle</string>
+    <string name="agent_avatar_rest_hexagon">Hexagon</string>
 </resources>

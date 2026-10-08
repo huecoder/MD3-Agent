@@ -27,6 +27,7 @@ import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import dev.huecoder.md3assistant.App
 import dev.huecoder.md3assistant.MainActivity
+import dev.huecoder.md3assistant.ui.avatar.ProvideAgentLook
 import dev.huecoder.md3assistant.ui.theme.AssistantTheme
 
 class AssistantSession(context: Context) :
@@ -68,11 +69,13 @@ class AssistantSession(context: Context) :
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnLifecycleDestroyed(this@AssistantSession))
             setContent {
                 AssistantTheme {
-                    AssistantOverlay(
-                        activation = activation.intValue,
-                        onDismiss = ::hide,
-                        onOpenInApp = ::openInApp,
-                    )
+                    ProvideAgentLook {
+                        AssistantOverlay(
+                            activation = activation.intValue,
+                            onDismiss = ::hide,
+                            onOpenInApp = ::openInApp,
+                        )
+                    }
                 }
             }
         }

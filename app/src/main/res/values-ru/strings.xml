@@ -378,4 +378,10 @@
     <string name="mcp_sign_in_needed">Сервер просит войти в аккаунт</string>
     <string name="mcp_sign_in">Войти</string>
     <string name="mcp_sign_out">Выйти</string>
+    <string name="agent_avatar">Аватар</string>
+    <string name="agent_avatar_classic">Классика</string>
+    <string name="agent_avatar_bot">GrokBot</string>
+    <string name="agent_avatar_rest_shape">Форма в покое</string>
+    <string name="agent_avatar_rest_circle">Круг</string>
+    <string name="agent_avatar_rest_hexagon">Шестиугольник</string>
 </resources>
