@@ -17,6 +17,9 @@ import dev.huecoder.md3assistant.data.settings.SecretCipher
 import dev.huecoder.md3assistant.data.settings.SettingsRepository
 import dev.huecoder.md3assistant.llm.ChatCompletionClient
 import dev.huecoder.md3assistant.mcp.McpToolbox
+import dev.huecoder.md3assistant.mcp.auth.McpOAuth
+import dev.huecoder.md3assistant.mcp.auth.McpSignIn
+import dev.huecoder.md3assistant.data.settings.McpOAuthSession
 import dev.huecoder.md3assistant.llm.ModelCatalogClient
 import dev.huecoder.md3assistant.llm.TranscriptionClient
 import dev.huecoder.md3assistant.net.HttpClientProvider
@@ -79,8 +82,10 @@ class AppContainer(context: Context) {
 
     val python = PythonRuntime(appContext)
 
-    val mcp = McpToolbox(httpClients, attachments, applicationScope)
     val prompts = UserPrompts()
+    private val mcpOAuth = McpOAuth(httpClients::current)
+    val mcpSignIn = McpSignIn(mcpOAuth, settings)
+    val mcp = McpToolbox(httpClients, attachments, prompts, mcpOAuth, ::saveMcpSession, applicationScope)
 
     val tools = ToolRegistry(
         listOf(
@@ -100,6 +105,10 @@ class AppContainer(context: Context) {
         ),
         sources = listOf(mcp),
     )
+
+    private suspend fun saveMcpSession(serverId: String, session: McpOAuthSession) = settings.updateTools { tools ->
+        tools.copy(mcpServers = tools.mcpServers.map { if (it.id == serverId) it.copy(oauth = session) else it })
+    }
 
     fun newVoiceRecorder() = VoiceRecorder(appContext)
 

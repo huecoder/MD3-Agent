@@ -24,8 +24,8 @@ sealed interface McpContent {
 
 data class McpCallResult(val content: List<McpContent>, val isError: Boolean)
 
-class McpClient(server: McpServer, client: () -> OkHttpClient) {
-    private val transport = McpTransport(server.url.trim(), server.requestHeaders(), client)
+class McpClient(server: McpServer, private val authorizer: McpAuthorizer?, client: () -> OkHttpClient) {
+    private val transport = McpTransport(server.url.trim(), server.requestHeaders(), authorizer, client)
     private val initLock = Mutex()
 
     @Volatile
@@ -47,17 +47,21 @@ class McpClient(server: McpServer, client: () -> OkHttpClient) {
         tools
     }
 
-    suspend fun callTool(name: String, arguments: JsonObject): McpCallResult = inSession {
-        val result = transport.request("tools/call", buildJsonObject {
-            put("name", name)
-            put("arguments", arguments)
-        })
+    suspend fun callTool(name: String, arguments: JsonObject, serverRequests: McpServerRequests = McpServerRequests.NONE): McpCallResult = inSession {
+        val result = transport.request(
+            "tools/call",
+            buildJsonObject {
+                put("name", name)
+                put("arguments", arguments)
+            },
+            serverRequests,
+        )
         parseResult(result)
     }
 
-    private suspend fun <T> inSession(block: suspend () -> T): T {
+    private suspend fun <T> inSession(block: suspend () -> T): T = withAuthRetry {
         ensureInitialized()
-        return try {
+        try {
             block()
         } catch (e: McpSessionExpiredException) {
             initLock.withLock {
@@ -69,11 +73,18 @@ class McpClient(server: McpServer, client: () -> OkHttpClient) {
         }
     }
 
+    private suspend fun <T> withAuthRetry(block: suspend () -> T): T = try {
+        block()
+    } catch (e: McpUnauthorizedException) {
+        if (authorizer?.refresh() != true) throw e
+        block()
+    }
+
     private suspend fun ensureInitialized() = initLock.withLock {
         if (initialized) return@withLock
         val result = transport.request("initialize", buildJsonObject {
             put("protocolVersion", PROTOCOL_VERSION)
-            putJsonObject("capabilities") {}
+            putJsonObject("capabilities") { putJsonObject("elicitation") {} }
             putJsonObject("clientInfo") {
                 put("name", CLIENT_NAME)
                 put("version", BuildConfig.VERSION_NAME)

@@ -10,6 +10,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.huecoder.md3assistant.ui.navigation.AppNavHost
 import dev.huecoder.md3assistant.ui.theme.AssistantTheme
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private val pendingChatId = MutableStateFlow<String?>(null)
@@ -33,6 +34,10 @@ class MainActivity : ComponentActivity() {
 
     private fun consume(intent: Intent?) {
         intent?.getStringExtra(EXTRA_CHAT_ID)?.let { pendingChatId.value = it }
+        val container = (application as App).container
+        intent?.data?.takeIf(container.mcpSignIn::isCallback)?.let { callback ->
+            container.applicationScope.launch { container.mcpSignIn.complete(callback) }
+        }
     }
 
     companion object {

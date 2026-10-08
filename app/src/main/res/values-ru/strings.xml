@@ -373,4 +373,9 @@
     <string name="tools_ask_user_summary">Показывает опрос с вариантами, когда ассистенту нужно твоё решение</string>
     <string name="tools_category_assistant">Диалог</string>
     <string name="form_header">%1$s просит данные</string>
+    <string name="mcp_signed_in">Вход выполнен</string>
+    <string name="mcp_sign_in_waiting">Заверши вход в браузере и вернись сюда</string>
+    <string name="mcp_sign_in_needed">Сервер просит войти в аккаунт</string>
+    <string name="mcp_sign_in">Войти</string>
+    <string name="mcp_sign_out">Выйти</string>
 </resources>

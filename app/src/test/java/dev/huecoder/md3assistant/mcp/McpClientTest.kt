@@ -1,5 +1,6 @@
 package dev.huecoder.md3assistant.mcp
 
+import dev.huecoder.md3assistant.conversation.PromptAnswer
 import dev.huecoder.md3assistant.data.settings.McpServer
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.buildJsonObject
@@ -23,7 +24,8 @@ class McpClientTest {
     @After
     fun tearDown() = server.close()
 
-    private fun client(apiKey: String = "") = McpClient(McpServer("id", "Test", server.url("/mcp").toString(), apiKey = apiKey)) { http }
+    private fun client(apiKey: String = "", authorizer: McpAuthorizer? = null) =
+        McpClient(McpServer("id", "Test", server.url("/mcp").toString(), apiKey = apiKey), authorizer) { http }
 
     private fun json(body: String, sessionId: String? = null) = server.enqueue(
         MockResponse.Builder().body(body).addHeader("Content-Type", "application/json")
@@ -96,5 +98,65 @@ class McpClientTest {
         json("""{"jsonrpc":"2.0","id":2,"error":{"code":-32602,"message":"Unknown tool"}}""")
 
         client().callTool("nope", buildJsonObject {})
+    }
+
+    @Test
+    fun `server requests inside the stream are answered before the result arrives`() = runTest {
+        initialized()
+        server.enqueue(
+            MockResponse.Builder().addHeader("Content-Type", "text/event-stream").body(
+                "data: {\"jsonrpc\":\"2.0\",\"id\":\"e1\",\"method\":\"elicitation/create\",\"params\":{\"message\":\"Key?\"," +
+                    "\"requestedSchema\":{\"type\":\"object\",\"properties\":{\"key\":{\"type\":\"string\"}},\"required\":[\"key\"]}}}\n\n" +
+                    "data: {\"jsonrpc\":\"2.0\",\"id\":2,\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"done\"}]}}\n\n",
+            ).build(),
+        )
+        accepted()
+
+        val result = client().callTool("search", buildJsonObject {}) { method, params ->
+            val form = McpElicitation.form("Test", params)
+            assertEquals(McpElicitation.METHOD, method)
+            McpElicitation.result(form, PromptAnswer.Submitted(mapOf("key" to "secret")))
+        }
+
+        assertEquals(listOf(McpContent.Text("done")), result.content)
+        repeat(3) { server.takeRequest() }
+        val reply = server.takeRequest().body!!.utf8()
+        assertTrue(reply.contains("\"id\":\"e1\""))
+        assertTrue(reply.contains("\"action\":\"accept\""))
+        assertTrue(reply.contains("\"key\":\"secret\""))
+    }
+
+    @Test
+    fun `an unauthorized reply refreshes the token once and retries`() = runTest {
+        var token = "old"
+        var refreshes = 0
+        val authorizer = object : McpAuthorizer {
+            override suspend fun authorization() = "Bearer $token"
+            override suspend fun refresh(): Boolean {
+                refreshes += 1
+                token = "new"
+                return true
+            }
+        }
+        server.enqueue(MockResponse.Builder().code(401).addHeader("WWW-Authenticate", "Bearer resource_metadata=\"https://x/meta\"").build())
+        json("""{"jsonrpc":"2.0","id":2,"result":{"protocolVersion":"2025-06-18"}}""", "s1")
+        accepted()
+        json("""{"jsonrpc":"2.0","id":3,"result":{"tools":[]}}""")
+
+        client(authorizer = authorizer).listTools()
+
+        assertEquals(1, refreshes)
+        assertEquals("Bearer old", server.takeRequest().headers["Authorization"])
+        assertEquals("Bearer new", server.takeRequest().headers["Authorization"])
+    }
+
+    @Test
+    fun `without a way to refresh the sign in request surfaces`() = runTest {
+        server.enqueue(MockResponse.Builder().code(401).addHeader("WWW-Authenticate", "Bearer resource_metadata=\"https://x/meta\"").build())
+
+        val error = runCatching { client().listTools() }.exceptionOrNull()
+
+        assertTrue(error is McpUnauthorizedException)
+        assertEquals("https://x/meta", (error as McpUnauthorizedException).resourceMetadataUrl)
     }
 }

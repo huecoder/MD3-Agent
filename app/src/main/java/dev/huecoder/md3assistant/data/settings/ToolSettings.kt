@@ -78,11 +78,24 @@ data class McpServer(
     val apiKey: String = "",
     val headers: List<HeaderEntry> = emptyList(),
     val enabled: Boolean = true,
+    val oauth: McpOAuthSession? = null,
 ) {
     fun requestHeaders(): List<HeaderEntry> =
         headers.filter { it.name.isNotBlank() } + listOfNotNull(apiKey.trim().takeIf { it.isNotEmpty() }?.let { HeaderEntry(AUTHORIZATION, "Bearer $it") })
+
+    fun withoutTokenValues(): McpServer = copy(oauth = oauth?.copy(accessToken = "", refreshToken = null, expiresAt = null))
 
     private companion object {
         const val AUTHORIZATION = "Authorization"
     }
 }
+
+@Serializable
+data class McpOAuthSession(
+    val clientId: String,
+    val clientSecret: String? = null,
+    val tokenEndpoint: String,
+    val accessToken: String,
+    val refreshToken: String? = null,
+    val expiresAt: Long? = null,
+)

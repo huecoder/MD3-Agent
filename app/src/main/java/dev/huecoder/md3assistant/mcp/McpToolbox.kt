@@ -2,7 +2,14 @@ package dev.huecoder.md3assistant.mcp
 
 import android.util.Log
 import dev.huecoder.md3assistant.data.attachments.AttachmentStore
+import dev.huecoder.md3assistant.conversation.UserPrompts
+import dev.huecoder.md3assistant.data.settings.McpOAuthSession
 import dev.huecoder.md3assistant.data.settings.McpServer
+import dev.huecoder.md3assistant.mcp.auth.McpOAuth
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import java.io.IOException
+import java.util.concurrent.ConcurrentHashMap
 import dev.huecoder.md3assistant.net.HttpClientProvider
 import dev.huecoder.md3assistant.tools.Tool
 import dev.huecoder.md3assistant.tools.ToolSource
@@ -23,13 +30,19 @@ sealed interface McpServerState {
     data class Ready(val tools: List<McpTool>) : McpServerState
 
     data class Failed(val message: String) : McpServerState
+
+    data class NeedsSignIn(val resourceMetadataUrl: String?) : McpServerState
 }
 
 class McpToolbox(
     private val httpClients: HttpClientProvider,
     private val attachments: AttachmentStore,
+    private val prompts: UserPrompts,
+    private val oauth: McpOAuth,
+    private val saveSession: suspend (serverId: String, session: McpOAuthSession) -> Unit,
     private val scope: CoroutineScope,
 ) : ToolSource {
+    private val sessions = ConcurrentHashMap<String, McpOAuthSession>()
     private val _states = MutableStateFlow<Map<String, McpServerState>>(emptyMap())
     private val loaded = mutableMapOf<String, McpServer>()
     private val jobs = mutableMapOf<String, Job>()
@@ -44,8 +57,9 @@ class McpToolbox(
     @Synchronized
     fun sync(servers: List<McpServer>) {
         val wanted = servers.filter { it.enabled && it.url.isNotBlank() }.associateBy { it.id }
+        wanted.values.forEach { server -> server.oauth?.let { sessions[server.id] = it } ?: sessions.remove(server.id) }
         (loaded.keys - wanted.keys).forEach(::forget)
-        wanted.values.filter { loaded[it.id] != it }.forEach(::load)
+        wanted.values.filter { loaded[it.id]?.withoutTokenValues() != it.withoutTokenValues() }.forEach(::load)
     }
 
     @Synchronized
@@ -57,7 +71,9 @@ class McpToolbox(
         withTimeoutOrNull(SETTLE_TIMEOUT_MS) { _states.first { states -> states.values.none { it is McpServerState.Loading } } }
     }
 
-    suspend fun probe(server: McpServer): List<McpRemoteTool> = McpClient(server, httpClients::current).listTools()
+    suspend fun probe(server: McpServer): List<McpRemoteTool> = McpClient(server, authorizerFor(server), httpClients::current).listTools()
+
+    private fun authorizerFor(server: McpServer): McpAuthorizer = SessionAuthorizer(server)
 
     private fun load(server: McpServer) {
         jobs.remove(server.id)?.cancel()
@@ -65,15 +81,42 @@ class McpToolbox(
         _states.update { it + (server.id to McpServerState.Loading) }
         jobs[server.id] = scope.launch {
             val state = try {
-                val client = McpClient(server, httpClients::current)
-                McpServerState.Ready(client.listTools().map { McpTool(server.name, it, client, attachments) })
+                val client = McpClient(server, authorizerFor(server), httpClients::current)
+                McpServerState.Ready(client.listTools().map { McpTool(server.name, it, client, attachments, prompts) })
             } catch (e: CancellationException) {
                 throw e
+            } catch (e: McpUnauthorizedException) {
+                McpServerState.NeedsSignIn(e.resourceMetadataUrl)
             } catch (e: Exception) {
                 Log.w(TAG, "MCP server ${server.name} failed to load", e)
                 McpServerState.Failed(e.message ?: e.javaClass.simpleName)
             }
             _states.update { if (it.containsKey(server.id)) it + (server.id to state) else it }
+        }
+    }
+
+    private inner class SessionAuthorizer(private val server: McpServer) : McpAuthorizer {
+        private val refreshLock = Mutex()
+
+        override suspend fun authorization(): String? {
+            val session = sessions[server.id] ?: server.oauth ?: return null
+            val expiresAt = session.expiresAt
+            if (expiresAt != null && System.currentTimeMillis() > expiresAt - EXPIRY_MARGIN_MS) refresh()
+            return (sessions[server.id] ?: session).accessToken.takeIf { it.isNotEmpty() }?.let { "Bearer $it" }
+        }
+
+        override suspend fun refresh(): Boolean = refreshLock.withLock {
+            val session = sessions[server.id] ?: server.oauth ?: return@withLock false
+            if (session.refreshToken == null) return@withLock false
+            try {
+                val renewed = oauth.refresh(session, server.url.trim())
+                sessions[server.id] = renewed
+                saveSession(server.id, renewed)
+                true
+            } catch (e: IOException) {
+                Log.w(TAG, "Token refresh for ${server.name} failed", e)
+                false
+            }
         }
     }
 
@@ -86,5 +129,6 @@ class McpToolbox(
     private companion object {
         const val TAG = "McpToolbox"
         const val SETTLE_TIMEOUT_MS = 15_000L
+        const val EXPIRY_MARGIN_MS = 60_000L
     }
 }

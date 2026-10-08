@@ -32,7 +32,15 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Delete
 import com.composables.icons.materialsymbols.rounded.Sync
+import android.content.Intent
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.net.toUri
+import com.composables.icons.materialsymbols.rounded.Key
+import com.composables.icons.materialsymbols.roundedfilled.Check_circle
 import dev.huecoder.md3assistant.R
+import dev.huecoder.md3assistant.mcp.auth.SignInStatus
 import dev.huecoder.md3assistant.ui.components.FormField
 import dev.huecoder.md3assistant.ui.components.LabeledSwitch
 import dev.huecoder.md3assistant.ui.components.SectionHeader
@@ -42,9 +50,11 @@ import dev.huecoder.md3assistant.ui.text.asString
 
 @Composable
 fun McpServerEditorScreen(serverId: String?, onDone: () -> Unit) {
-    val viewModel = appViewModel(key = "mcp-server-$serverId") { McpServerEditorViewModel(serverId, it.settings, it.mcp) }
+    val viewModel = appViewModel(key = "mcp-server-$serverId") { McpServerEditorViewModel(serverId, it.settings, it.mcp, it.mcpSignIn) }
     val form by viewModel.form.collectAsStateWithLifecycle()
     val probe by viewModel.probe.collectAsStateWithLifecycle()
+    val signInStatus by viewModel.signInStatus.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     SettingsScaffold(
         title = stringResource(if (form?.isNew == false) R.string.mcp_server_title else R.string.mcp_server_title_new),
@@ -106,6 +116,13 @@ fun McpServerEditorScreen(serverId: String?, onDone: () -> Unit) {
                 if (probe == McpProbeState.Running) LoadingIndicator(Modifier.size(PROBE_INDICATOR_SIZE))
             }
             ProbeResult(probe)
+            SignInSection(
+                isSignedIn = current.oauth != null,
+                needsSignIn = probe is McpProbeState.NeedsSignIn,
+                status = signInStatus.takeIf { it.serverIdOrNull() == current.id },
+                onSignIn = { viewModel.signIn { url -> context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri())) } },
+                onSignOut = viewModel::signOut,
+            )
 
             SectionHeader(stringResource(R.string.provider_section_headers))
             HeaderEditor(
@@ -133,8 +150,49 @@ private fun ProbeResult(probe: McpProbeState) {
             color = MaterialTheme.colorScheme.primary,
         )
         is McpProbeState.Failed -> Text(probe.message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
-        McpProbeState.Idle, McpProbeState.Running -> Unit
+        McpProbeState.Idle, McpProbeState.Running, is McpProbeState.NeedsSignIn -> Unit
     }
+}
+
+@Composable
+private fun SignInSection(isSignedIn: Boolean, needsSignIn: Boolean, status: SignInStatus?, onSignIn: () -> Unit, onSignOut: () -> Unit) {
+    if (!isSignedIn && !needsSignIn && status == null) return
+    Surface(shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surfaceContainer, modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Icon(
+                    if (isSignedIn) MaterialSymbols.RoundedFilled.Check_circle else MaterialSymbols.Rounded.Key,
+                    contentDescription = null,
+                    tint = if (isSignedIn) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary,
+                )
+                Text(
+                    stringResource(
+                        when {
+                            isSignedIn -> R.string.mcp_signed_in
+                            status is SignInStatus.InProgress -> R.string.mcp_sign_in_waiting
+                            else -> R.string.mcp_sign_in_needed
+                        },
+                    ),
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            (status as? SignInStatus.Failed)?.let {
+                Text(it.message, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+            }
+            if (isSignedIn) {
+                OutlinedButton(onClick = onSignOut, shapes = ButtonDefaults.shapes()) { Text(stringResource(R.string.mcp_sign_out)) }
+            } else {
+                Button(onClick = onSignIn, shapes = ButtonDefaults.shapes()) { Text(stringResource(R.string.mcp_sign_in)) }
+            }
+        }
+    }
+}
+
+private fun SignInStatus.serverIdOrNull(): String? = when (this) {
+    SignInStatus.Idle -> null
+    is SignInStatus.InProgress -> serverId
+    is SignInStatus.Failed -> serverId
 }
 
 private val PROBE_INDICATOR_SIZE = 32.dp

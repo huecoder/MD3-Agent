@@ -6,7 +6,9 @@ import dev.huecoder.md3assistant.data.attachments.AttachmentStore
 import dev.huecoder.md3assistant.data.settings.ToolPermission
 import dev.huecoder.md3assistant.data.settings.ToolSettings
 import dev.huecoder.md3assistant.llm.ToolSpec
-import dev.huecoder.md3assistant.tools.Tool
+import dev.huecoder.md3assistant.conversation.UserPrompts
+import dev.huecoder.md3assistant.tools.ContextualTool
+import dev.huecoder.md3assistant.tools.ToolContext
 import dev.huecoder.md3assistant.tools.ToolOutcome
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -16,7 +18,8 @@ class McpTool(
     val remote: McpRemoteTool,
     private val client: McpClient,
     private val attachments: AttachmentStore,
-) : Tool {
+    private val prompts: UserPrompts,
+) : ContextualTool {
     override val spec = ToolSpec(
         name = toolName(serverName, remote.name),
         description = remote.description.ifBlank { remote.title ?: remote.name } + " (MCP server $serverName)",
@@ -32,8 +35,12 @@ class McpTool(
     override fun promptNote(settings: ToolSettings): String? =
         client.instructions?.let { "Notes from the MCP server $serverName: ${it.take(MAX_INSTRUCTION_CHARS)}" }
 
-    override suspend fun execute(arguments: JsonObject, settings: ToolSettings): ToolOutcome {
-        val result = client.callTool(remote.name, arguments)
+    override suspend fun execute(arguments: JsonObject, settings: ToolSettings, context: ToolContext): ToolOutcome {
+        val result = client.callTool(remote.name, arguments) { method, params ->
+            if (method != McpElicitation.METHOD) return@callTool null
+            val form = McpElicitation.form(serverName, params)
+            McpElicitation.result(form, prompts.ask(context.chatId, form))
+        }
         val texts = result.content.filterIsInstance<McpContent.Text>().map { it.text }
         val images = result.content.filterIsInstance<McpContent.Image>().mapIndexedNotNull { index, image -> storeImage(index, image) }
         val text = texts.joinToString("\n\n").ifBlank { if (images.isEmpty()) "The tool returned nothing" else "The tool returned ${images.size} image(s), attached below" }

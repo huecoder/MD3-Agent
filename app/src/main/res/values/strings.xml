@@ -373,4 +373,9 @@
     <string name="tools_ask_user_summary">Shows a poll with choices when the assistant needs a decision</string>
     <string name="tools_category_assistant">Conversation</string>
     <string name="form_header">%1$s needs details</string>
+    <string name="mcp_signed_in">Signed in with your account</string>
+    <string name="mcp_sign_in_waiting">Finish signing in in the browser, then come back</string>
+    <string name="mcp_sign_in_needed">This server asks you to sign in</string>
+    <string name="mcp_sign_in">Sign in</string>
+    <string name="mcp_sign_out">Sign out</string>
 </resources>

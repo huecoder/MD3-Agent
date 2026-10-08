@@ -101,6 +101,7 @@ private fun ServerStatus(server: McpServer, state: McpServerState?) {
         !server.enabled -> stringResource(R.string.mcp_status_disabled) to false
         state is McpServerState.Ready -> pluralStringResource(R.plurals.mcp_server_found_tools, state.tools.size, state.tools.size) to false
         state is McpServerState.Failed -> state.message to true
+        state is McpServerState.NeedsSignIn -> stringResource(R.string.mcp_sign_in_needed) to true
         else -> stringResource(R.string.mcp_status_connecting) to false
     }
     Text(
