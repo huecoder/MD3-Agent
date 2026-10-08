@@ -1,5 +1,6 @@
 package dev.huecoder.md3assistant.assistant
 
+import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.AnchoredDraggableDefaults
@@ -23,8 +24,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -74,7 +77,9 @@ fun AssistantSheet(state: AssistantSheetState, onDismissed: () -> Unit, content:
     val statusBarTop = WindowInsets.statusBars.getTop(density)
     val surface = MaterialTheme.colorScheme.surfaceContainer
     val flingBehavior = AnchoredDraggableDefaults.flingBehavior(draggable, animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec())
-    val nestedScroll = remember(draggable) { SheetNestedScroll(draggable) }
+    val settleSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()
+    val flingThreshold = with(density) { FLING_THRESHOLD.toPx() }
+    val nestedScroll = remember(draggable, settleSpec, flingThreshold) { SheetNestedScroll(draggable, settleSpec, flingThreshold) }
     var hasOpened by remember(draggable) { mutableStateOf(false) }
 
     LaunchedEffect(draggable) {
@@ -142,13 +147,19 @@ fun AssistantSheet(state: AssistantSheetState, onDismissed: () -> Unit, content:
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = HANDLE_ALPHA)),
                 )
-                content()
+                CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
+                    content()
+                }
             }
         }
     }
 }
 
-private class SheetNestedScroll(private val state: AnchoredDraggableState<SheetValue>) : NestedScrollConnection {
+private class SheetNestedScroll(
+    private val state: AnchoredDraggableState<SheetValue>,
+    private val settleSpec: AnimationSpec<Float>,
+    private val flingThreshold: Float,
+) : NestedScrollConnection {
     override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
         if (available.y >= 0f || source != NestedScrollSource.UserInput) return Offset.Zero
         return Offset(0f, state.dispatchRawDelta(available.y))
@@ -162,13 +173,23 @@ private class SheetNestedScroll(private val state: AnchoredDraggableState<SheetV
     override suspend fun onPreFling(available: Velocity): Velocity {
         val isExpanding = available.y < 0f && state.offset > state.anchors.minPosition()
         if (!isExpanding) return Velocity.Zero
-        state.settle(available.y)
+        settle(available.y)
         return available
     }
 
     override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
-        state.settle(available.y)
+        settle(available.y)
         return available
+    }
+
+    private suspend fun settle(velocity: Float) {
+        val offset = state.offset.takeUnless { it.isNaN() } ?: return
+        val target = when {
+            velocity <= -flingThreshold -> state.anchors.closestAnchor(offset, searchUpwards = false)
+            velocity >= flingThreshold -> state.anchors.closestAnchor(offset, searchUpwards = true)
+            else -> state.anchors.closestAnchor(offset)
+        } ?: return
+        state.animateTo(target, settleSpec)
     }
 }
 
@@ -179,3 +200,4 @@ private val CORNER = 28.dp
 private val HANDLE_WIDTH = 32.dp
 private val HANDLE_HEIGHT = 4.dp
 private val HANDLE_PADDING = 10.dp
+private val FLING_THRESHOLD = 125.dp
