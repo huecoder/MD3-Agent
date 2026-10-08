@@ -3,6 +3,10 @@ package dev.huecoder.md3assistant.ui.components
 import androidx.annotation.StringRes
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.composables.icons.materialsymbols.MaterialSymbols
+import com.composables.icons.materialsymbols.rounded.Manage_search
+import com.composables.icons.materialsymbols.rounded.Bookmark_remove
+import com.composables.icons.materialsymbols.rounded.Edit_note
+import com.composables.icons.materialsymbols.rounded.Bookmark_add
 import com.composables.icons.materialsymbols.rounded.Bar_chart
 import com.composables.icons.materialsymbols.rounded.Build
 import com.composables.icons.materialsymbols.rounded.Code
@@ -29,6 +33,10 @@ import dev.huecoder.md3assistant.tools.files.ListFilesTool
 import dev.huecoder.md3assistant.tools.files.ReadFileTool
 import dev.huecoder.md3assistant.tools.files.SendFilesTool
 import dev.huecoder.md3assistant.tools.files.WriteFileTool
+import dev.huecoder.md3assistant.tools.memory.MemoryDeleteTool
+import dev.huecoder.md3assistant.tools.memory.MemorySaveTool
+import dev.huecoder.md3assistant.tools.memory.MemorySearchTool
+import dev.huecoder.md3assistant.tools.memory.MemoryUpdateTool
 import dev.huecoder.md3assistant.tools.system.RunCommandTool
 import dev.huecoder.md3assistant.tools.system.RunPythonTool
 import dev.huecoder.md3assistant.tools.weather.WeatherTool
@@ -38,6 +46,7 @@ import dev.huecoder.md3assistant.ui.text.UiText
 
 enum class ToolCategory(@StringRes val title: Int) {
     ASSISTANT(R.string.tools_category_assistant),
+    MEMORY(R.string.tools_category_memory),
     WEB(R.string.tools_category_web),
     SCREEN(R.string.tools_category_screen),
     FILES(R.string.tools_category_files),
@@ -51,6 +60,10 @@ data class ToolInfo(val icon: ImageVector, val title: UiText, val summary: UiTex
 object ToolCatalog {
     private val known = mapOf(
         AskUserTool.NAME to known(ToolCategory.ASSISTANT, MaterialSymbols.Rounded.Quiz, R.string.tools_ask_user_title, R.string.tools_ask_user_summary),
+        MemorySaveTool.NAME to known(ToolCategory.MEMORY, MaterialSymbols.Rounded.Bookmark_add, R.string.tools_memory_save_title, R.string.tools_memory_save_summary),
+        MemoryUpdateTool.NAME to known(ToolCategory.MEMORY, MaterialSymbols.Rounded.Edit_note, R.string.tools_memory_update_title, R.string.tools_memory_update_summary),
+        MemoryDeleteTool.NAME to known(ToolCategory.MEMORY, MaterialSymbols.Rounded.Bookmark_remove, R.string.tools_memory_delete_title, R.string.tools_memory_delete_summary),
+        MemorySearchTool.NAME to known(ToolCategory.MEMORY, MaterialSymbols.Rounded.Manage_search, R.string.tools_memory_search_title, R.string.tools_memory_search_summary),
         WebSearchTool.NAME to known(ToolCategory.WEB, MaterialSymbols.Rounded.Travel_explore, R.string.tools_web_search_title, R.string.tools_web_search_summary),
         ReadWebpageTool.NAME to known(ToolCategory.WEB, MaterialSymbols.Rounded.Language, R.string.tools_read_webpage_title, R.string.tools_read_webpage_summary),
         WeatherTool.NAME to known(ToolCategory.WEB, MaterialSymbols.Rounded.Partly_cloudy_day, R.string.tools_weather_title, R.string.tools_weather_summary),

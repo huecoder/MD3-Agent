@@ -15,6 +15,7 @@ data class ToolSettings(
     val fetch: FetchSettings = FetchSettings(),
     val access: AccessSettings = AccessSettings(),
     val mcpServers: List<McpServer> = emptyList(),
+    val memory: MemorySettings = MemorySettings(),
 ) {
     fun permission(toolName: String, default: ToolPermission): ToolPermission = permissions[toolName] ?: default
 
@@ -99,3 +100,32 @@ data class McpOAuthSession(
     val refreshToken: String? = null,
     val expiresAt: Long? = null,
 )
+
+@Serializable
+enum class EmbeddingKind { OFF, GEMINI, OPENAI }
+
+@Serializable
+data class MemorySettings(
+    val embeddingKind: EmbeddingKind = EmbeddingKind.OFF,
+    val embeddingBaseUrl: String = "",
+    val embeddingApiKey: String = "",
+    val embeddingModel: String = "",
+) {
+    val embeddingsReady: Boolean
+        get() = embeddingKind != EmbeddingKind.OFF && embeddingApiKey.isNotBlank() && model.isNotBlank() && baseUrl.isNotBlank()
+
+    val model: String
+        get() = embeddingModel.trim().ifEmpty { if (embeddingKind == EmbeddingKind.GEMINI) GEMINI_MODEL else "" }
+
+    val embeddingSignature: String
+        get() = "$embeddingKind:$model"
+
+    val baseUrl: String
+        get() = embeddingBaseUrl.trim().ifEmpty { if (embeddingKind == EmbeddingKind.GEMINI) GEMINI_BASE_URL else "" }
+
+    companion object {
+        const val GEMINI_MODEL = "gemini-embedding-2"
+        const val GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta"
+        const val GEMINI_KEY_URL = "https://aistudio.google.com/apikey"
+    }
+}

@@ -45,6 +45,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.concurrent.ConcurrentHashMap
+import dev.huecoder.md3assistant.data.memory.MemoryStore
 
 class ConversationRunner(
     private val chats: ChatRepository,
@@ -57,6 +58,7 @@ class ConversationRunner(
     private val prompts: UserPrompts,
     private val catalog: ModelCatalog,
     private val generatedImages: GeneratedImages,
+    private val memories: MemoryStore,
     private val scope: CoroutineScope,
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
@@ -190,7 +192,7 @@ class ConversationRunner(
         history.flatMap { Attachment.decode(it.attachmentsJson) }.forEach { attachment ->
             attachments.contentFor(attachment)?.let { contents[attachment.id] = it }
         }
-        return TurnAssembler.assemble(systemPrompt.render(current.agent, tools.promptNotes(current.tools)), history, contents)
+        return TurnAssembler.assemble(systemPrompt.render(current.agent, tools.promptNotes(current.tools), memories.instant()), history, contents)
     }
 
     private suspend fun resolveModel(chatId: String, current: AppSettings): ResolvedModel? {

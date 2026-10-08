@@ -68,3 +68,24 @@ interface MessageDao {
     @Query("UPDATE messages SET status = 'CANCELLED' WHERE status = 'STREAMING'")
     suspend fun markInterruptedStreams()
 }
+
+@Dao
+interface MemoryDao {
+    @Query("SELECT * FROM memories WHERE tier = :tier ORDER BY createdAt ASC")
+    fun observeTier(tier: MemoryTier): Flow<List<MemoryEntity>>
+
+    @Query("SELECT * FROM memories ORDER BY tier ASC, updatedAt DESC")
+    fun observeAll(): Flow<List<MemoryEntity>>
+
+    @Query("SELECT * FROM memories WHERE tier = :tier ORDER BY createdAt ASC")
+    suspend fun listTier(tier: MemoryTier): List<MemoryEntity>
+
+    @Query("SELECT * FROM memories WHERE id = :id")
+    suspend fun get(id: String): MemoryEntity?
+
+    @Upsert
+    suspend fun upsert(memory: MemoryEntity)
+
+    @Query("DELETE FROM memories WHERE id = :id")
+    suspend fun delete(id: String): Int
+}

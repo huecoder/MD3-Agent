@@ -1,5 +1,6 @@
 package dev.huecoder.md3assistant.prompt
 
+import dev.huecoder.md3assistant.data.db.MemoryEntity
 import dev.huecoder.md3assistant.data.settings.AgentProfile
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
@@ -11,13 +12,22 @@ class SystemPromptRenderer(
     private val now: () -> ZonedDateTime = ZonedDateTime::now,
     private val locale: () -> Locale = Locale::getDefault,
 ) {
-    fun render(agent: AgentProfile, accessNotes: List<String> = emptyList()): String {
+    fun render(agent: AgentProfile, accessNotes: List<String> = emptyList(), instantMemories: List<MemoryEntity> = emptyList()): String {
         val values = variables(agent)
         val prompt = PLACEHOLDER.replace(agent.systemPromptTemplate) { match ->
             values[match.groupValues[1]]?.invoke() ?: match.value
         }
-        if (accessNotes.isEmpty()) return prompt
-        return prompt + "\n\n" + ACCESS_HEADER + accessNotes.joinToString("") { "\n- $it" }
+        return buildString {
+            append(prompt)
+            if (instantMemories.isNotEmpty()) {
+                append("\n\n").append(MEMORY_HEADER)
+                instantMemories.forEach { append("\n- [").append(it.id).append("] ").append(it.title).append(": ").append(it.content) }
+            }
+            if (accessNotes.isNotEmpty()) {
+                append("\n\n").append(ACCESS_HEADER)
+                accessNotes.forEach { append("\n- ").append(it) }
+            }
+        }
     }
 
     fun contextNote(): String {
@@ -44,6 +54,7 @@ class SystemPromptRenderer(
     }
 
     private companion object {
+        const val MEMORY_HEADER = "Instant memory, what you know about the user (ids in brackets):"
         const val ACCESS_HEADER = "Device access available to you right now:"
         val PLACEHOLDER = Regex("""\{([a-z_]+)\}""")
         val TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm")

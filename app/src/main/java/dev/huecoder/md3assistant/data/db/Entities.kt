@@ -77,3 +77,17 @@ data class MessageEntity(
     val cachedTokens: Int? = null,
     val contextNote: String? = null,
 )
+
+enum class MemoryTier { INSTANT, LONG_TERM }
+
+@Entity(tableName = "memories", indices = [Index("tier")])
+data class MemoryEntity(
+    @PrimaryKey val id: String,
+    val tier: MemoryTier,
+    val title: String,
+    val content: String,
+    val createdAt: Long,
+    val updatedAt: Long,
+    val embedding: String? = null,
+    val embeddingModel: String? = null,
+)

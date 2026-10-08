@@ -384,4 +384,13 @@
     <string name="agent_avatar_rest_shape">Shape when idle</string>
     <string name="agent_avatar_rest_circle">Circle</string>
     <string name="agent_avatar_rest_hexagon">Hexagon</string>
+    <string name="tools_category_memory">Memory</string>
+    <string name="tools_memory_save_title">Remember facts</string>
+    <string name="tools_memory_save_summary">Saves preferences and facts about you to instant or long-term memory</string>
+    <string name="tools_memory_update_title">Edit memories</string>
+    <string name="tools_memory_update_summary">Rewrites a saved memory or moves it between instant and long-term</string>
+    <string name="tools_memory_delete_title">Forget memories</string>
+    <string name="tools_memory_delete_summary">Deletes memories that are wrong or outdated</string>
+    <string name="tools_memory_search_title">Search memory</string>
+    <string name="tools_memory_search_summary">Finds long-term memories by keywords, or by meaning when embeddings are set up</string>
 </resources>

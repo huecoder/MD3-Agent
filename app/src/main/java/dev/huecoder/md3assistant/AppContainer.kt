@@ -13,6 +13,12 @@ import dev.huecoder.md3assistant.conversation.ToolApprovals
 import dev.huecoder.md3assistant.data.attachments.AttachmentStore
 import dev.huecoder.md3assistant.data.chat.ChatRepository
 import dev.huecoder.md3assistant.data.db.AppDatabase
+import dev.huecoder.md3assistant.data.memory.MemoryStore
+import dev.huecoder.md3assistant.llm.EmbeddingClient
+import dev.huecoder.md3assistant.tools.memory.MemoryDeleteTool
+import dev.huecoder.md3assistant.tools.memory.MemorySaveTool
+import dev.huecoder.md3assistant.tools.memory.MemorySearchTool
+import dev.huecoder.md3assistant.tools.memory.MemoryUpdateTool
 import dev.huecoder.md3assistant.data.settings.SecretCipher
 import dev.huecoder.md3assistant.data.settings.SettingsRepository
 import dev.huecoder.md3assistant.llm.ChatCompletionClient
@@ -69,6 +75,7 @@ class AppContainer(context: Context) {
     private val database = AppDatabase.build(context)
     val attachments = AttachmentStore(context)
     val chats = ChatRepository(database.chatDao(), database.messageDao(), attachments)
+    val memories = MemoryStore(database.memoryDao(), EmbeddingClient(httpClients), settings.settings.map { it.tools.memory })
 
     val completions = ChatCompletionClient(httpClients)
     val modelCatalogClient = ModelCatalogClient(httpClients)
@@ -96,6 +103,10 @@ class AppContainer(context: Context) {
             ShowUiTool(),
             ShowChartTool(),
             AskUserTool(prompts),
+            MemorySaveTool(memories),
+            MemoryUpdateTool(memories),
+            MemoryDeleteTool(memories),
+            MemorySearchTool(memories),
             RunCommandTool(shellAccess),
             RunPythonTool(python, shellAccess.workspace),
             ListFilesTool(deviceFiles),
@@ -125,7 +136,7 @@ class AppContainer(context: Context) {
 
     val conversations = ConversationRunner(
         chats, settings, completions, systemPrompt, tools, attachments, approvals, prompts,
-        modelCatalog, GeneratedImages(attachments, httpClients), applicationScope,
+        modelCatalog, GeneratedImages(attachments, httpClients), memories, applicationScope,
     )
 
     init {

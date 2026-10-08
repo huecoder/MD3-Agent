@@ -384,4 +384,13 @@
     <string name="agent_avatar_rest_shape">Форма в покое</string>
     <string name="agent_avatar_rest_circle">Круг</string>
     <string name="agent_avatar_rest_hexagon">Шестиугольник</string>
+    <string name="tools_category_memory">Память</string>
+    <string name="tools_memory_save_title">Запоминать факты</string>
+    <string name="tools_memory_save_summary">Сохраняет предпочтения и факты о тебе в постоянную или долгую память</string>
+    <string name="tools_memory_update_title">Править память</string>
+    <string name="tools_memory_update_summary">Переписывает запись или переносит её между постоянной и долгой памятью</string>
+    <string name="tools_memory_delete_title">Забывать</string>
+    <string name="tools_memory_delete_summary">Удаляет неверные или устаревшие записи</string>
+    <string name="tools_memory_search_title">Поиск по памяти</string>
+    <string name="tools_memory_search_summary">Ищет в долгой памяти по словам, а с эмбеддингами и по смыслу</string>
 </resources>
