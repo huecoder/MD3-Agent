@@ -192,7 +192,7 @@ private fun chatSummary(settings: AppSettings): String =
 
 @Composable
 private fun voiceSummary(settings: AppSettings): String {
-    val provider = settings.voice.activeProvider?.name ?: stringResource(R.string.settings_voice_no_provider)
+    val provider = settings.voice.transcriptionProvider?.name ?: stringResource(R.string.settings_voice_no_provider)
     val speak = stringResource(
         when (settings.voice.speakReplies) {
             SpeakReplies.NEVER -> R.string.settings_voice_speak_never

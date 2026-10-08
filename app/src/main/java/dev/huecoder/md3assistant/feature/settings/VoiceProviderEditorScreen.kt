@@ -35,7 +35,6 @@ import com.composables.icons.materialsymbols.rounded.Delete
 import com.composables.icons.materialsymbols.rounded.Sync
 import dev.huecoder.md3assistant.R
 import dev.huecoder.md3assistant.ui.components.FormField
-import dev.huecoder.md3assistant.ui.components.LabeledSwitch
 import dev.huecoder.md3assistant.ui.components.SectionHeader
 import dev.huecoder.md3assistant.ui.components.SettingsScaffold
 import dev.huecoder.md3assistant.ui.components.appViewModel
@@ -139,12 +138,6 @@ fun VoiceProviderEditorScreen(providerId: String?, onDone: () -> Unit) {
             (fetch as? ModelFetchState.Failed)?.let {
                 Text(it.message.asString(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
             }
-            LabeledSwitch(
-                title = stringResource(R.string.voice_provider_make_active),
-                summary = stringResource(R.string.voice_provider_make_active_summary),
-                checked = current.makeActive,
-                onCheckedChange = { value -> viewModel.edit { it.copy(makeActive = value) } },
-            )
 
             SectionHeader(stringResource(R.string.provider_section_headers))
             HeaderEditor(

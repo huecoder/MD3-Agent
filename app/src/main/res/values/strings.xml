@@ -180,7 +180,11 @@
     <string name="voice_output_system">System</string>
     <string name="voice_output_provider">Provider</string>
     <string name="voice_settings_engine_hint_system">Uses the text-to-speech engine installed on the phone. Works offline.</string>
-    <string name="voice_settings_engine_hint_provider">Uses /audio/speech of the active voice provider.</string>
+    <string name="voice_settings_engine_hint_provider">Uses /audio/speech of the speech provider picked below.</string>
+    <string name="voice_settings_transcription_provider">Recognition provider</string>
+    <string name="voice_settings_speech_provider">Speech provider</string>
+    <string name="voice_provider_role_transcription">Recognition</string>
+    <string name="voice_provider_role_speech">Speech</string>
     <string name="voice_settings_engine_needs_provider">Add a voice provider first, until then the system engine is used.</string>
     <string name="voice_provider_title">Voice provider</string>
     <string name="voice_provider_title_new">New voice provider</string>
@@ -190,8 +194,6 @@
     <string name="voice_provider_speech_model">Speech model</string>
     <string name="voice_provider_speech_voice">Voice</string>
     <string name="voice_provider_speech_voice_hint">alloy, nova, shimmer and so on, depends on the provider.</string>
-    <string name="voice_provider_make_active">Use for voice</string>
-    <string name="voice_provider_make_active_summary">Dictation and reading replies go through this provider.</string>
     <string name="chat_thinking">Thinking…</string>
     <string name="chat_speak">Read aloud</string>
     <string name="chat_stop_speaking">Stop reading</string>

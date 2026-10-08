@@ -35,11 +35,15 @@ enum class InvokeInput { TEXT, VOICE }
 data class VoiceSettings(
     val providers: List<VoiceProvider> = emptyList(),
     val activeProviderId: String? = null,
+    val speechProviderId: String? = null,
     val language: String = "",
     val speakReplies: SpeakReplies = SpeakReplies.AFTER_VOICE_INPUT,
     val speechOutput: SpeechOutput = SpeechOutput.SYSTEM,
     val invokeInput: InvokeInput = InvokeInput.TEXT,
 ) {
-    val activeProvider: VoiceProvider?
+    val transcriptionProvider: VoiceProvider?
         get() = providers.firstOrNull { it.id == activeProviderId } ?: providers.firstOrNull()
+
+    val speechProvider: VoiceProvider?
+        get() = providers.firstOrNull { it.id == speechProviderId } ?: transcriptionProvider
 }

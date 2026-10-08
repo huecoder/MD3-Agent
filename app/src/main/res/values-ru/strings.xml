@@ -175,7 +175,11 @@
     <string name="voice_output_system">Системный</string>
     <string name="voice_output_provider">Провайдер</string>
     <string name="voice_settings_engine_hint_system">Использует движок синтеза речи на телефоне. Работает без интернета.</string>
-    <string name="voice_settings_engine_hint_provider">Использует /audio/speech активного голосового провайдера.</string>
+    <string name="voice_settings_engine_hint_provider">Использует /audio/speech провайдера озвучки, выбранного ниже.</string>
+    <string name="voice_settings_transcription_provider">Провайдер распознавания</string>
+    <string name="voice_settings_speech_provider">Провайдер озвучки</string>
+    <string name="voice_provider_role_transcription">Распознавание</string>
+    <string name="voice_provider_role_speech">Озвучка</string>
     <string name="voice_settings_engine_needs_provider">Сначала добавь голосовой провайдер, а пока будет системный движок.</string>
     <string name="voice_provider_title">Голосовой провайдер</string>
     <string name="voice_provider_title_new">Новый голосовой провайдер</string>
@@ -185,8 +189,6 @@
     <string name="voice_provider_speech_model">Модель озвучки</string>
     <string name="voice_provider_speech_voice">Голос</string>
     <string name="voice_provider_speech_voice_hint">alloy, nova, shimmer и т.д., зависит от провайдера.</string>
-    <string name="voice_provider_make_active">Использовать для голоса</string>
-    <string name="voice_provider_make_active_summary">Диктовка и озвучка ответов пойдут через этот провайдер.</string>
     <string name="chat_thinking">Думаю…</string>
     <string name="chat_speak">Прочитать вслух</string>
     <string name="chat_stop_speaking">Остановить озвучку</string>

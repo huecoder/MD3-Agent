@@ -79,7 +79,7 @@ class AppContainer(context: Context) {
     fun newVoiceRecorder() = VoiceRecorder(appContext)
 
     fun newSpeechSynthesizer(voice: VoiceSettings): SpeechSynthesizer {
-        val provider = voice.activeProvider
+        val provider = voice.speechProvider
         return if (voice.speechOutput == SpeechOutput.PROVIDER && provider != null) {
             ProviderSpeechSynthesizer(httpClients, provider, appContext.cacheDir)
         } else {

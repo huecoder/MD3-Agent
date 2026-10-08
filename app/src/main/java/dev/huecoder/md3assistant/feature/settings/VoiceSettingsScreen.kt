@@ -1,5 +1,6 @@
 package dev.huecoder.md3assistant.feature.settings
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -10,7 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedListItem
@@ -31,7 +31,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Add
 import com.composables.icons.materialsymbols.rounded.Graphic_eq
-import com.composables.icons.materialsymbols.roundedfilled.Check_circle
 import dev.huecoder.md3assistant.R
 import dev.huecoder.md3assistant.data.settings.InvokeInput
 import dev.huecoder.md3assistant.data.settings.SpeakReplies
@@ -64,6 +63,11 @@ fun VoiceSettingsScreen(onBack: () -> Unit, onEditProvider: (providerId: String?
             item { SectionHeader(stringResource(R.string.dictation_settings_section)) }
             item {
                 SettingsBlock {
+                    if (voice.providers.isNotEmpty()) {
+                        ProviderDropdown(R.string.voice_settings_transcription_provider, voice, voice.transcriptionProvider?.id) { id ->
+                            viewModel.updateVoice { it.copy(activeProviderId = id) }
+                        }
+                    }
                     LanguageField(voice.language) { language -> viewModel.updateVoice { it.copy(language = language) } }
                     ChoiceRow(
                         title = stringResource(R.string.voice_settings_invoke),
@@ -91,6 +95,11 @@ fun VoiceSettingsScreen(onBack: () -> Unit, onEditProvider: (providerId: String?
                         onSelect = { value -> viewModel.updateVoice { it.copy(speechOutput = value) } },
                         hint = stringResource(outputHint(voice)),
                     )
+                    if (voice.speechOutput == SpeechOutput.PROVIDER && voice.providers.isNotEmpty()) {
+                        ProviderDropdown(R.string.voice_settings_speech_provider, voice, voice.speechProvider?.id) { id ->
+                            viewModel.updateVoice { it.copy(speechProviderId = id) }
+                        }
+                    }
                 }
             }
         }
@@ -99,18 +108,20 @@ fun VoiceSettingsScreen(onBack: () -> Unit, onEditProvider: (providerId: String?
 
 private fun LazyListScope.voiceProviderItems(voice: VoiceSettings, onEditProvider: (String?) -> Unit) {
     val count = voice.providers.size + 1
-    val activeId = voice.activeProvider?.id
+    val transcriptionId = voice.transcriptionProvider?.id
+    val speechId = voice.speechProvider?.id.takeIf { voice.speechOutput == SpeechOutput.PROVIDER }
     itemsIndexed(voice.providers, key = { _, provider -> "voice-${provider.id}" }) { index, provider ->
         SegmentedListItem(
             onClick = { onEditProvider(provider.id) },
             shapes = ListItemDefaults.segmentedShapes(index, count),
             colors = groupedListColors(),
             leadingContent = { ShapeBadge(MaterialSymbols.Rounded.Graphic_eq) },
-            supportingContent = { Text(provider.baseUrl, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-            trailingContent = if (provider.id == activeId) {
-                { Icon(MaterialSymbols.RoundedFilled.Check_circle, contentDescription = stringResource(R.string.settings_provider_active), tint = MaterialTheme.colorScheme.primary) }
-            } else {
-                null
+            supportingContent = {
+                val roles = listOfNotNull(
+                    stringResource(R.string.voice_provider_role_transcription).takeIf { provider.id == transcriptionId },
+                    stringResource(R.string.voice_provider_role_speech).takeIf { provider.id == speechId },
+                )
+                Text(roles.joinToString(" · ").ifEmpty { provider.baseUrl }, maxLines = 1, overflow = TextOverflow.Ellipsis)
             },
         ) { Text(provider.name, style = MaterialTheme.typography.titleMediumEmphasized) }
     }
@@ -164,9 +175,20 @@ private fun LanguageField(saved: String, onCommit: (String) -> Unit) {
     )
 }
 
+@Composable
+private fun ProviderDropdown(@StringRes label: Int, voice: VoiceSettings, selectedId: String?, onSelect: (String) -> Unit) {
+    OptionDropdown(
+        label = stringResource(label),
+        options = voice.providers.map { DropdownOption(it.id, it.name) },
+        selected = selectedId,
+        onSelect = onSelect,
+        modifier = Modifier.fillMaxWidth(),
+    )
+}
+
 private fun outputHint(voice: VoiceSettings): Int = when {
     voice.speechOutput == SpeechOutput.SYSTEM -> R.string.voice_settings_engine_hint_system
-    voice.activeProvider == null -> R.string.voice_settings_engine_needs_provider
+    voice.speechProvider == null -> R.string.voice_settings_engine_needs_provider
     else -> R.string.voice_settings_engine_hint_provider
 }
 

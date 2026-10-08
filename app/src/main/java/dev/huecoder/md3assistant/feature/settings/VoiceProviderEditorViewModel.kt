@@ -27,7 +27,6 @@ data class VoiceProviderForm(
     val transcriptionModel: String = VoiceProvider.DEFAULT_TRANSCRIPTION_MODEL,
     val speechModel: String = VoiceProvider.DEFAULT_SPEECH_MODEL,
     val speechVoice: String = VoiceProvider.DEFAULT_SPEECH_VOICE,
-    val makeActive: Boolean = true,
     val models: List<String> = emptyList(),
 ) {
     val baseUrlError: UiText?
@@ -85,7 +84,6 @@ class VoiceProviderEditorViewModel(
                     transcriptionModel = it.transcriptionModel,
                     speechModel = it.speechModel,
                     speechVoice = it.speechVoice,
-                    makeActive = current.voice.activeProvider?.id == it.id,
                 )
             } ?: VoiceProviderForm(id = settings.newProviderId(), isNew = true)
         }
@@ -114,12 +112,7 @@ class VoiceProviderEditorViewModel(
             settings.updateVoice { voice ->
                 val exists = voice.providers.any { it.id == provider.id }
                 val providers = if (exists) voice.providers.map { if (it.id == provider.id) provider else it } else voice.providers + provider
-                val activeId = when {
-                    current.makeActive -> provider.id
-                    voice.activeProviderId == provider.id -> null
-                    else -> voice.activeProviderId
-                }
-                voice.copy(providers = providers, activeProviderId = activeId)
+                voice.copy(providers = providers)
             }
             onSaved()
         }
@@ -132,6 +125,7 @@ class VoiceProviderEditorViewModel(
                 voice.copy(
                     providers = voice.providers.filterNot { it.id == id },
                     activeProviderId = voice.activeProviderId.takeUnless { it == id },
+                    speechProviderId = voice.speechProviderId.takeUnless { it == id },
                 )
             }
             onDeleted()
