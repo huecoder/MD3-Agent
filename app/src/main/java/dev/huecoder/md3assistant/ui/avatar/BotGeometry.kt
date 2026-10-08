@@ -31,7 +31,6 @@ object BotGeometry {
     private const val EYE_RADIUS = 0.155f
     private const val EYE_SPREAD = 0.36f
     private const val EYE_LIFT = 0.16f
-    private const val TILT_RADIANS = 0.18f
     private const val CLOSED_EYE = 0.14f
     private const val MAX_WOBBLE = 0.1f
     private const val BLINK_STRETCH = 0.25f
@@ -59,8 +58,8 @@ object BotGeometry {
         val halfLength = EYE_HALF_LENGTH * (1f - (1f - CLOSED_EYE) * closing)
         val yaw = gaze.yaw.coerceIn(-Gaze.MAX_YAW, Gaze.MAX_YAW)
         val pitch = gaze.pitch.coerceIn(-Gaze.MAX_PITCH, Gaze.MAX_PITCH) + EYE_LIFT
-        val left = project(sphericalCapsule(halfLength, radius, TILT_RADIANS), yaw - EYE_SPREAD, pitch, safeRadius)
-        val right = project(sphericalCapsule(halfLength, radius, -TILT_RADIANS), yaw + EYE_SPREAD, pitch, safeRadius)
+        val left = project(sphericalCapsule(halfLength, radius), yaw - EYE_SPREAD, pitch, safeRadius)
+        val right = project(sphericalCapsule(halfLength, radius), yaw + EYE_SPREAD, pitch, safeRadius)
         return left to right
     }
 
@@ -68,9 +67,9 @@ object BotGeometry {
 
     fun isInside(eye: Eye, safeRadius: Float) = eye.reach <= safeRadius + EPSILON
 
-    private fun sphericalCapsule(halfLength: Float, radius: Float, tilt: Float): List<Vec3> {
+    private fun sphericalCapsule(halfLength: Float, radius: Float): List<Vec3> {
         val upright = halfLength >= radius
-        val axisAngle = if (upright) tilt else tilt + PI.toFloat() / 2f
+        val axisAngle = if (upright) 0f else PI.toFloat() / 2f
         val capRadius = min(halfLength, radius)
         val arc = max(halfLength, radius) - capRadius
         val along = Vec3(-sin(axisAngle), cos(axisAngle), 0f)
