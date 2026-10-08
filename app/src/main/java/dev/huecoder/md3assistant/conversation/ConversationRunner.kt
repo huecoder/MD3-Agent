@@ -108,6 +108,7 @@ class ConversationRunner(
     }
 
     private suspend fun streamRound(chatId: String, provider: ProviderProfile, model: String, current: AppSettings): StreamingDraft? {
+        tools.awaitReady()
         val turns = buildTurns(current, chats.history(chatId))
         val message = chats.startAssistantMessage(chatId, model)
         val accumulator = ToolCallAccumulator()

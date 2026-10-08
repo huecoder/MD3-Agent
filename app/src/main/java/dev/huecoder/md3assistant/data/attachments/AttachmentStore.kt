@@ -16,6 +16,7 @@ import kotlinx.serialization.json.Json
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
+import java.nio.ByteBuffer
 import java.util.UUID
 import kotlin.math.max
 
@@ -72,6 +73,15 @@ class AttachmentStore(private val context: Context) {
             storeImageForModel(name) { ImageDecoder.createSource(source) }
         } else {
             storeRaw(name, mimeType, forModel) { target -> source.inputStream().use { copyCapped(it, target) } }
+        }
+    }
+
+    suspend fun importBytes(name: String, bytes: ByteArray, forModel: Boolean): Attachment = withContext(Dispatchers.IO) {
+        val mimeType = TextFormats.guessMimeType(name)
+        if (forModel && mimeType.startsWith("image/")) {
+            storeImageForModel(name) { ImageDecoder.createSource(ByteBuffer.wrap(bytes)) }
+        } else {
+            storeRaw(name, mimeType, forModel) { target -> target.writeBytes(bytes) }
         }
     }
 

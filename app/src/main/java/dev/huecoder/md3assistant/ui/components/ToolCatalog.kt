@@ -7,6 +7,7 @@ import com.composables.icons.materialsymbols.rounded.Build
 import com.composables.icons.materialsymbols.rounded.Description
 import com.composables.icons.materialsymbols.rounded.Edit_document
 import com.composables.icons.materialsymbols.rounded.Folder_open
+import com.composables.icons.materialsymbols.rounded.Hub
 import com.composables.icons.materialsymbols.rounded.Perm_media
 import com.composables.icons.materialsymbols.rounded.Language
 import com.composables.icons.materialsymbols.rounded.Partly_cloudy_day
@@ -15,8 +16,10 @@ import com.composables.icons.materialsymbols.rounded.Smart_button
 import com.composables.icons.materialsymbols.rounded.Terminal
 import com.composables.icons.materialsymbols.rounded.Travel_explore
 import dev.huecoder.md3assistant.R
+import dev.huecoder.md3assistant.mcp.McpTool
 import dev.huecoder.md3assistant.tools.ReadScreenTool
 import dev.huecoder.md3assistant.tools.ShowUiTool
+import dev.huecoder.md3assistant.tools.Tool
 import dev.huecoder.md3assistant.tools.files.ListFilesTool
 import dev.huecoder.md3assistant.tools.files.ReadFileTool
 import dev.huecoder.md3assistant.tools.files.SendFilesTool
@@ -32,6 +35,7 @@ enum class ToolCategory(@StringRes val title: Int) {
     SCREEN(R.string.tools_category_screen),
     FILES(R.string.tools_category_files),
     SYSTEM(R.string.tools_category_system),
+    MCP(R.string.tools_category_mcp),
     OTHER(R.string.tools_category_other),
 }
 
@@ -51,9 +55,23 @@ object ToolCatalog {
         SendFilesTool.NAME to known(ToolCategory.FILES, MaterialSymbols.Rounded.Perm_media, R.string.tools_send_files_title, R.string.tools_send_files_summary),
     )
 
-    fun of(toolName: String): ToolInfo =
-        known[toolName] ?: ToolInfo(MaterialSymbols.Rounded.Build, UiText.Raw(toolName), UiText.Raw(""), ToolCategory.OTHER)
+    fun of(toolName: String): ToolInfo = known[toolName] ?: when {
+        McpTool.isMcpName(toolName) -> ToolInfo(MaterialSymbols.Rounded.Hub, UiText.Raw(McpTool.shortName(toolName)), UiText.Raw(""), ToolCategory.MCP)
+        else -> ToolInfo(MaterialSymbols.Rounded.Build, UiText.Raw(toolName), UiText.Raw(""), ToolCategory.OTHER)
+    }
+
+    fun of(tool: Tool): ToolInfo = when (tool) {
+        is McpTool -> ToolInfo(
+            MaterialSymbols.Rounded.Hub,
+            UiText.Raw("${tool.serverName} · ${tool.displayName}"),
+            UiText.Raw(tool.remote.description.lineSequence().firstOrNull().orEmpty().take(MAX_SUMMARY_CHARS)),
+            ToolCategory.MCP,
+        )
+        else -> of(tool.spec.name)
+    }
 
     private fun known(category: ToolCategory, icon: ImageVector, @StringRes title: Int, @StringRes summary: Int): ToolInfo =
         ToolInfo(icon, UiText.Resource(title), UiText.Resource(summary), category)
+
+    private const val MAX_SUMMARY_CHARS = 160
 }

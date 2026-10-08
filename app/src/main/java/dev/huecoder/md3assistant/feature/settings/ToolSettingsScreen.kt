@@ -71,7 +71,7 @@ fun ToolSettingsScreen(onBack: () -> Unit) {
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
         ) {
-            val grouped = container.tools.all.groupBy { ToolCatalog.of(it.spec.name).category }
+            val grouped = container.tools.all.groupBy { ToolCatalog.of(it).category }
             ToolCategory.entries.forEach { category ->
                 val categoryTools = grouped[category].orEmpty()
                 if (categoryTools.isEmpty()) return@forEach
@@ -79,7 +79,7 @@ fun ToolSettingsScreen(onBack: () -> Unit) {
                 categoryTools.forEachIndexed { index, tool ->
                     val name = tool.spec.name
                     ToolPermissionRow(
-                        info = ToolCatalog.of(name),
+                        info = ToolCatalog.of(tool),
                         permission = container.tools.permission(tool, current),
                         shape = ListItemDefaults.segmentedShapes(index, categoryTools.size).shape,
                         onChange = { tools = current.withPermission(name, it) },

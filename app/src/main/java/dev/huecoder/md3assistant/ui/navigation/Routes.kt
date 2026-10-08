@@ -34,3 +34,9 @@ data class VoiceProviderEditorRoute(val providerId: String? = null)
 
 @Serializable
 data object DeviceAccessRoute
+
+@Serializable
+data object McpServersRoute
+
+@Serializable
+data class McpServerEditorRoute(val serverId: String? = null)

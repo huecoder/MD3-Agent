@@ -19,6 +19,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -59,6 +60,7 @@ fun SettingsScreen(
     onOpenChat: () -> Unit,
     onOpenVoice: () -> Unit,
     onOpenAccess: () -> Unit,
+    onOpenMcp: () -> Unit,
 ) {
     val viewModel = appViewModel { SettingsViewModel(it.settings) }
     val toolRegistry = (LocalContext.current.applicationContext as App).container.tools
@@ -101,6 +103,12 @@ fun SettingsScreen(
                 title = stringResource(R.string.settings_access),
                 summary = accessSummary(current, isAssistant),
                 onClick = onOpenAccess,
+            ),
+            SettingsEntry(
+                icon = MaterialSymbols.Rounded.Hub,
+                title = stringResource(R.string.settings_mcp),
+                summary = mcpSummary(current),
+                onClick = onOpenMcp,
             ),
         )
         val systemEntries = listOf(
@@ -181,6 +189,12 @@ private fun accessSummary(settings: AppSettings, isAssistant: Boolean): String =
     } else {
         stringResource(R.string.settings_access_summary_not_assistant)
     }
+
+@Composable
+private fun mcpSummary(settings: AppSettings): String {
+    val enabled = settings.tools.mcpServers.count { it.enabled }
+    return if (enabled == 0) stringResource(R.string.settings_mcp_summary_none) else pluralStringResource(R.plurals.settings_mcp_summary, enabled, enabled)
+}
 
 @Composable
 private fun chatSummary(settings: AppSettings): String =

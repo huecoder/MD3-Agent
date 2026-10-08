@@ -177,7 +177,7 @@ private data class ToolLook(val icon: ImageVector, val title: UiText) {
                     listOf(fileName(args.optionalString("path"))),
                 )
                 SendFilesTool.NAME -> UiText.Plural(R.plurals.chat_tool_sent_files, args.optionalArray("paths").size, listOf(args.optionalArray("paths").size))
-                else -> UiText.Raw(call.name)
+                else -> ToolCatalog.of(call.name).title
             }
             return ToolLook(ToolCatalog.of(call.name).icon, title)
         }

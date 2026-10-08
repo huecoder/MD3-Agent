@@ -10,6 +10,7 @@ import dev.huecoder.md3assistant.data.db.AppDatabase
 import dev.huecoder.md3assistant.data.settings.SecretCipher
 import dev.huecoder.md3assistant.data.settings.SettingsRepository
 import dev.huecoder.md3assistant.llm.ChatCompletionClient
+import dev.huecoder.md3assistant.mcp.McpToolbox
 import dev.huecoder.md3assistant.llm.ModelCatalogClient
 import dev.huecoder.md3assistant.llm.TranscriptionClient
 import dev.huecoder.md3assistant.net.HttpClientProvider
@@ -39,6 +40,9 @@ import dev.huecoder.md3assistant.voice.VoiceRecorder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import java.io.File
 
 class AppContainer(context: Context) {
@@ -61,6 +65,8 @@ class AppContainer(context: Context) {
     val shellAccess = ShellAccess(appContext)
     val deviceFiles = DeviceFiles(shellAccess.workspace, attachments.directory, File(appContext.cacheDir, FILE_STAGING_DIR))
 
+    val mcp = McpToolbox(httpClients, attachments, applicationScope)
+
     val tools = ToolRegistry(
         listOf(
             WebSearchTool(WebSearcher(httpClients)),
@@ -74,7 +80,14 @@ class AppContainer(context: Context) {
             WriteFileTool(deviceFiles),
             SendFilesTool(deviceFiles, attachments),
         ),
+        sources = listOf(mcp),
     )
+
+    init {
+        applicationScope.launch {
+            settings.settings.map { it.tools.mcpServers }.distinctUntilChanged().collect(mcp::sync)
+        }
+    }
 
     fun newVoiceRecorder() = VoiceRecorder(appContext)
 

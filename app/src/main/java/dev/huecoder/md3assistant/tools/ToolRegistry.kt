@@ -14,30 +14,36 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import java.io.IOException
 
-class ToolRegistry(private val tools: List<Tool>) {
+interface ToolSource {
+    fun tools(): List<Tool>
+
+    suspend fun awaitReady()
+}
+
+class ToolRegistry(private val builtIn: List<Tool>, private val sources: List<ToolSource> = emptyList()) {
     private val json = Json { ignoreUnknownKeys = true }
-    private val byName = tools.associateBy { it.spec.name }
+    private val builtInByName = builtIn.associateBy { it.spec.name }
 
     init {
-        require(byName.size == tools.size) { "Tool names must be unique" }
+        require(builtInByName.size == builtIn.size) { "Tool names must be unique" }
     }
 
-    val all: List<Tool> get() = tools
+    val all: List<Tool> get() = builtIn + connected().filter { it.spec.name !in builtInByName }
 
-    fun specs(settings: ToolSettings): List<ToolSpec> = tools.filter { permission(it, settings) != ToolPermission.OFF }.map { it.spec }
+    fun specs(settings: ToolSettings): List<ToolSpec> = all.filter { permission(it, settings) != ToolPermission.OFF }.map { it.spec }
 
     fun permission(tool: Tool, settings: ToolSettings): ToolPermission = settings.permission(tool.spec.name, tool.defaultPermission)
 
     fun permission(toolName: String, settings: ToolSettings): ToolPermission =
-        byName[toolName]?.let { permission(it, settings) } ?: ToolPermission.OFF
+        find(toolName)?.let { permission(it, settings) } ?: ToolPermission.OFF
 
     fun promptNotes(settings: ToolSettings): List<String> =
-        tools.filter { permission(it, settings) != ToolPermission.OFF }.mapNotNull { it.promptNote(settings) }.distinct()
+        all.filter { permission(it, settings) != ToolPermission.OFF }.mapNotNull { it.promptNote(settings) }.distinct()
 
-    fun endsTurn(call: ToolCall): Boolean = byName[call.name]?.endsTurn == true
+    fun endsTurn(call: ToolCall): Boolean = find(call.name)?.endsTurn == true
 
     suspend fun run(call: ToolCall, settings: ToolSettings): ToolOutcome {
-        val tool = byName[call.name]?.takeIf { permission(it, settings) != ToolPermission.OFF }
+        val tool = find(call.name)?.takeIf { permission(it, settings) != ToolPermission.OFF }
             ?: return ToolOutcome.error("Tool \"${call.name}\" is not available")
         val arguments = parseArguments(call.arguments)
             ?: return ToolOutcome.error("Arguments are not a JSON object: ${call.arguments.take(ARGUMENT_PREVIEW_CHARS)}")
@@ -62,6 +68,12 @@ class ToolRegistry(private val tools: List<Tool>) {
             ToolOutcome.error("Tool failed: ${e.message ?: e.javaClass.simpleName}")
         }
     }
+
+    suspend fun awaitReady() = sources.forEach { it.awaitReady() }
+
+    private fun connected(): List<Tool> = sources.flatMap { it.tools() }
+
+    fun find(name: String): Tool? = builtInByName[name] ?: connected().firstOrNull { it.spec.name == name }
 
     private fun parseArguments(raw: String): JsonObject? =
         runCatching { json.parseToJsonElement(raw.ifBlank { "{}" }) as? JsonObject }.getOrNull()

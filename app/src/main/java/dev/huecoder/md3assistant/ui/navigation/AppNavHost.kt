@@ -18,6 +18,8 @@ import dev.huecoder.md3assistant.feature.settings.NetworkSettingsScreen
 import dev.huecoder.md3assistant.feature.settings.ProviderEditorScreen
 import dev.huecoder.md3assistant.feature.settings.SettingsScreen
 import dev.huecoder.md3assistant.feature.settings.ToolSettingsScreen
+import dev.huecoder.md3assistant.feature.settings.McpServerEditorScreen
+import dev.huecoder.md3assistant.feature.settings.McpServersScreen
 import dev.huecoder.md3assistant.feature.settings.VoiceProviderEditorScreen
 import dev.huecoder.md3assistant.feature.settings.VoiceSettingsScreen
 
@@ -56,6 +58,7 @@ fun AppNavHost(chatToOpen: String?, onChatOpened: () -> Unit) {
                 onOpenChat = { navController.navigate(ChatSettingsRoute) },
                 onOpenVoice = { navController.navigate(VoiceSettingsRoute) },
                 onOpenAccess = { navController.navigate(DeviceAccessRoute) },
+                onOpenMcp = { navController.navigate(McpServersRoute) },
             )
         }
         screen<ProviderEditorRoute>(navController) { entry ->
@@ -71,6 +74,15 @@ fun AppNavHost(chatToOpen: String?, onChatOpened: () -> Unit) {
                 onBack = navController::popBackStack,
                 onEditProvider = { navController.navigate(VoiceProviderEditorRoute(it)) },
             )
+        }
+        screen<McpServersRoute>(navController) {
+            McpServersScreen(
+                onBack = navController::popBackStack,
+                onEditServer = { navController.navigate(McpServerEditorRoute(it)) },
+            )
+        }
+        screen<McpServerEditorRoute>(navController) { entry ->
+            McpServerEditorScreen(serverId = entry.toRoute<McpServerEditorRoute>().serverId, onDone = navController::popBackStack)
         }
         screen<VoiceProviderEditorRoute>(navController) { entry ->
             VoiceProviderEditorScreen(providerId = entry.toRoute<VoiceProviderEditorRoute>().providerId, onDone = navController::popBackStack)

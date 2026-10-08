@@ -45,6 +45,7 @@
     <string name="tools_category_screen">Screen and interface</string>
     <string name="tools_category_files">Files</string>
     <string name="tools_category_system">System</string>
+    <string name="tools_category_mcp" translatable="false">MCP</string>
     <string name="tools_category_other">Other</string>
     <string name="tools_section_search">Search</string>
     <string name="tools_searxng_url">SearXNG address</string>
@@ -288,4 +289,32 @@
     <string name="permission_shizuku_summary">ADB-level commands without root</string>
     <string name="settings_access_summary">%1$s · files: %2$s</string>
     <string name="settings_access_summary_not_assistant">Not set as the default assistant</string>
+    <string name="settings_mcp">MCP servers</string>
+    <string name="settings_mcp_summary_none">Not connected</string>
+    <string name="mcp_section_servers">Servers</string>
+    <string name="mcp_servers_hint">Remote MCP servers over Streamable HTTP. Their tools show up for the model and ask before running by default, you can change that in Tools.</string>
+    <string name="mcp_add_server">Add server</string>
+    <string name="mcp_reconnect">Reconnect</string>
+    <string name="mcp_status_disabled">Turned off</string>
+    <string name="mcp_status_connecting">Connecting…</string>
+    <string name="mcp_server_title">MCP server</string>
+    <string name="mcp_server_title_new">New MCP server</string>
+    <string name="mcp_server_delete">Delete server</string>
+    <string name="mcp_server_name">Name</string>
+    <string name="mcp_server_url">Server URL</string>
+    <string name="mcp_server_url_placeholder" translatable="false">https://example.com/mcp</string>
+    <string name="mcp_server_url_hint">The Streamable HTTP endpoint, usually ends with /mcp</string>
+    <string name="mcp_url_invalid">Not a valid http(s) address</string>
+    <string name="mcp_server_token">Token (optional)</string>
+    <string name="mcp_server_enabled">Connected</string>
+    <string name="mcp_server_enabled_summary">Give the model the tools of this server</string>
+    <string name="mcp_server_test">Test connection</string>
+    <plurals name="mcp_server_found_tools">
+        <item quantity="one">%d tool</item>
+        <item quantity="other">%d tools</item>
+    </plurals>
+    <plurals name="settings_mcp_summary">
+        <item quantity="one">%d server</item>
+        <item quantity="other">%d servers</item>
+    </plurals>
 </resources>

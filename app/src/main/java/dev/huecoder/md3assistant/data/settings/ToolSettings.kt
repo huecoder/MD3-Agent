@@ -75,6 +75,14 @@ data class McpServer(
     val id: String,
     val name: String,
     val url: String,
+    val apiKey: String = "",
     val headers: List<HeaderEntry> = emptyList(),
     val enabled: Boolean = true,
-)
+) {
+    fun requestHeaders(): List<HeaderEntry> =
+        headers.filter { it.name.isNotBlank() } + listOfNotNull(apiKey.trim().takeIf { it.isNotEmpty() }?.let { HeaderEntry(AUTHORIZATION, "Bearer $it") })
+
+    private companion object {
+        const val AUTHORIZATION = "Authorization"
+    }
+}

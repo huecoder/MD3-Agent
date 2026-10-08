@@ -283,4 +283,35 @@
     <string name="permission_shizuku_summary">Команды уровня ADB без root</string>
     <string name="settings_access_summary">%1$s · файлы: %2$s</string>
     <string name="settings_access_summary_not_assistant">Не назначен ассистентом по умолчанию</string>
+    <string name="settings_mcp">MCP-серверы</string>
+    <string name="settings_mcp_summary_none">Не подключены</string>
+    <string name="mcp_section_servers">Серверы</string>
+    <string name="mcp_servers_hint">Удалённые MCP-серверы по Streamable HTTP. Их тулзы видит модель, по умолчанию они спрашивают перед запуском, это меняется в разделе «Инструменты».</string>
+    <string name="mcp_add_server">Добавить сервер</string>
+    <string name="mcp_reconnect">Переподключить</string>
+    <string name="mcp_status_disabled">Выключен</string>
+    <string name="mcp_status_connecting">Подключение…</string>
+    <string name="mcp_server_title">MCP-сервер</string>
+    <string name="mcp_server_title_new">Новый MCP-сервер</string>
+    <string name="mcp_server_delete">Удалить сервер</string>
+    <string name="mcp_server_name">Название</string>
+    <string name="mcp_server_url">Адрес сервера</string>
+    <string name="mcp_server_url_hint">Адрес Streamable HTTP, обычно заканчивается на /mcp</string>
+    <string name="mcp_url_invalid">Это не http(s)-адрес</string>
+    <string name="mcp_server_token">Токен (необязательно)</string>
+    <string name="mcp_server_enabled">Подключён</string>
+    <string name="mcp_server_enabled_summary">Модель получит тулзы этого сервера</string>
+    <string name="mcp_server_test">Проверить</string>
+    <plurals name="mcp_server_found_tools">
+        <item quantity="one">%d тулза</item>
+        <item quantity="few">%d тулзы</item>
+        <item quantity="many">%d тулз</item>
+        <item quantity="other">%d тулзы</item>
+    </plurals>
+    <plurals name="settings_mcp_summary">
+        <item quantity="one">%d сервер</item>
+        <item quantity="few">%d сервера</item>
+        <item quantity="many">%d серверов</item>
+        <item quantity="other">%d сервера</item>
+    </plurals>
 </resources>
