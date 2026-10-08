@@ -9,9 +9,6 @@ data object HomeRoute
 data class ChatRoute(val chatId: String? = null)
 
 @Serializable
-data object SettingsRoute
-
-@Serializable
 data class ProviderEditorRoute(val providerId: String? = null)
 
 @Serializable

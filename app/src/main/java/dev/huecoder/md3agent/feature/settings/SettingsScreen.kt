@@ -12,6 +12,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,6 +41,7 @@ import com.composables.icons.materialsymbols.rounded.Mic
 import com.composables.icons.materialsymbols.roundedfilled.Check_circle
 import dev.huecoder.md3agent.App
 import dev.huecoder.md3agent.R
+import dev.huecoder.md3agent.feature.main.MainNavBarClearance
 import dev.huecoder.md3agent.data.settings.EmbeddingKind
 import dev.huecoder.md3agent.assistant.AssistantRole
 import dev.huecoder.md3agent.data.settings.AppSettings
@@ -52,19 +54,21 @@ import dev.huecoder.md3agent.ui.components.ShapeBadge
 import dev.huecoder.md3agent.ui.components.appViewModel
 import dev.huecoder.md3agent.ui.components.groupedListColors
 
+@Immutable
+data class SettingsDestinations(
+    val editProvider: (providerId: String?) -> Unit,
+    val agent: () -> Unit,
+    val memory: () -> Unit,
+    val network: () -> Unit,
+    val tools: () -> Unit,
+    val chat: () -> Unit,
+    val voice: () -> Unit,
+    val access: () -> Unit,
+    val mcp: () -> Unit,
+)
+
 @Composable
-fun SettingsScreen(
-    onBack: () -> Unit,
-    onEditProvider: (providerId: String?) -> Unit,
-    onOpenAgent: () -> Unit,
-    onOpenMemory: () -> Unit,
-    onOpenNetwork: () -> Unit,
-    onOpenTools: () -> Unit,
-    onOpenChat: () -> Unit,
-    onOpenVoice: () -> Unit,
-    onOpenAccess: () -> Unit,
-    onOpenMcp: () -> Unit,
-) {
+fun SettingsScreen(destinations: SettingsDestinations) {
     val viewModel = appViewModel { SettingsViewModel(it.settings) }
     val toolRegistry = (LocalContext.current.applicationContext as App).container.tools
     val settings by viewModel.settings.collectAsStateWithLifecycle()
@@ -72,32 +76,32 @@ fun SettingsScreen(
     var isAssistant by remember { mutableStateOf(AssistantRole.isHeld(context)) }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { isAssistant = AssistantRole.isHeld(context) }
 
-    SettingsScaffold(stringResource(R.string.settings_title), onBack) { padding ->
+    SettingsScaffold(stringResource(R.string.settings_title), onBack = null) { padding ->
         val current = settings ?: return@SettingsScaffold
         val assistantEntries = listOf(
             SettingsEntry(
                 icon = MaterialSymbols.Rounded.Face,
                 title = stringResource(R.string.settings_agent),
                 summary = stringResource(R.string.settings_agent_summary, current.agent.name),
-                onClick = onOpenAgent,
+                onClick = destinations.agent,
             ),
             SettingsEntry(
                 icon = MaterialSymbols.Rounded.Neurology,
                 title = stringResource(R.string.settings_memory),
                 summary = memorySummary(current),
-                onClick = onOpenMemory,
+                onClick = destinations.memory,
             ),
             SettingsEntry(
                 icon = MaterialSymbols.Rounded.Mic,
                 title = stringResource(R.string.settings_voice),
                 summary = voiceSummary(current),
-                onClick = onOpenVoice,
+                onClick = destinations.voice,
             ),
             SettingsEntry(
                 icon = MaterialSymbols.Rounded.Chat,
                 title = stringResource(R.string.settings_chat),
                 summary = chatSummary(current),
-                onClick = onOpenChat,
+                onClick = destinations.chat,
             ),
         )
         val capabilityEntries = listOf(
@@ -105,19 +109,19 @@ fun SettingsScreen(
                 icon = MaterialSymbols.Rounded.Handyman,
                 title = stringResource(R.string.settings_tools),
                 summary = toolsSummary(current, toolRegistry),
-                onClick = onOpenTools,
+                onClick = destinations.tools,
             ),
             SettingsEntry(
                 icon = MaterialSymbols.Rounded.Shield_person,
                 title = stringResource(R.string.settings_access),
                 summary = accessSummary(current, isAssistant),
-                onClick = onOpenAccess,
+                onClick = destinations.access,
             ),
             SettingsEntry(
                 icon = MaterialSymbols.Rounded.Hub,
                 title = stringResource(R.string.settings_mcp),
                 summary = mcpSummary(current),
-                onClick = onOpenMcp,
+                onClick = destinations.mcp,
             ),
         )
         val systemEntries = listOf(
@@ -125,19 +129,19 @@ fun SettingsScreen(
                 icon = MaterialSymbols.Rounded.Dns,
                 title = stringResource(R.string.settings_network),
                 summary = networkSummary(current),
-                onClick = onOpenNetwork,
+                onClick = destinations.network,
             ),
         )
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = padding.calculateTopPadding(), bottom = 32.dp),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = padding.calculateTopPadding(), bottom = MainNavBarClearance),
             verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
         ) {
             item { SectionHeader(stringResource(R.string.settings_section_assistant)) }
             entryGroup(assistantEntries)
 
             item { SectionHeader(stringResource(R.string.settings_section_providers)) }
-            providerItems(current, onEditProvider)
+            providerItems(current, destinations.editProvider)
 
             item { SectionHeader(stringResource(R.string.settings_section_capabilities)) }
             entryGroup(capabilityEntries)

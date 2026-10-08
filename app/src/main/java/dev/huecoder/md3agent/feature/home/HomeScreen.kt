@@ -4,10 +4,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -24,9 +20,6 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.composables.icons.materialsymbols.MaterialSymbols
-import com.composables.icons.materialsymbols.rounded.Edit_square
-import com.composables.icons.materialsymbols.rounded.Settings
 import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.ui.components.appViewModel
 import dev.huecoder.md3agent.ui.theme.heroTitle
@@ -47,22 +40,8 @@ fun HomeScreen(
             LargeFlexibleTopAppBar(
                 title = { Text(stringResource(R.string.home_title), style = MaterialTheme.typography.heroTitle) },
                 subtitle = state.activeModel?.let { model -> { Text(model, maxLines = 1, overflow = TextOverflow.Ellipsis) } },
-                actions = {
-                    IconButton(onClick = onOpenSettings, shapes = IconButtonDefaults.shapes()) {
-                        Icon(MaterialSymbols.Rounded.Settings, contentDescription = stringResource(R.string.settings_title))
-                    }
-                },
                 scrollBehavior = topBarScroll,
             )
-        },
-        floatingActionButton = {
-            if (state.hasProvider) {
-                ExtendedFloatingActionButton(
-                    onClick = { onOpenChat(null) },
-                    icon = { Icon(MaterialSymbols.Rounded.Edit_square, contentDescription = null) },
-                    text = { Text(stringResource(R.string.home_new_chat)) },
-                )
-            }
         },
     ) { padding ->
         Box(Modifier.fillMaxSize()) {

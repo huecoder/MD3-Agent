@@ -34,7 +34,7 @@ import dev.huecoder.md3agent.ui.theme.heroTitle
 @Composable
 fun SettingsScaffold(
     title: String,
-    onBack: () -> Unit,
+    onBack: (() -> Unit)?,
     actions: @Composable RowScope.() -> Unit = {},
     save: SaveAction? = null,
     content: @Composable (PaddingValues) -> Unit,
@@ -42,14 +42,14 @@ fun SettingsScaffold(
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     var confirmingLeave by remember { mutableStateOf(false) }
     val guardsLeave = save?.isDirty == true
-    val requestBack = { if (guardsLeave) confirmingLeave = true else onBack() }
+    val requestBack: () -> Unit = { if (guardsLeave) confirmingLeave = true else onBack?.invoke() }
     BackHandler(enabled = guardsLeave) { confirmingLeave = true }
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             LargeFlexibleTopAppBar(
                 title = { Text(title, style = MaterialTheme.typography.heroTitle) },
-                navigationIcon = { BackButton(requestBack) },
+                navigationIcon = { if (onBack != null) BackButton(requestBack) },
                 actions = actions,
                 scrollBehavior = scrollBehavior,
             )
@@ -61,7 +61,7 @@ fun SettingsScaffold(
         UnsavedChangesDialog(
             canSave = save.canSave,
             onSave = { confirmingLeave = false; save.onSave() },
-            onDiscard = { confirmingLeave = false; onBack() },
+            onDiscard = { confirmingLeave = false; onBack?.invoke() },
             onDismiss = { confirmingLeave = false },
         )
     }

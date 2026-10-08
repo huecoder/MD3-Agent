@@ -10,14 +10,14 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import dev.huecoder.md3agent.feature.chat.ChatScreen
-import dev.huecoder.md3agent.feature.home.HomeScreen
+import dev.huecoder.md3agent.feature.main.MainScreen
 import dev.huecoder.md3agent.feature.settings.AgentSettingsScreen
 import dev.huecoder.md3agent.feature.settings.ChatSettingsScreen
 import dev.huecoder.md3agent.feature.settings.DeviceAccessScreen
 import dev.huecoder.md3agent.feature.settings.MemorySettingsScreen
 import dev.huecoder.md3agent.feature.settings.NetworkSettingsScreen
 import dev.huecoder.md3agent.feature.settings.ProviderEditorScreen
-import dev.huecoder.md3agent.feature.settings.SettingsScreen
+import dev.huecoder.md3agent.feature.settings.SettingsDestinations
 import dev.huecoder.md3agent.feature.settings.ToolSettingsScreen
 import dev.huecoder.md3agent.feature.settings.McpServerEditorScreen
 import dev.huecoder.md3agent.feature.settings.McpServersScreen
@@ -41,27 +41,23 @@ fun AppNavHost(chatToOpen: String?, onChatOpened: () -> Unit) {
         popExitTransition = NavTransitions.popExit,
     ) {
         screen<HomeRoute>(navController) {
-            HomeScreen(
+            MainScreen(
                 onOpenChat = { navController.navigate(ChatRoute(it)) },
-                onOpenSettings = { navController.navigate(SettingsRoute) },
+                settingsDestinations = SettingsDestinations(
+                    editProvider = { navController.navigate(ProviderEditorRoute(it)) },
+                    agent = { navController.navigate(AgentSettingsRoute) },
+                    memory = { navController.navigate(MemorySettingsRoute) },
+                    network = { navController.navigate(NetworkSettingsRoute) },
+                    tools = { navController.navigate(ToolSettingsRoute) },
+                    chat = { navController.navigate(ChatSettingsRoute) },
+                    voice = { navController.navigate(VoiceSettingsRoute) },
+                    access = { navController.navigate(DeviceAccessRoute) },
+                    mcp = { navController.navigate(McpServersRoute) },
+                ),
             )
         }
         screen<ChatRoute>(navController) { entry ->
             ChatScreen(chatId = entry.toRoute<ChatRoute>().chatId, onBack = navController::popBackStack)
-        }
-        screen<SettingsRoute>(navController) {
-            SettingsScreen(
-                onBack = navController::popBackStack,
-                onEditProvider = { navController.navigate(ProviderEditorRoute(it)) },
-                onOpenAgent = { navController.navigate(AgentSettingsRoute) },
-                onOpenMemory = { navController.navigate(MemorySettingsRoute) },
-                onOpenNetwork = { navController.navigate(NetworkSettingsRoute) },
-                onOpenTools = { navController.navigate(ToolSettingsRoute) },
-                onOpenChat = { navController.navigate(ChatSettingsRoute) },
-                onOpenVoice = { navController.navigate(VoiceSettingsRoute) },
-                onOpenAccess = { navController.navigate(DeviceAccessRoute) },
-                onOpenMcp = { navController.navigate(McpServersRoute) },
-            )
         }
         screen<ProviderEditorRoute>(navController) { entry ->
             ProviderEditorScreen(providerId = entry.toRoute<ProviderEditorRoute>().providerId, onDone = navController::popBackStack)

@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Chat
 import dev.huecoder.md3agent.R
+import dev.huecoder.md3agent.feature.main.MainNavBarClearance
 import dev.huecoder.md3agent.conversation.ChatActivity
 import dev.huecoder.md3agent.ui.components.WorkingBadge
 import dev.huecoder.md3agent.data.db.ChatSummary
@@ -26,7 +27,6 @@ import dev.huecoder.md3agent.ui.components.SectionHeader
 import dev.huecoder.md3agent.ui.components.ShapeBadge
 import dev.huecoder.md3agent.ui.components.groupedListColors
 
-private val FabClearance = 96.dp
 
 @Composable
 fun ChatList(
@@ -42,7 +42,7 @@ fun ChatList(
             start = 16.dp,
             end = 16.dp,
             top = contentPadding.calculateTopPadding(),
-            bottom = contentPadding.calculateBottomPadding() + FabClearance,
+            bottom = contentPadding.calculateBottomPadding() + MainNavBarClearance,
         ),
         verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
     ) {
