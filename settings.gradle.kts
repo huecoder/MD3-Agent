@@ -20,5 +20,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "MD3Assistant"
+rootProject.name = "MD3Agent"
 include(":app")

@@ -323,7 +323,7 @@
     <string name="lightbox_close">Закрыть</string>
     <string name="lightbox_open">Открыть в другом приложении</string>
     <string name="lightbox_download">Сохранить в загрузки</string>
-    <string name="lightbox_saved">Сохранено в Загрузки/MD3 Assistant</string>
+    <string name="lightbox_saved">Сохранено в Загрузки/MD3 Agent</string>
     <string name="lightbox_save_failed">Не получилось сохранить картинку</string>
     <string name="model_picker_title">Модель</string>
     <string name="model_search">Поиск по имени, компании или id</string>

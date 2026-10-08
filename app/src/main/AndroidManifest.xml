@@ -25,7 +25,7 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true"
-        android:theme="@style/Theme.MD3Assistant">
+        android:theme="@style/Theme.MD3Agent">
 
         <activity
             android:name=".MainActivity"
@@ -42,7 +42,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
                     android:host="oauth"
-                    android:scheme="md3assistant" />
+                    android:scheme="md3agent" />
             </intent-filter>
         </activity>
 

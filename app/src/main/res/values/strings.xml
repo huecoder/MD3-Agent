@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name" translatable="false">MD3 Assistant</string>
+    <string name="app_name" translatable="false">MD3 Agent</string>
     <string name="settings_title">Settings</string>
     <string name="settings_section_assistant">Assistant</string>
     <string name="settings_agent">Agent</string>
@@ -327,7 +327,7 @@
     <string name="lightbox_close">Close</string>
     <string name="lightbox_open">Open in another app</string>
     <string name="lightbox_download">Save to Downloads</string>
-    <string name="lightbox_saved">Saved to Downloads/MD3 Assistant</string>
+    <string name="lightbox_saved">Saved to Downloads/MD3 Agent</string>
     <string name="lightbox_save_failed">Couldn\'t save the image</string>
     <string name="model_picker_title">Model</string>
     <string name="model_search">Search by name, company or id</string>

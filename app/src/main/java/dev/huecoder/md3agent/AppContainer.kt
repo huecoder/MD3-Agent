@@ -1,0 +1,157 @@
+package dev.huecoder.md3agent
+
+import android.content.Context
+import dev.huecoder.md3agent.assistant.ScreenContextStore
+import dev.huecoder.md3agent.conversation.BackgroundWorkService
+import dev.huecoder.md3agent.conversation.ConversationRunner
+import dev.huecoder.md3agent.system.lifecycle.AppVisibility
+import dev.huecoder.md3agent.conversation.GeneratedImages
+import dev.huecoder.md3agent.conversation.UserPrompts
+import dev.huecoder.md3agent.tools.AskUserTool
+import dev.huecoder.md3agent.data.models.ModelCatalog
+import dev.huecoder.md3agent.conversation.ToolApprovals
+import dev.huecoder.md3agent.data.attachments.AttachmentStore
+import dev.huecoder.md3agent.data.chat.ChatRepository
+import dev.huecoder.md3agent.data.db.AppDatabase
+import dev.huecoder.md3agent.data.memory.MemoryStore
+import dev.huecoder.md3agent.llm.EmbeddingClient
+import dev.huecoder.md3agent.tools.memory.MemoryDeleteTool
+import dev.huecoder.md3agent.tools.memory.MemorySaveTool
+import dev.huecoder.md3agent.tools.memory.MemorySearchTool
+import dev.huecoder.md3agent.tools.memory.MemoryUpdateTool
+import dev.huecoder.md3agent.data.settings.SecretCipher
+import dev.huecoder.md3agent.data.settings.SettingsRepository
+import dev.huecoder.md3agent.llm.ChatCompletionClient
+import dev.huecoder.md3agent.mcp.McpToolbox
+import dev.huecoder.md3agent.mcp.auth.McpOAuth
+import dev.huecoder.md3agent.mcp.auth.McpSignIn
+import dev.huecoder.md3agent.data.settings.McpOAuthSession
+import dev.huecoder.md3agent.llm.ModelCatalogClient
+import dev.huecoder.md3agent.llm.TranscriptionClient
+import dev.huecoder.md3agent.net.HttpClientProvider
+import dev.huecoder.md3agent.prompt.DeviceInfoProvider
+import dev.huecoder.md3agent.prompt.SystemPromptRenderer
+import dev.huecoder.md3agent.tools.ReadScreenTool
+import dev.huecoder.md3agent.tools.ShowChartTool
+import dev.huecoder.md3agent.tools.ShowUiTool
+import dev.huecoder.md3agent.tools.system.RunCommandTool
+import dev.huecoder.md3agent.tools.system.RunPythonTool
+import dev.huecoder.md3agent.system.shell.ShellAccess
+import dev.huecoder.md3agent.tools.ToolRegistry
+import dev.huecoder.md3agent.system.files.DeviceFiles
+import dev.huecoder.md3agent.system.python.PythonRuntime
+import dev.huecoder.md3agent.tools.files.ListFilesTool
+import dev.huecoder.md3agent.tools.files.ReadFileTool
+import dev.huecoder.md3agent.tools.files.SendFilesTool
+import dev.huecoder.md3agent.tools.files.WriteFileTool
+import dev.huecoder.md3agent.tools.weather.WeatherTool
+import dev.huecoder.md3agent.tools.web.PageFetcher
+import dev.huecoder.md3agent.tools.web.ReadWebpageTool
+import dev.huecoder.md3agent.tools.web.WebSearchTool
+import dev.huecoder.md3agent.tools.web.WebSearcher
+import dev.huecoder.md3agent.data.settings.SpeechOutput
+import dev.huecoder.md3agent.data.settings.VoiceSettings
+import dev.huecoder.md3agent.voice.ProviderSpeechSynthesizer
+import dev.huecoder.md3agent.voice.SpeechSynthesizer
+import dev.huecoder.md3agent.voice.SystemSpeechSynthesizer
+import dev.huecoder.md3agent.voice.VoiceRecorder
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
+
+class AppContainer(context: Context) {
+    val appContext: Context = context.applicationContext
+    val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    val visibility = AppVisibility()
+
+    val settings = SettingsRepository(context, SecretCipher())
+    val httpClients = HttpClientProvider(settings.networkSettings, applicationScope)
+
+    private val database = AppDatabase.build(context)
+    val attachments = AttachmentStore(context)
+    val chats = ChatRepository(database.chatDao(), database.messageDao(), attachments)
+    val memories = MemoryStore(database.memoryDao(), EmbeddingClient(httpClients), settings.settings.map { it.tools.memory })
+
+    val completions = ChatCompletionClient(httpClients)
+    val modelCatalogClient = ModelCatalogClient(httpClients)
+    val modelCatalog = ModelCatalog(modelCatalogClient, File(appContext.filesDir, MODEL_CATALOG_DIR))
+    val transcriptions = TranscriptionClient(httpClients)
+    val systemPrompt = SystemPromptRenderer(DeviceInfoProvider(context))
+
+    val screenContext = ScreenContextStore()
+    val shellAccess = ShellAccess(appContext)
+    val deviceFiles = DeviceFiles(shellAccess.workspace, attachments.directory, File(appContext.cacheDir, FILE_STAGING_DIR))
+
+    val python = PythonRuntime(appContext)
+
+    val prompts = UserPrompts()
+    private val mcpOAuth = McpOAuth(httpClients::current)
+    val mcpSignIn = McpSignIn(mcpOAuth, settings)
+    val mcp = McpToolbox(httpClients, attachments, prompts, mcpOAuth, ::saveMcpSession, applicationScope)
+
+    val tools = ToolRegistry(
+        listOf(
+            WebSearchTool(WebSearcher(httpClients)),
+            ReadWebpageTool(PageFetcher(httpClients)),
+            WeatherTool(httpClients),
+            ReadScreenTool(screenContext),
+            ShowUiTool(),
+            ShowChartTool(),
+            AskUserTool(prompts),
+            MemorySaveTool(memories),
+            MemoryUpdateTool(memories),
+            MemoryDeleteTool(memories),
+            MemorySearchTool(memories),
+            RunCommandTool(shellAccess),
+            RunPythonTool(python, shellAccess.workspace),
+            ListFilesTool(deviceFiles),
+            ReadFileTool(deviceFiles, attachments),
+            WriteFileTool(deviceFiles),
+            SendFilesTool(deviceFiles, attachments),
+        ),
+        sources = listOf(mcp),
+    )
+
+    private suspend fun saveMcpSession(serverId: String, session: McpOAuthSession) = settings.updateTools { tools ->
+        tools.copy(mcpServers = tools.mcpServers.map { if (it.id == serverId) it.copy(oauth = session) else it })
+    }
+
+    fun newVoiceRecorder() = VoiceRecorder(appContext)
+
+    fun newSpeechSynthesizer(voice: VoiceSettings): SpeechSynthesizer {
+        val provider = voice.speechProvider
+        return if (voice.speechOutput == SpeechOutput.PROVIDER && provider != null) {
+            ProviderSpeechSynthesizer(httpClients, provider, appContext.cacheDir)
+        } else {
+            SystemSpeechSynthesizer(appContext, voice.language)
+        }
+    }
+
+    val approvals = ToolApprovals()
+
+    val conversations = ConversationRunner(
+        chats, settings, completions, systemPrompt, tools, attachments, approvals, prompts,
+        modelCatalog, GeneratedImages(attachments, httpClients), memories, applicationScope,
+    )
+
+    init {
+        applicationScope.launch {
+            settings.settings.map { it.tools.mcpServers }.distinctUntilChanged().collect(mcp::sync)
+        }
+        applicationScope.launch {
+            conversations.activity.map { it.isNotEmpty() }.distinctUntilChanged().collect { busy ->
+                if (busy) withContext(Dispatchers.Main) { BackgroundWorkService.start(appContext) }
+            }
+        }
+    }
+
+    private companion object {
+        const val FILE_STAGING_DIR = "file-staging"
+        const val MODEL_CATALOG_DIR = "model-catalog"
+    }
+}
