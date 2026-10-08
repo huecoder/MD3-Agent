@@ -23,6 +23,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.huecoder.md3agent.App
@@ -30,6 +31,8 @@ import dev.huecoder.md3agent.feature.home.HomeScreen
 import dev.huecoder.md3agent.feature.settings.SettingsDestinations
 import dev.huecoder.md3agent.feature.settings.SettingsScreen
 import kotlinx.coroutines.flow.map
+import kotlin.math.abs
+import kotlin.math.sign
 
 @Composable
 fun MainScreen(
@@ -41,7 +44,8 @@ fun MainScreen(
         .collectAsStateWithLifecycle(initialValue = true)
     var tab by rememberSaveable { mutableStateOf(MainTab.CHATS) }
     var expanded by rememberSaveable { mutableStateOf(true) }
-    val collapseOnScroll = remember { CollapseOnScroll { expanded = it } }
+    val thresholdPx = with(LocalDensity.current) { COLLAPSE_DISTANCE.toPx() }
+    val collapseOnScroll = remember(thresholdPx) { CollapseOnScroll(thresholdPx) { expanded = it } }
 
     BackHandler(enabled = tab != MainTab.CHATS) { tab = MainTab.CHATS }
 
@@ -61,20 +65,29 @@ fun MainScreen(
             expanded = expanded,
             onSelect = { selected -> tab = selected; expanded = true },
             onNewChat = { if (hasProvider) onOpenChat(null) else tab = MainTab.SETTINGS },
-            modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 16.dp),
+            modifier = Modifier.align(Alignment.BottomEnd).navigationBarsPadding().padding(end = 16.dp, bottom = 16.dp),
         )
     }
 }
 
-private class CollapseOnScroll(private val onExpandedChange: (Boolean) -> Unit) : NestedScrollConnection {
-    override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-        when {
-            available.y < -SCROLL_THRESHOLD -> onExpandedChange(false)
-            available.y > SCROLL_THRESHOLD -> onExpandedChange(true)
+private class CollapseOnScroll(
+    private val thresholdPx: Float,
+    private val onExpandedChange: (Boolean) -> Unit,
+) : NestedScrollConnection {
+    private var travelled = 0f
+
+    override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
+        val delta = consumed.y
+        if (delta == 0f) return Offset.Zero
+        if (delta.sign != travelled.sign) travelled = 0f
+        travelled += delta
+        if (abs(travelled) >= thresholdPx) {
+            onExpandedChange(travelled > 0f)
+            travelled = 0f
         }
         return Offset.Zero
     }
 }
 
-private const val SCROLL_THRESHOLD = 4f
+private val COLLAPSE_DISTANCE = 48.dp
 private const val TAB_FADE_MS = 180
