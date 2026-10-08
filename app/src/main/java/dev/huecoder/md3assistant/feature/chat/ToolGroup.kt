@@ -23,6 +23,11 @@ import com.composables.icons.materialsymbols.rounded.Handyman
 import com.composables.icons.materialsymbols.rounded.Shield_question
 import dev.huecoder.md3assistant.R
 import dev.huecoder.md3assistant.tools.ReadScreenTool
+import dev.huecoder.md3assistant.tools.files.ListFilesTool
+import dev.huecoder.md3assistant.tools.files.ReadFileTool
+import dev.huecoder.md3assistant.tools.files.SendFilesTool
+import dev.huecoder.md3assistant.tools.files.WriteFileTool
+import dev.huecoder.md3assistant.tools.optionalArray
 import dev.huecoder.md3assistant.tools.optionalString
 import dev.huecoder.md3assistant.tools.system.RunCommandTool
 import dev.huecoder.md3assistant.tools.weather.WeatherTool
@@ -77,6 +82,8 @@ private fun ToolDetails(call: ToolCallUi) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         val arguments = readableArguments(call.arguments)
         if (arguments.isNotEmpty()) Detail(label = stringResource(R.string.chat_tool_arguments), text = arguments)
+        val viewedImages = call.attachments.filter { it.forModel && it.isImage }
+        if (viewedImages.isNotEmpty()) AttachmentStrip(viewedImages)
         when {
             call.result != null -> Detail(label = stringResource(R.string.chat_tool_result), text = ToolLook.readableResult(call))
             call.status == ToolStatus.CANCELLED -> Detail(
@@ -160,6 +167,16 @@ private data class ToolLook(val icon: ImageVector, val title: UiText) {
                     if (running) R.string.chat_tool_running_command else R.string.chat_tool_command,
                     listOf(args.optionalString("command")?.lineSequence()?.first()?.take(COMMAND_PREVIEW_CHARS).orEmpty()),
                 )
+                ListFilesTool.NAME -> UiText.Resource(R.string.chat_tool_list_files, listOf(fileName(args.optionalString("path"))))
+                ReadFileTool.NAME -> UiText.Resource(
+                    if (running) R.string.chat_tool_reading_file else R.string.chat_tool_file,
+                    listOf(fileName(args.optionalString("path"))),
+                )
+                WriteFileTool.NAME -> UiText.Resource(
+                    if (running) R.string.chat_tool_writing_file else R.string.chat_tool_wrote_file,
+                    listOf(fileName(args.optionalString("path"))),
+                )
+                SendFilesTool.NAME -> UiText.Plural(R.plurals.chat_tool_sent_files, args.optionalArray("paths").size, listOf(args.optionalArray("paths").size))
                 else -> UiText.Raw(call.name)
             }
             return ToolLook(ToolCatalog.of(call.name).icon, title)
@@ -173,6 +190,8 @@ private data class ToolLook(val icon: ImageVector, val title: UiText) {
         }
 
         private fun quoted(value: String?): UiText = value?.let { UiText.Resource(R.string.chat_tool_quoted, listOf(it)) } ?: UiText.Raw("")
+
+        private fun fileName(path: String?): String = path?.trimEnd('/')?.substringAfterLast('/')?.ifEmpty { path }.orEmpty()
 
         private fun hostOf(url: String) = runCatching { URI(url).host?.removePrefix("www.") }.getOrNull() ?: url
     }

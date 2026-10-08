@@ -32,7 +32,7 @@ class ToolRegistry(private val tools: List<Tool>) {
         byName[toolName]?.let { permission(it, settings) } ?: ToolPermission.OFF
 
     fun promptNotes(settings: ToolSettings): List<String> =
-        tools.filter { permission(it, settings) != ToolPermission.OFF }.mapNotNull { it.promptNote(settings) }
+        tools.filter { permission(it, settings) != ToolPermission.OFF }.mapNotNull { it.promptNote(settings) }.distinct()
 
     fun endsTurn(call: ToolCall): Boolean = byName[call.name]?.endsTurn == true
 

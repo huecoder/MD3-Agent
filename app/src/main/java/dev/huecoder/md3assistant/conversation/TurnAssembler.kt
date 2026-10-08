@@ -2,6 +2,7 @@ package dev.huecoder.md3assistant.conversation
 
 import dev.huecoder.md3assistant.data.attachments.Attachment
 import dev.huecoder.md3assistant.data.attachments.AttachmentContent
+import dev.huecoder.md3assistant.data.attachments.ByteSize
 import dev.huecoder.md3assistant.data.db.MessageEntity
 import dev.huecoder.md3assistant.data.db.MessageRole
 import dev.huecoder.md3assistant.data.db.MessageStatus
@@ -27,8 +28,16 @@ object TurnAssembler {
         val answeredCallIds = history.filter { it.role == MessageRole.TOOL }.mapNotNullTo(HashSet()) { it.toolCallId }
         val keptCallIds = HashSet<String>()
         val turns = mutableListOf(ChatTurn(ChatTurn.Role.SYSTEM, systemPrompt))
+        val toolImages = mutableListOf<String>()
+
+        fun flushToolImages() {
+            if (toolImages.isEmpty()) return
+            turns += ChatTurn(ChatTurn.Role.USER, TOOL_IMAGES_NOTE, imageUrls = toolImages.toList())
+            toolImages.clear()
+        }
 
         for (message in history) {
+            if (message.role != MessageRole.TOOL) flushToolImages()
             when (message.role) {
                 MessageRole.USER -> if (message.status != MessageStatus.ERROR) {
                     turns += userTurn(message, Attachment.decode(message.attachmentsJson).mapNotNull { attachments[it.id] })
@@ -41,20 +50,34 @@ object TurnAssembler {
                 }
                 MessageRole.TOOL -> if (message.toolCallId in keptCallIds) {
                     turns += ChatTurn(ChatTurn.Role.TOOL, message.content, toolCallId = message.toolCallId)
+                    toolImages += Attachment.decode(message.attachmentsJson)
+                        .mapNotNull { attachments[it.id] as? AttachmentContent.Image }
+                        .map { it.dataUrl }
                 }
                 MessageRole.SYSTEM -> Unit
             }
         }
+        flushToolImages()
         return turns
     }
 
     private fun userTurn(message: MessageEntity, contents: List<AttachmentContent>): ChatTurn {
-        val files = contents.filterIsInstance<AttachmentContent.Text>()
         val text = buildString {
             append(message.content)
-            files.forEach { file ->
-                if (isNotEmpty()) append("\n\n")
-                append("File \"").append(file.name).append("\":\n```\n").append(file.text.trimEnd()).append("\n```")
+            contents.forEach { content ->
+                when (content) {
+                    is AttachmentContent.Text -> {
+                        if (isNotEmpty()) append("\n\n")
+                        append("File \"").append(content.name).append("\":\n```\n").append(content.text.trimEnd()).append("\n```")
+                    }
+                    is AttachmentContent.Stored -> {
+                        if (isNotEmpty()) append("\n\n")
+                        append("File \"").append(content.name).append("\" (").append(content.mimeType).append(", ")
+                            .append(ByteSize.describe(content.sizeBytes)).append(") is saved on the device at ").append(content.path)
+                            .append(". Use the file tools to work with it.")
+                    }
+                    is AttachmentContent.Image -> Unit
+                }
             }
         }
         return ChatTurn(
@@ -63,4 +86,6 @@ object TurnAssembler {
             imageUrls = contents.filterIsInstance<AttachmentContent.Image>().map { it.dataUrl },
         )
     }
+
+    private const val TOOL_IMAGES_NOTE = "Images returned by the tool calls above."
 }

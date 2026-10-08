@@ -20,7 +20,13 @@ import dev.huecoder.md3assistant.tools.ShowUiTool
 import dev.huecoder.md3assistant.tools.system.RunCommandTool
 import dev.huecoder.md3assistant.system.shell.ShellAccess
 import dev.huecoder.md3assistant.tools.ToolRegistry
+import dev.huecoder.md3assistant.system.files.DeviceFiles
+import dev.huecoder.md3assistant.tools.files.ListFilesTool
+import dev.huecoder.md3assistant.tools.files.ReadFileTool
+import dev.huecoder.md3assistant.tools.files.SendFilesTool
+import dev.huecoder.md3assistant.tools.files.WriteFileTool
 import dev.huecoder.md3assistant.tools.weather.WeatherTool
+import dev.huecoder.md3assistant.tools.web.PageFetcher
 import dev.huecoder.md3assistant.tools.web.ReadWebpageTool
 import dev.huecoder.md3assistant.tools.web.WebSearchTool
 import dev.huecoder.md3assistant.tools.web.WebSearcher
@@ -33,6 +39,7 @@ import dev.huecoder.md3assistant.voice.VoiceRecorder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.Dispatchers
+import java.io.File
 
 class AppContainer(context: Context) {
     private val appContext = context.applicationContext
@@ -52,15 +59,20 @@ class AppContainer(context: Context) {
 
     val screenContext = ScreenContextStore()
     val shellAccess = ShellAccess(appContext)
+    val deviceFiles = DeviceFiles(shellAccess.workspace, attachments.directory, File(appContext.cacheDir, FILE_STAGING_DIR))
 
     val tools = ToolRegistry(
         listOf(
             WebSearchTool(WebSearcher(httpClients)),
-            ReadWebpageTool(httpClients),
+            ReadWebpageTool(PageFetcher(httpClients)),
             WeatherTool(httpClients),
             ReadScreenTool(screenContext),
             ShowUiTool(),
             RunCommandTool(shellAccess),
+            ListFilesTool(deviceFiles),
+            ReadFileTool(deviceFiles, attachments),
+            WriteFileTool(deviceFiles),
+            SendFilesTool(deviceFiles, attachments),
         ),
     )
 
@@ -78,4 +90,8 @@ class AppContainer(context: Context) {
     val approvals = ToolApprovals()
 
     val conversations = ConversationRunner(chats, settings, completions, systemPrompt, tools, attachments, approvals, applicationScope)
+
+    private companion object {
+        const val FILE_STAGING_DIR = "file-staging"
+    }
 }

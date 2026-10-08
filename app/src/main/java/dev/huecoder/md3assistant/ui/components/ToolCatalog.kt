@@ -4,6 +4,10 @@ import androidx.annotation.StringRes
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Build
+import com.composables.icons.materialsymbols.rounded.Description
+import com.composables.icons.materialsymbols.rounded.Edit_document
+import com.composables.icons.materialsymbols.rounded.Folder_open
+import com.composables.icons.materialsymbols.rounded.Perm_media
 import com.composables.icons.materialsymbols.rounded.Language
 import com.composables.icons.materialsymbols.rounded.Partly_cloudy_day
 import com.composables.icons.materialsymbols.rounded.Screenshot_monitor
@@ -13,6 +17,10 @@ import com.composables.icons.materialsymbols.rounded.Travel_explore
 import dev.huecoder.md3assistant.R
 import dev.huecoder.md3assistant.tools.ReadScreenTool
 import dev.huecoder.md3assistant.tools.ShowUiTool
+import dev.huecoder.md3assistant.tools.files.ListFilesTool
+import dev.huecoder.md3assistant.tools.files.ReadFileTool
+import dev.huecoder.md3assistant.tools.files.SendFilesTool
+import dev.huecoder.md3assistant.tools.files.WriteFileTool
 import dev.huecoder.md3assistant.tools.system.RunCommandTool
 import dev.huecoder.md3assistant.tools.weather.WeatherTool
 import dev.huecoder.md3assistant.tools.web.ReadWebpageTool
@@ -29,6 +37,10 @@ object ToolCatalog {
         ReadScreenTool.NAME to known(MaterialSymbols.Rounded.Screenshot_monitor, R.string.tools_read_screen_title, R.string.tools_read_screen_summary),
         ShowUiTool.NAME to known(MaterialSymbols.Rounded.Smart_button, R.string.tools_show_ui_title, R.string.tools_show_ui_summary),
         RunCommandTool.NAME to known(MaterialSymbols.Rounded.Terminal, R.string.tools_run_command_title, R.string.tools_run_command_summary),
+        ListFilesTool.NAME to known(MaterialSymbols.Rounded.Folder_open, R.string.tools_list_files_title, R.string.tools_list_files_summary),
+        ReadFileTool.NAME to known(MaterialSymbols.Rounded.Description, R.string.tools_read_file_title, R.string.tools_read_file_summary),
+        WriteFileTool.NAME to known(MaterialSymbols.Rounded.Edit_document, R.string.tools_write_file_title, R.string.tools_write_file_summary),
+        SendFilesTool.NAME to known(MaterialSymbols.Rounded.Perm_media, R.string.tools_send_files_title, R.string.tools_send_files_summary),
     )
 
     fun of(toolName: String): ToolInfo =

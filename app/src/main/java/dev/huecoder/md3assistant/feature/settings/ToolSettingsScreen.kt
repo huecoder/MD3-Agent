@@ -33,6 +33,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import dev.huecoder.md3assistant.App
 import dev.huecoder.md3assistant.R
+import dev.huecoder.md3assistant.data.settings.FetchBackend
+import dev.huecoder.md3assistant.data.settings.FetchSettings
 import dev.huecoder.md3assistant.data.settings.SearchBackend
 import dev.huecoder.md3assistant.data.settings.SearchSettings
 import dev.huecoder.md3assistant.data.settings.ToolPermission
@@ -78,6 +80,9 @@ fun ToolSettingsScreen(onBack: () -> Unit) {
             SectionHeader(stringResource(R.string.tools_section_search))
             SearchSection(current.search) { tools = current.copy(search = it) }
 
+            SectionHeader(stringResource(R.string.tools_section_fetch))
+            FetchSection(current.fetch) { tools = current.copy(fetch = it) }
+
             SectionHeader(stringResource(R.string.tools_weather_title))
             WeatherSection(current.weather) { tools = current.copy(weather = it) }
 
@@ -88,7 +93,7 @@ fun ToolSettingsScreen(onBack: () -> Unit) {
                         onBack()
                     }
                 },
-                enabled = current.search.isComplete(),
+                enabled = current.search.isComplete() && current.fetch.isComplete(),
                 shapes = ButtonDefaults.shapes(),
                 modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 24.dp),
             ) { Text(stringResource(R.string.settings_save)) }
@@ -153,6 +158,56 @@ private fun SearchSection(search: SearchSettings, onChange: (SearchSettings) -> 
 }
 
 @Composable
+private fun FetchSection(fetch: FetchSettings, onChange: (FetchSettings) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        SegmentedChoices(FETCH_CHOICES, fetch.backend, onSelect = { onChange(fetch.copy(backend = it)) })
+        Text(stringResource(fetch.backend.hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        when (fetch.backend) {
+            FetchBackend.DIRECT -> Unit
+            FetchBackend.JINA_READER -> SecretField(fetch.jinaApiKey) { onChange(fetch.copy(jinaApiKey = it)) }
+            FetchBackend.CUSTOM -> {
+                FormField(
+                    value = fetch.customUrl,
+                    onValueChange = { onChange(fetch.copy(customUrl = it)) },
+                    label = stringResource(R.string.tools_fetch_custom_url),
+                    placeholder = stringResource(R.string.tools_fetch_custom_url_placeholder),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                SecretField(fetch.customApiKey) { onChange(fetch.copy(customApiKey = it)) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SecretField(value: String, onChange: (String) -> Unit) {
+    FormField(
+        value = value,
+        onValueChange = onChange,
+        label = stringResource(R.string.tools_fetch_api_key),
+        visualTransformation = PasswordVisualTransformation(),
+        modifier = Modifier.fillMaxWidth(),
+    )
+}
+
+private val FETCH_CHOICES = listOf(
+    Choice(FetchBackend.DIRECT, R.string.tools_fetch_backend_direct),
+    Choice(FetchBackend.JINA_READER, R.string.tools_fetch_backend_jina),
+    Choice(FetchBackend.CUSTOM, R.string.tools_fetch_backend_custom),
+)
+
+@get:StringRes
+private val FetchBackend.hint: Int
+    get() = when (this) {
+        FetchBackend.DIRECT -> R.string.tools_fetch_backend_direct_hint
+        FetchBackend.JINA_READER -> R.string.tools_fetch_backend_jina_hint
+        FetchBackend.CUSTOM -> R.string.tools_fetch_backend_custom_hint
+    }
+
+private fun FetchSettings.isComplete(): Boolean = backend != FetchBackend.CUSTOM || customUrl.isNotBlank()
+
+@Composable
 private fun WeatherSection(weather: WeatherSettings, onChange: (WeatherSettings) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
@@ -202,6 +257,7 @@ private fun SearchSettings.isComplete(): Boolean = when (backend) {
 private fun ToolSettings.trimmed() = copy(
     search = search.copy(searxngUrl = search.searxngUrl.trim(), apiKey = search.apiKey.trim()),
     weather = weather.copy(forecastUrl = weather.forecastUrl.trim(), geocodingUrl = weather.geocodingUrl.trim()),
+    fetch = fetch.copy(jinaApiKey = fetch.jinaApiKey.trim(), customUrl = fetch.customUrl.trim(), customApiKey = fetch.customApiKey.trim()),
 )
 
 private val BADGE_SIZE = 40.dp

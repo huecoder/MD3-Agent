@@ -12,7 +12,9 @@ data class ToolSettings(
     val permissions: Map<String, ToolPermission> = emptyMap(),
     val weather: WeatherSettings = WeatherSettings(),
     val search: SearchSettings = SearchSettings(),
+    val fetch: FetchSettings = FetchSettings(),
     val access: AccessSettings = AccessSettings(),
+    val mcpServers: List<McpServer> = emptyList(),
 ) {
     fun permission(toolName: String, default: ToolPermission): ToolPermission = permissions[toolName] ?: default
 
@@ -44,7 +46,35 @@ data class SearchSettings(
 )
 
 @Serializable
+enum class FetchBackend { DIRECT, JINA_READER, CUSTOM }
+
+@Serializable
+data class FetchSettings(
+    val backend: FetchBackend = FetchBackend.JINA_READER,
+    val jinaApiKey: String = "",
+    val customUrl: String = "",
+    val customApiKey: String = "",
+) {
+    companion object {
+        const val URL_PLACEHOLDER = "{url}"
+        const val JINA_READER_URL = "https://r.jina.ai/$URL_PLACEHOLDER"
+    }
+}
+
+@Serializable
 enum class ShellMode { SANDBOX, TERMUX, SHIZUKU, ROOT }
 
 @Serializable
-data class AccessSettings(val shell: ShellMode = ShellMode.SANDBOX)
+enum class FileScope { APP, SHARED_STORAGE, ROOT }
+
+@Serializable
+data class AccessSettings(val shell: ShellMode = ShellMode.SANDBOX, val files: FileScope = FileScope.APP)
+
+@Serializable
+data class McpServer(
+    val id: String,
+    val name: String,
+    val url: String,
+    val headers: List<HeaderEntry> = emptyList(),
+    val enabled: Boolean = true,
+)

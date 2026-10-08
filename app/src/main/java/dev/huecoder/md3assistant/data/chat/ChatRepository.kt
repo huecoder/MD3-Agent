@@ -47,9 +47,9 @@ class ChatRepository(
             .copy(attachmentsJson = Attachment.encode(attached))
             .also { save(it) }
 
-    suspend fun appendToolResult(chatId: String, toolCallId: String, content: String, status: MessageStatus): MessageEntity =
+    suspend fun appendToolResult(chatId: String, toolCallId: String, content: String, status: MessageStatus, attached: List<Attachment>): MessageEntity =
         newMessage(chatId, MessageRole.TOOL, content, status, modelId = null)
-            .copy(toolCallId = toolCallId)
+            .copy(toolCallId = toolCallId, attachmentsJson = Attachment.encode(attached))
             .also { save(it) }
 
     suspend fun startAssistantMessage(chatId: String, modelId: String): MessageEntity =
@@ -61,7 +61,12 @@ class ChatRepository(
         chatDao.touch(message.chatId, clock())
     }
 
-    suspend fun truncateAfter(message: MessageEntity) = messageDao.deleteFrom(message.chatId, message.createdAt + 1)
+    suspend fun truncateAfter(message: MessageEntity) {
+        val from = message.createdAt + 1
+        val dropped = messageDao.listForChat(message.chatId).filter { it.createdAt >= from }.flatMap { Attachment.decode(it.attachmentsJson) }
+        messageDao.deleteFrom(message.chatId, from)
+        attachments.delete(dropped)
+    }
 
     suspend fun rename(chatId: String, title: String) = chatDao.rename(chatId, title)
 

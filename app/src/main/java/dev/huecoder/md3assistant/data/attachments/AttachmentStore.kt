@@ -7,21 +7,29 @@ import android.graphics.ImageDecoder
 import android.net.Uri
 import android.provider.OpenableColumns
 import android.util.Base64
+import android.webkit.MimeTypeMap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
-import java.io.ByteArrayOutputStream
 import java.io.File
-import java.io.InputStream
 import java.io.IOException
+import java.io.InputStream
 import java.util.UUID
 import kotlin.math.max
 
 @Serializable
-data class Attachment(val id: String, val name: String, val mimeType: String, val sizeBytes: Long) {
+data class Attachment(
+    val id: String,
+    val name: String,
+    val mimeType: String,
+    val sizeBytes: Long,
+    val forModel: Boolean = true,
+) {
     val isImage: Boolean get() = mimeType.startsWith("image/")
+
+    val isText: Boolean get() = TextFormats.isText(mimeType, name)
 
     companion object {
         private val listSerializer = ListSerializer(serializer())
@@ -37,39 +45,45 @@ data class Attachment(val id: String, val name: String, val mimeType: String, va
 sealed interface AttachmentContent {
     data class Image(val dataUrl: String) : AttachmentContent
     data class Text(val name: String, val text: String) : AttachmentContent
+    data class Stored(val name: String, val mimeType: String, val sizeBytes: Long, val path: String) : AttachmentContent
 }
 
-class UnsupportedAttachmentException(val fileName: String) : IOException("Unsupported attachment type: $fileName")
-
-class AttachmentTooLargeException(val limitKb: Int) : IOException("Attachment is larger than $limitKb KB")
+class AttachmentTooLargeException(val limitMb: Int) : IOException("Attachment is larger than $limitMb MB")
 
 class AttachmentStore(private val context: Context) {
-    private val directory: File get() = File(context.filesDir, DIRECTORY).apply { mkdirs() }
+    val directory: File get() = File(context.filesDir, DIRECTORY).apply { mkdirs() }
 
     suspend fun import(uri: Uri): Attachment = withContext(Dispatchers.IO) {
         val resolver = context.contentResolver
         val name = displayName(resolver, uri) ?: uri.lastPathSegment ?: FALLBACK_NAME
         val mimeType = resolver.getType(uri) ?: TextFormats.guessMimeType(name)
-        val id = UUID.randomUUID().toString()
-        val target = File(directory, id)
-        when {
-            mimeType.startsWith("image/") -> importImage(uri, target)
-            TextFormats.isText(mimeType, name) -> importText(resolver, uri, target)
-            else -> throw UnsupportedAttachmentException(name)
+        if (mimeType.startsWith("image/")) {
+            storeImageForModel(name) { ImageDecoder.createSource(resolver, uri) }
+        } else {
+            val input = resolver.openInputStream(uri) ?: throw IOException("Could not open the file")
+            storeRaw(name, mimeType, forModel = true) { target -> input.use { copyCapped(it, target) } }
         }
-        val storedMime = if (mimeType.startsWith("image/")) STORED_IMAGE_MIME else mimeType
-        Attachment(id, name, storedMime, target.length())
+    }
+
+    suspend fun importLocal(source: File, forModel: Boolean): Attachment = withContext(Dispatchers.IO) {
+        val name = source.name
+        val mimeType = TextFormats.guessMimeType(name)
+        if (forModel && mimeType.startsWith("image/")) {
+            storeImageForModel(name) { ImageDecoder.createSource(source) }
+        } else {
+            storeRaw(name, mimeType, forModel) { target -> source.inputStream().use { copyCapped(it, target) } }
+        }
     }
 
     fun file(attachment: Attachment): File = File(directory, attachment.id)
 
     suspend fun contentFor(attachment: Attachment): AttachmentContent? = withContext(Dispatchers.IO) {
         val file = file(attachment)
-        if (!file.exists()) return@withContext null
-        if (attachment.isImage) {
-            AttachmentContent.Image("data:${attachment.mimeType};base64," + Base64.encodeToString(file.readBytes(), Base64.NO_WRAP))
-        } else {
-            AttachmentContent.Text(attachment.name, file.readText())
+        when {
+            !attachment.forModel || !file.exists() -> null
+            attachment.isImage -> AttachmentContent.Image("data:${attachment.mimeType};base64," + Base64.encodeToString(file.readBytes(), Base64.NO_WRAP))
+            attachment.isText && file.length() <= MAX_INLINE_TEXT_BYTES -> AttachmentContent.Text(attachment.name, file.readText())
+            else -> AttachmentContent.Stored(attachment.name, attachment.mimeType, file.length(), file.absolutePath)
         }
     }
 
@@ -77,9 +91,10 @@ class AttachmentStore(private val context: Context) {
         attachments.forEach { file(it).delete() }
     }
 
-    private fun importImage(uri: Uri, target: File) {
-        val source = ImageDecoder.createSource(context.contentResolver, uri)
-        val bitmap = ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
+    private fun storeImageForModel(name: String, source: () -> ImageDecoder.Source): Attachment {
+        val id = newId(JPEG_EXTENSION)
+        val target = File(directory, id)
+        val bitmap = ImageDecoder.decodeBitmap(source()) { decoder, info, _ ->
             val longest = max(info.size.width, info.size.height)
             if (longest > MAX_IMAGE_SIDE_PX) {
                 val scale = MAX_IMAGE_SIDE_PX.toFloat() / longest
@@ -89,28 +104,37 @@ class AttachmentStore(private val context: Context) {
         }
         target.outputStream().use { bitmap.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, it) }
         bitmap.recycle()
+        return Attachment(id, name, STORED_IMAGE_MIME, target.length())
     }
 
-    private fun importText(resolver: ContentResolver, uri: Uri, target: File) {
-        val input = resolver.openInputStream(uri) ?: throw IOException("Could not open the file")
-        input.use { stream ->
-            val bytes = readAtMost(stream, MAX_TEXT_BYTES + 1)
-            if (bytes.size > MAX_TEXT_BYTES) {
-                throw AttachmentTooLargeException(MAX_TEXT_BYTES / BYTES_PER_KB)
+    private fun storeRaw(name: String, mimeType: String, forModel: Boolean, write: (File) -> Unit): Attachment {
+        val target = File(directory, newId(TextFormats.extension(name)))
+        try {
+            write(target)
+        } catch (e: IOException) {
+            target.delete()
+            throw e
+        }
+        return Attachment(target.name, name, mimeType, target.length(), forModel)
+    }
+
+    private fun copyCapped(input: InputStream, target: File) {
+        target.outputStream().use { output ->
+            val chunk = ByteArray(COPY_BUFFER_BYTES)
+            var total = 0L
+            while (true) {
+                val read = input.read(chunk)
+                if (read == -1) break
+                total += read
+                if (total > MAX_FILE_BYTES) throw AttachmentTooLargeException((MAX_FILE_BYTES / BYTES_PER_MB).toInt())
+                output.write(chunk, 0, read)
             }
-            target.writeBytes(bytes)
         }
     }
 
-    private fun readAtMost(stream: InputStream, limit: Int): ByteArray {
-        val out = ByteArrayOutputStream()
-        val chunk = ByteArray(BYTES_PER_KB)
-        while (out.size() < limit) {
-            val read = stream.read(chunk, 0, minOf(chunk.size, limit - out.size()))
-            if (read == -1) break
-            out.write(chunk, 0, read)
-        }
-        return out.toByteArray()
+    private fun newId(extension: String): String {
+        val base = UUID.randomUUID().toString()
+        return if (extension.matches(SAFE_EXTENSION)) "$base.$extension" else base
     }
 
     private fun displayName(resolver: ContentResolver, uri: Uri): String? =
@@ -122,10 +146,14 @@ class AttachmentStore(private val context: Context) {
         const val DIRECTORY = "attachments"
         const val FALLBACK_NAME = "file"
         const val STORED_IMAGE_MIME = "image/jpeg"
+        const val JPEG_EXTENSION = "jpg"
         const val MAX_IMAGE_SIDE_PX = 1600
         const val JPEG_QUALITY = 85
-        const val BYTES_PER_KB = 1024
-        const val MAX_TEXT_BYTES = 256 * BYTES_PER_KB
+        const val COPY_BUFFER_BYTES = 64 * 1024
+        const val BYTES_PER_MB = 1024L * 1024
+        const val MAX_FILE_BYTES = 64 * BYTES_PER_MB
+        const val MAX_INLINE_TEXT_BYTES = 256 * 1024L
+        val SAFE_EXTENSION = Regex("[a-z0-9]{1,8}")
     }
 }
 
@@ -143,7 +171,15 @@ object TextFormats {
     fun isText(mimeType: String, name: String): Boolean =
         mimeType.startsWith("text/") || mimeType in textMimeTypes || extension(name) in textExtensions
 
-    fun guessMimeType(name: String): String = if (extension(name) in textExtensions) "text/plain" else "application/octet-stream"
+    fun guessMimeType(name: String): String {
+        val extension = extension(name)
+        return when {
+            extension in textExtensions -> "text/plain"
+            else -> MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension) ?: GENERIC_MIME
+        }
+    }
 
-    private fun extension(name: String) = name.substringAfterLast('.', missingDelimiterValue = "").lowercase()
+    fun extension(name: String) = name.substringAfterLast('.', missingDelimiterValue = "").lowercase()
+
+    private const val GENERIC_MIME = "application/octet-stream"
 }

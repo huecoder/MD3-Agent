@@ -101,8 +101,7 @@
     <string name="home_setup_body">Add any OpenAI-compatible endpoint: address, key and model.</string>
     <string name="home_setup_open_settings">Open settings</string>
     <string name="chat_error_no_model">Add a provider and choose a model in settings first</string>
-    <string name="chat_attachment_unsupported">“%1$s”: only images and text files are supported for now</string>
-    <string name="chat_attachment_too_large">The file is larger than %1$d KB, too much for the model context</string>
+    <string name="chat_attachment_too_large">The file is larger than %1$d MB</string>
     <string name="chat_attachment_failed">Couldn\'t attach the file</string>
     <string name="chat_attachment_image_unreadable">Couldn\'t read the image</string>
     <string name="chat_empty_greeting">How can I help?</string>
@@ -244,4 +243,47 @@
     <string name="access_action_open_shizuku">Open Shizuku</string>
     <string name="access_action_check_root">Check root</string>
     <string name="access_action_checking">Checking…</string>
+    <string name="tools_section_fetch">Page reading</string>
+    <string name="tools_fetch_backend_direct">Direct</string>
+    <string name="tools_fetch_backend_jina" translatable="false">Jina Reader</string>
+    <string name="tools_fetch_backend_custom">Custom</string>
+    <string name="tools_fetch_backend_direct_hint">The phone downloads the page itself and strips the HTML. No middleman, but pages built by scripts come back empty.</string>
+    <string name="tools_fetch_backend_jina_hint">r.jina.ai renders the page and returns clean markdown. Works without a key, a free key raises the rate limit.</string>
+    <string name="tools_fetch_backend_custom_hint">Any reader API that takes the page address in its URL. {url} is replaced with the page address, without it the address goes to the end.</string>
+    <string name="tools_fetch_api_key">API key (optional)</string>
+    <string name="tools_fetch_custom_url">Reader URL</string>
+    <string name="tools_fetch_custom_url_placeholder" translatable="false">https://reader.example.com/{url}</string>
+    <string name="tools_list_files_title">Browsing folders</string>
+    <string name="tools_list_files_summary">Lists what is inside a folder</string>
+    <string name="tools_read_file_title">Reading files</string>
+    <string name="tools_read_file_summary">Reads text files and looks at images</string>
+    <string name="tools_write_file_title">Writing files</string>
+    <string name="tools_write_file_summary">Creates and edits text files</string>
+    <string name="tools_send_files_title">Sending files</string>
+    <string name="tools_send_files_summary">Shows pictures and files from the phone right in the chat</string>
+    <string name="chat_tool_list_files">Folder %1$s</string>
+    <string name="chat_tool_reading_file">Reading %1$s</string>
+    <string name="chat_tool_file">File %1$s</string>
+    <string name="chat_tool_writing_file">Writing %1$s</string>
+    <string name="chat_tool_wrote_file">Saved %1$s</string>
+    <plurals name="chat_tool_sent_files">
+        <item quantity="one">Sent %1$d file</item>
+        <item quantity="other">Sent %1$d files</item>
+    </plurals>
+    <string name="chat_attachment_no_viewer">No app can open %1$s</string>
+    <string name="access_section_files">Files</string>
+    <string name="access_files_hint">Which files the assistant can read, write and send you. Its workspace is the same folder the sandbox shell starts in.</string>
+    <string name="access_files_app">App folder</string>
+    <string name="access_files_app_summary">Workspace and chat attachments only</string>
+    <string name="access_files_shared">Phone storage</string>
+    <string name="access_files_shared_summary">Download, DCIM, Documents and the rest, no root</string>
+    <string name="access_files_root">Root</string>
+    <string name="access_files_root_summary">Any path, other apps\' data included</string>
+    <string name="access_setup_files_app">Works out of the box. The assistant sees only its workspace and the files you attach to the chat.</string>
+    <string name="access_setup_files_shared">Turn on All files access for the app, then come back here.</string>
+    <string name="access_setup_files_shared_ready">All files access is on. Writing still asks first unless you change it in Tools.</string>
+    <string name="access_setup_files_shared_old">Needs Android 11 or newer.</string>
+    <string name="access_setup_files_root">Files are read and written through su. Your root manager will ask to grant access.</string>
+    <string name="access_setup_files_root_ready">Root is granted. Any file on the device is reachable.</string>
+    <string name="access_action_open_settings">Open settings</string>
 </resources>

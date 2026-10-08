@@ -188,6 +188,6 @@ fun EmptyConversation(modifier: Modifier = Modifier, avatarSize: Dp = 96.dp, sty
     }
 }
 
-private val PICKABLE_MIME_TYPES = arrayOf("image/*", "text/*", "application/*")
+private val PICKABLE_MIME_TYPES = arrayOf("*/*")
 
 private val ComposerClearance = 104.dp

@@ -7,6 +7,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.style.TextDecoration
+import com.mikepenz.markdown.coil3.Coil3ImageTransformerImpl
 import com.mikepenz.markdown.compose.components.markdownComponents
 import com.mikepenz.markdown.compose.elements.highlightedCodeBlock
 import com.mikepenz.markdown.compose.elements.highlightedCodeFence
@@ -45,5 +46,6 @@ fun MarkdownContent(text: String, modifier: Modifier = Modifier) {
             ),
         ),
         components = markdownComponents(codeFence = highlightedCodeFence, codeBlock = highlightedCodeBlock),
+        imageTransformer = Coil3ImageTransformerImpl,
     )
 }

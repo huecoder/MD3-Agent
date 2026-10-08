@@ -99,6 +99,7 @@ dependencies {
 
     implementation(libs.markdown.m3)
     implementation(libs.markdown.code)
+    implementation(libs.markdown.coil3)
     implementation(libs.material.kolor)
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)

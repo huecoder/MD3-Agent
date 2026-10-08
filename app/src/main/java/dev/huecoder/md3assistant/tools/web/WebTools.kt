@@ -2,8 +2,6 @@ package dev.huecoder.md3assistant.tools.web
 
 import dev.huecoder.md3assistant.data.settings.ToolSettings
 import dev.huecoder.md3assistant.llm.ToolSpec
-import dev.huecoder.md3assistant.net.HttpClientProvider
-import dev.huecoder.md3assistant.net.fetchText
 import dev.huecoder.md3assistant.tools.Tool
 import dev.huecoder.md3assistant.tools.ToolArgumentException
 import dev.huecoder.md3assistant.tools.ToolOutcome
@@ -15,7 +13,6 @@ import dev.huecoder.md3assistant.tools.stringProperty
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
-import okhttp3.Request
 
 class WebSearchTool(private val searcher: WebSearcher) : Tool {
     private val json = Json
@@ -45,29 +42,32 @@ class WebSearchTool(private val searcher: WebSearcher) : Tool {
     }
 }
 
-class ReadWebpageTool(private val httpClients: HttpClientProvider) : Tool {
+class ReadWebpageTool(private val fetcher: PageFetcher) : Tool {
     override val spec = ToolSpec(
         name = NAME,
-        description = "Opens a web page by URL and returns its text.",
+        description = "Opens a web page by URL and returns its readable text, usually as markdown. " +
+            "Long pages come in parts: when the result says it is truncated, call again with the given offset to read on.",
         parameters = objectSchema(required = listOf("url")) {
             stringProperty("url", "Full http(s) address of the page")
+            integerProperty("offset", "Character offset to continue reading from, default 0", minimum = 0, maximum = Int.MAX_VALUE)
         },
     )
 
     override suspend fun execute(arguments: JsonObject, settings: ToolSettings): ToolOutcome {
         val raw = arguments.requireString("url")
         val url = raw.toHttpUrlOrNull() ?: throw ToolArgumentException("Not an http(s) address: \"$raw\"")
-        val request = Request.Builder().url(url).header("Accept", "text/html,text/plain;q=0.9,*/*;q=0.5").build()
-        val html = httpClients.current().fetchText(request)
-        val text = HtmlText.document(html)
-        if (text.isBlank()) return ToolOutcome.error("The page has no text (it may be rendered by scripts)")
-        val title = HtmlText.title(html)
-        val clipped = if (text.length > MAX_TEXT_CHARS) text.take(MAX_TEXT_CHARS) + "\n…[truncated]" else text
-        return ToolOutcome(listOfNotNull(title?.let { "# $it" }, url.toString(), clipped).joinToString("\n\n"))
+        val offset = (arguments.optionalInt("offset") ?: 0).coerceAtLeast(0)
+        val page = fetcher.fetch(url, settings.fetch)
+        if (page.text.isBlank()) return ToolOutcome.error("The page has no text (it may be rendered by scripts)")
+        if (offset >= page.text.length) return ToolOutcome.error("Offset $offset is past the end of the page (${page.text.length} characters)")
+        val end = minOf(offset + MAX_TEXT_CHARS, page.text.length)
+        val tail = if (end < page.text.length) "\n\n…[truncated at ${end} of ${page.text.length} characters, continue with offset=$end]" else ""
+        val header = listOfNotNull(page.title?.let { "# $it" }, url.toString())
+        return ToolOutcome((header + (page.text.substring(offset, end) + tail)).joinToString("\n\n"))
     }
 
     companion object {
         const val NAME = "read_webpage"
-        private const val MAX_TEXT_CHARS = 12_000
+        private const val MAX_TEXT_CHARS = 16_000
     }
 }

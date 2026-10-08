@@ -94,6 +94,7 @@ fun AssistantReply(
                             key(call.id) { ApprovalCard(call, onDecision = { onApproval(call, it) }) }
                         }
                     }
+                    is ReplyPart.Media -> MediaGallery(part.attachments)
                     is ReplyPart.Error -> ErrorNotice(part.text.asString())
                 }
             }

@@ -12,7 +12,6 @@ import dev.huecoder.md3assistant.conversation.ToolApprovals
 import dev.huecoder.md3assistant.data.attachments.Attachment
 import dev.huecoder.md3assistant.data.attachments.AttachmentStore
 import dev.huecoder.md3assistant.data.attachments.AttachmentTooLargeException
-import dev.huecoder.md3assistant.data.attachments.UnsupportedAttachmentException
 import dev.huecoder.md3assistant.data.chat.ChatRepository
 import dev.huecoder.md3assistant.data.db.ChatEntity
 import dev.huecoder.md3assistant.data.db.MessageEntity
@@ -134,10 +133,8 @@ class ChatViewModel(
                 try {
                     val attachment = attachments.import(uri)
                     pending.update { it.copy(items = it.items + attachment) }
-                } catch (e: UnsupportedAttachmentException) {
-                    _errors.value = UiText.Resource(R.string.chat_attachment_unsupported, listOf(e.fileName))
                 } catch (e: AttachmentTooLargeException) {
-                    _errors.value = UiText.Resource(R.string.chat_attachment_too_large, listOf(e.limitKb))
+                    _errors.value = UiText.Resource(R.string.chat_attachment_too_large, listOf(e.limitMb))
                 } catch (e: IOException) {
                     _errors.value = UiText.Resource(R.string.chat_attachment_failed)
                 } catch (e: IllegalArgumentException) {

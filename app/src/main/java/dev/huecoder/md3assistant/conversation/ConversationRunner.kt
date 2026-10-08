@@ -143,7 +143,7 @@ class ConversationRunner(
             } else {
                 ToolOutcome.denied()
             }
-            chats.appendToolResult(chatId, call.id, outcome.content, outcome.messageStatus)
+            chats.appendToolResult(chatId, call.id, outcome.content, outcome.messageStatus, outcome.attachments)
         }
         return round.toolCalls.all(tools::endsTurn)
     }

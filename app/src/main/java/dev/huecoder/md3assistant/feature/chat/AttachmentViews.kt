@@ -1,5 +1,10 @@
 package dev.huecoder.md3assistant.feature.chat
 
+import android.content.ActivityNotFoundException
+import android.content.Context
+import android.content.Intent
+import android.widget.Toast
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,6 +29,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
 import coil3.compose.AsyncImage
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Close
@@ -39,9 +45,10 @@ fun AttachmentStrip(attachments: List<Attachment>, modifier: Modifier = Modifier
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier.horizontalScroll(rememberScrollState()),
     ) {
+        val context = LocalContext.current
         attachments.forEach { attachment ->
             Box {
-                if (attachment.isImage) ImageThumb(attachment) else FilePill(attachment)
+                if (attachment.isImage) ImageThumb(attachment) else FilePill(attachment, onClick = { context.openAttachment(attachment) })
                 onRemove?.let { remove ->
                     FilledTonalIconButton(
                         onClick = { remove(attachment) },
@@ -57,18 +64,37 @@ fun AttachmentStrip(attachments: List<Attachment>, modifier: Modifier = Modifier
 
 @Composable
 private fun ImageThumb(attachment: Attachment) {
-    val store = (LocalContext.current.applicationContext as App).container.attachments
-    AsyncImage(
-        model = store.file(attachment),
-        contentDescription = attachment.name,
-        contentScale = ContentScale.Crop,
-        modifier = Modifier.size(THUMB_SIZE).clip(MaterialTheme.shapes.medium),
-    )
+    AttachmentImage(attachment, Modifier.size(THUMB_SIZE).clip(MaterialTheme.shapes.medium))
 }
 
 @Composable
-private fun FilePill(attachment: Attachment) {
-    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainerHighest) {
+fun AttachmentImage(attachment: Attachment, modifier: Modifier = Modifier, contentScale: ContentScale = ContentScale.Crop) {
+    val context = LocalContext.current
+    val store = (context.applicationContext as App).container.attachments
+    AsyncImage(
+        model = store.file(attachment),
+        contentDescription = attachment.name,
+        contentScale = contentScale,
+        modifier = modifier.clickable { context.openAttachment(attachment) },
+    )
+}
+
+fun Context.openAttachment(attachment: Attachment) {
+    val file = (applicationContext as App).container.attachments.file(attachment)
+    val uri = FileProvider.getUriForFile(this, "$packageName$FILE_PROVIDER_SUFFIX", file, attachment.name)
+    val intent = Intent(Intent.ACTION_VIEW)
+        .setDataAndType(uri, attachment.mimeType)
+        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+    try {
+        startActivity(intent)
+    } catch (e: ActivityNotFoundException) {
+        Toast.makeText(this, getString(R.string.chat_attachment_no_viewer, attachment.name), Toast.LENGTH_SHORT).show()
+    }
+}
+
+@Composable
+fun FilePill(attachment: Attachment, onClick: () -> Unit) {
+    Surface(onClick = onClick, shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainerHighest) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -86,6 +112,7 @@ private fun FilePill(attachment: Attachment) {
     }
 }
 
+private const val FILE_PROVIDER_SUFFIX = ".files"
 private val THUMB_SIZE = 72.dp
 private val REMOVE_BUTTON_SIZE = 22.dp
 private val MAX_FILE_NAME_WIDTH = 180.dp

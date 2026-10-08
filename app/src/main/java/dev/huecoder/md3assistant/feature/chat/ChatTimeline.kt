@@ -23,7 +23,14 @@ import java.net.URI
 
 enum class ToolStatus { AWAITING_APPROVAL, RUNNING, DONE, ERROR, DENIED, CANCELLED }
 
-data class ToolCallUi(val id: String, val name: String, val arguments: JsonObject, val status: ToolStatus, val result: String?)
+data class ToolCallUi(
+    val id: String,
+    val name: String,
+    val arguments: JsonObject,
+    val status: ToolStatus,
+    val result: String?,
+    val attachments: List<Attachment> = emptyList(),
+)
 
 data class SourceUi(val title: String, val url: String, val host: String)
 
@@ -51,6 +58,8 @@ sealed interface ReplyPart {
     data class Text(val content: String) : ReplyPart
 
     data class Tools(val calls: List<ToolCallUi>) : ReplyPart
+
+    data class Media(val attachments: List<Attachment>) : ReplyPart
 
     data class Error(val text: UiText) : ReplyPart
 }
@@ -117,7 +126,12 @@ object ChatTimeline {
             if (reasoning.isNotEmpty()) add(ReplyPart.Reasoning(reasoning, isStreaming = isLive && content.isEmpty() && calls.isEmpty()))
             if (content.isNotEmpty()) add(ReplyPart.Text(content))
             val shown = calls.filter { it.name != ShowUiTool.NAME }
-            if (shown.isNotEmpty()) add(ReplyPart.Tools(shown.map { it.toUi(results[it.id], live) }))
+            if (shown.isNotEmpty()) {
+                val toolCalls = shown.map { it.toUi(results[it.id], live) }
+                add(ReplyPart.Tools(toolCalls))
+                val sharedWithUser = toolCalls.flatMap { call -> call.attachments.filterNot { it.forModel } }
+                if (sharedWithUser.isNotEmpty()) add(ReplyPart.Media(sharedWithUser))
+            }
             when {
                 isLive -> Unit
                 row.status == MessageStatus.ERROR -> add(ReplyPart.Error(row.errorText?.let(UiText::Raw) ?: UiText.Resource(R.string.chat_error_unknown)))
@@ -159,7 +173,7 @@ object ChatTimeline {
             live != null -> ToolStatus.RUNNING
             else -> ToolStatus.CANCELLED
         }
-        return ToolCallUi(id, name, parseArguments(arguments), status, result?.content)
+        return ToolCallUi(id, name, parseArguments(arguments), status, result?.content, Attachment.decode(result?.attachmentsJson))
     }
 
     private fun replyEnd(rows: List<MessageEntity>, results: Map<String?, MessageEntity>, isLatest: Boolean): ReplyEnd {

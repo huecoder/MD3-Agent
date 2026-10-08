@@ -1,7 +1,9 @@
 package dev.huecoder.md3assistant.feature.settings
 
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
@@ -19,6 +21,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SegmentedListItem
@@ -42,10 +45,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Adb
 import com.composables.icons.materialsymbols.rounded.Content_copy
+import com.composables.icons.materialsymbols.rounded.Folder
 import com.composables.icons.materialsymbols.rounded.Shield_lock
 import com.composables.icons.materialsymbols.rounded.Smartphone
+import com.composables.icons.materialsymbols.rounded.Storage
 import com.composables.icons.materialsymbols.rounded.Terminal
 import dev.huecoder.md3assistant.R
+import dev.huecoder.md3assistant.data.settings.FileScope
 import dev.huecoder.md3assistant.data.settings.ShellMode
 import dev.huecoder.md3assistant.system.shell.AccessStatus
 import dev.huecoder.md3assistant.system.shell.TermuxShell
@@ -59,35 +65,42 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun DeviceAccessScreen(onBack: () -> Unit) {
-    val viewModel = appViewModel { DeviceAccessViewModel(it.settings, it.shellAccess) }
+    val viewModel = appViewModel { DeviceAccessViewModel(it.settings, it.shellAccess, it.deviceFiles) }
     val selected by viewModel.shellMode.collectAsStateWithLifecycle()
     val statuses by viewModel.statuses.collectAsStateWithLifecycle()
     val checkingRoot by viewModel.checkingRoot.collectAsStateWithLifecycle()
+    val fileScope by viewModel.fileScope.collectAsStateWithLifecycle()
+    val sharedStorage by viewModel.sharedStorage.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     val askTermux = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { viewModel.refresh() }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refresh() }
 
     SettingsScaffold(stringResource(R.string.settings_access), onBack) { padding ->
         val mode = selected ?: return@SettingsScaffold
+        val files = fileScope ?: return@SettingsScaffold
+        val rootStatus = statuses[ShellMode.ROOT] ?: AccessStatus.UNKNOWN
+        val fileStatus = { scope: FileScope ->
+            when (scope) {
+                FileScope.APP -> AccessStatus.READY
+                FileScope.SHARED_STORAGE -> sharedStorage
+                FileScope.ROOT -> rootStatus
+            }
+        }
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = padding.calculateTopPadding(), bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
         ) {
             item { SectionHeader(stringResource(R.string.access_section_shell)) }
-            item {
-                Text(
-                    stringResource(R.string.access_shell_hint),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
-                )
-            }
+            item { SectionHint(R.string.access_shell_hint) }
             itemsIndexed(ShellMode.entries, key = { _, it -> it.name }) { index, option ->
-                ShellModeItem(
-                    mode = option,
+                AccessOptionItem(
+                    title = option.title,
+                    summary = option.summary,
+                    icon = option.icon,
                     status = statuses[option] ?: AccessStatus.UNKNOWN,
                     isSelected = option == mode,
-                    index = index,
+                    shapes = ListItemDefaults.segmentedShapes(index, ShellMode.entries.size),
                     onSelect = { viewModel.select(option) },
                 )
             }
@@ -102,25 +115,91 @@ fun DeviceAccessScreen(onBack: () -> Unit) {
                     modifier = Modifier.padding(top = 16.dp),
                 )
             }
+
+            item { SectionHeader(stringResource(R.string.access_section_files), Modifier.padding(top = 16.dp)) }
+            item { SectionHint(R.string.access_files_hint) }
+            itemsIndexed(FileScope.entries, key = { _, it -> "files-${it.name}" }) { index, option ->
+                AccessOptionItem(
+                    title = option.title,
+                    summary = option.summary,
+                    icon = option.icon,
+                    status = fileStatus(option),
+                    isSelected = option == files,
+                    shapes = ListItemDefaults.segmentedShapes(index, FileScope.entries.size),
+                    onSelect = { viewModel.selectFiles(option) },
+                )
+            }
+            item {
+                FilesSetup(
+                    scope = files,
+                    status = fileStatus(files),
+                    checkingRoot = checkingRoot,
+                    onOpenAllFilesAccess = { context.openAllFilesAccess() },
+                    onCheckRoot = viewModel::checkRoot,
+                    modifier = Modifier.padding(top = 16.dp),
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun ShellModeItem(mode: ShellMode, status: AccessStatus, isSelected: Boolean, index: Int, onSelect: () -> Unit) {
+private fun SectionHint(@StringRes text: Int) {
+    Text(
+        stringResource(text),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
+    )
+}
+
+@Composable
+private fun AccessOptionItem(
+    @StringRes title: Int,
+    @StringRes summary: Int,
+    icon: ImageVector,
+    status: AccessStatus,
+    isSelected: Boolean,
+    shapes: ListItemShapes,
+    onSelect: () -> Unit,
+) {
     SegmentedListItem(
         onClick = onSelect,
-        shapes = ListItemDefaults.segmentedShapes(index, ShellMode.entries.size),
+        shapes = shapes,
         colors = groupedListColors(),
-        leadingContent = { ShapeBadge(mode.icon) },
+        leadingContent = { ShapeBadge(icon) },
         supportingContent = {
             Column {
-                Text(stringResource(mode.summary))
+                Text(stringResource(summary))
                 Text(stringResource(status.label), color = status.color(), style = MaterialTheme.typography.labelLarge)
             }
         },
         trailingContent = { RadioButton(selected = isSelected, onClick = null) },
-    ) { Text(stringResource(mode.title), style = MaterialTheme.typography.titleMediumEmphasized) }
+    ) { Text(stringResource(title), style = MaterialTheme.typography.titleMediumEmphasized) }
+}
+
+@Composable
+private fun FilesSetup(
+    scope: FileScope,
+    status: AccessStatus,
+    checkingRoot: Boolean,
+    onOpenAllFilesAccess: () -> Unit,
+    onCheckRoot: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    when (scope) {
+        FileScope.APP -> SetupCard(R.string.access_setup_files_app, modifier)
+        FileScope.SHARED_STORAGE -> when (status) {
+            AccessStatus.READY -> SetupCard(R.string.access_setup_files_shared_ready, modifier)
+            AccessStatus.UNAVAILABLE -> SetupCard(R.string.access_setup_files_shared_old, modifier)
+            else -> SetupCard(R.string.access_setup_files_shared, modifier) {
+                SetupButton(R.string.access_action_open_settings, onClick = onOpenAllFilesAccess)
+            }
+        }
+        FileScope.ROOT -> SetupCard(if (status == AccessStatus.READY) R.string.access_setup_files_root_ready else R.string.access_setup_files_root, modifier) {
+            SetupButton(if (checkingRoot) R.string.access_action_checking else R.string.access_action_check_root, enabled = !checkingRoot, onClick = onCheckRoot)
+        }
+    }
 }
 
 @Composable
@@ -237,6 +316,38 @@ private val ShellMode.icon: ImageVector
         ShellMode.SHIZUKU -> MaterialSymbols.Rounded.Adb
         ShellMode.ROOT -> MaterialSymbols.Rounded.Shield_lock
     }
+
+@get:StringRes
+private val FileScope.title: Int
+    get() = when (this) {
+        FileScope.APP -> R.string.access_files_app
+        FileScope.SHARED_STORAGE -> R.string.access_files_shared
+        FileScope.ROOT -> R.string.access_files_root
+    }
+
+@get:StringRes
+private val FileScope.summary: Int
+    get() = when (this) {
+        FileScope.APP -> R.string.access_files_app_summary
+        FileScope.SHARED_STORAGE -> R.string.access_files_shared_summary
+        FileScope.ROOT -> R.string.access_files_root_summary
+    }
+
+private val FileScope.icon: ImageVector
+    get() = when (this) {
+        FileScope.APP -> MaterialSymbols.Rounded.Folder
+        FileScope.SHARED_STORAGE -> MaterialSymbols.Rounded.Storage
+        FileScope.ROOT -> MaterialSymbols.Rounded.Shield_lock
+    }
+
+private fun Context.openAllFilesAccess() {
+    val forApp = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, "package:$packageName".toUri())
+    try {
+        startActivity(forApp)
+    } catch (e: ActivityNotFoundException) {
+        startActivity(Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION))
+    }
+}
 
 private fun Context.openUrl(url: String) = startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
 

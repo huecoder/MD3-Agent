@@ -1,5 +1,6 @@
 package dev.huecoder.md3assistant.tools
 
+import dev.huecoder.md3assistant.data.attachments.Attachment
 import dev.huecoder.md3assistant.data.settings.ToolPermission
 import dev.huecoder.md3assistant.data.settings.ToolSettings
 import dev.huecoder.md3assistant.llm.ToolSpec
@@ -7,6 +8,7 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
@@ -30,7 +32,12 @@ interface Tool {
 
 const val DEFAULT_TOOL_TIMEOUT_MS = 45_000L
 
-data class ToolOutcome(val content: String, val isError: Boolean = false, val isDenied: Boolean = false) {
+data class ToolOutcome(
+    val content: String,
+    val isError: Boolean = false,
+    val isDenied: Boolean = false,
+    val attachments: List<Attachment> = emptyList(),
+) {
     companion object {
         fun error(message: String) = ToolOutcome(message, isError = true)
 
@@ -47,6 +54,8 @@ fun JsonObject.optionalString(name: String): String? =
     (this[name] as? JsonPrimitive)?.contentOrNull?.trim()?.takeIf { it.isNotEmpty() }
 
 fun JsonObject.optionalInt(name: String): Int? = (this[name] as? JsonPrimitive)?.intOrNull
+
+fun JsonObject.optionalBoolean(name: String): Boolean? = (this[name] as? JsonPrimitive)?.booleanOrNull
 
 fun JsonObject.optionalArray(name: String): JsonArray = this[name] as? JsonArray ?: JsonArray(emptyList())
 
@@ -66,4 +75,15 @@ fun JsonObjectBuilder.integerProperty(name: String, description: String, minimum
     put("description", description)
     put("minimum", minimum)
     put("maximum", maximum)
+}
+
+fun JsonObjectBuilder.booleanProperty(name: String, description: String) = putJsonObject(name) {
+    put("type", "boolean")
+    put("description", description)
+}
+
+fun JsonObjectBuilder.stringArrayProperty(name: String, description: String) = putJsonObject(name) {
+    put("type", "array")
+    put("description", description)
+    putJsonObject("items") { put("type", "string") }
 }

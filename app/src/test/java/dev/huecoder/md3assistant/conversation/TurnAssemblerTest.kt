@@ -114,4 +114,51 @@ class TurnAssemblerTest {
         assertEquals(listOf("data:image/jpeg;base64,AAA"), user.imageUrls)
         assertTrue(user.content.startsWith("глянь\n\nFile \"notes.md\":\n```\n# заметки\n```"))
     }
+
+    @Test
+    fun `stored files are described by path instead of inlined`() {
+        val turns = assemble(
+            listOf(row(MessageRole.USER, "разбери", attachmentsJson = Attachment.encode(listOf(Attachment("pdf", "doc.pdf", "application/pdf", 2048))))),
+            attachments = mapOf("pdf" to AttachmentContent.Stored("doc.pdf", "application/pdf", 2048, "/data/attachments/pdf")),
+        )
+        assertEquals(
+            "разбери\n\nFile \"doc.pdf\" (application/pdf, 2.0 KB) is saved on the device at /data/attachments/pdf. Use the file tools to work with it.",
+            turns[1].content,
+        )
+    }
+
+    @Test
+    fun `images from tool results follow the tool turns as one user turn`() {
+        val calls = listOf(ToolCall("a", "read_file", "{}"), ToolCall("b", "read_file", "{}"))
+        val turns = assemble(
+            listOf(
+                row(MessageRole.USER, "что на фото?"),
+                row(MessageRole.ASSISTANT, calls = calls),
+                row(MessageRole.TOOL, "attached", toolCallId = "a", attachmentsJson = Attachment.encode(listOf(Attachment("i1", "a.jpg", "image/jpeg", 1)))),
+                row(MessageRole.TOOL, "attached", toolCallId = "b", attachmentsJson = Attachment.encode(listOf(Attachment("i2", "b.jpg", "image/jpeg", 1)))),
+                row(MessageRole.ASSISTANT, "кот"),
+            ),
+            attachments = mapOf(
+                "i1" to AttachmentContent.Image("data:1"),
+                "i2" to AttachmentContent.Image("data:2"),
+            ),
+        )
+        assertEquals(
+            listOf(ChatTurn.Role.SYSTEM, ChatTurn.Role.USER, ChatTurn.Role.ASSISTANT, ChatTurn.Role.TOOL, ChatTurn.Role.TOOL, ChatTurn.Role.USER, ChatTurn.Role.ASSISTANT),
+            turns.map { it.role },
+        )
+        assertEquals(listOf("data:1", "data:2"), turns[5].imageUrls)
+    }
+
+    @Test
+    fun `files shared with the user are not sent to the model`() {
+        val turns = assemble(
+            listOf(
+                row(MessageRole.USER, "скинь"),
+                row(MessageRole.ASSISTANT, calls = listOf(ToolCall("a", "send_files", "{}"))),
+                row(MessageRole.TOOL, "sent", toolCallId = "a", attachmentsJson = Attachment.encode(listOf(Attachment("i", "a.jpg", "image/jpeg", 1, forModel = false)))),
+            ),
+        )
+        assertEquals(ChatTurn.Role.TOOL, turns.last().role)
+    }
 }
