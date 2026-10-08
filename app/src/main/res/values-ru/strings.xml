@@ -7,8 +7,6 @@
     <string name="settings_section_capabilities">Возможности</string>
     <string name="settings_tools">Инструменты</string>
     <string name="settings_tools_summary">Включено %1$d из %2$d · поиск, погода, экран</string>
-    <string name="settings_tokens_shown">Расход токенов виден под ответами</string>
-    <string name="settings_tokens_hidden">Расход токенов скрыт</string>
     <string name="settings_section_providers">Провайдеры</string>
     <string name="settings_provider_active">Активный</string>
     <string name="settings_add_provider">Добавить провайдера</string>
@@ -194,7 +192,6 @@
     <string name="chat_tool_screen">Экран</string>
     <string name="chat_tool_quoted">«%1$s»</string>
 
-    <string name="settings_chat">Чат</string>
     <string name="settings_voice">Голос</string>
     <string name="settings_voice_summary">%1$s · озвучка %2$s</string>
     <string name="settings_voice_no_provider">Нет голосового провайдера</string>
@@ -506,4 +503,31 @@
     <string name="access_group_elevated">Расширенный доступ</string>
     <string name="access_section_backends">Режим доступа</string>
     <string name="tools_category_enabled">включено %1$d из %2$d</string>
+    <string name="settings_appearance">Внешний вид</string>
+    <string name="settings_appearance_summary">Аватар, ответы, вибрация</string>
+    <string name="settings_models">Модели</string>
+    <string name="settings_models_summary">%1$s через %2$s</string>
+    <string name="settings_models_summary_none">Добавь провайдера чтобы начать</string>
+    <string name="settings_section_general">Основное</string>
+    <string name="settings_about">О приложении</string>
+    <string name="settings_about_summary">Версия %1$s, обновления, исходники</string>
+    <string name="appearance_section_feedback">Отклик</string>
+    <string name="appearance_haptics">Вибрация при нажатии</string>
+    <string name="appearance_haptics_summary">Лёгкий отклик на кнопки, переключатели и смену вкладок</string>
+    <string name="about_version">Версия %1$s (%2$d)</string>
+    <string name="about_check_updates">Проверить обновления</string>
+    <string name="about_update_download">Скачать обновление</string>
+    <string name="about_update_idle">Ищет свежий релиз на GitHub</string>
+    <string name="about_update_running">Проверяю...</string>
+    <string name="about_update_latest">Стоит последняя версия (%1$s)</string>
+    <string name="about_update_available">Вышла версия %1$s, нажми чтобы скачать</string>
+    <string name="about_update_not_published">Публичных релизов пока нет</string>
+    <string name="about_update_unreachable">Не получилось достучаться до GitHub, попробуй позже</string>
+    <string name="about_source">Исходный код</string>
+    <string name="about_source_summary">github.com/huecoder/md3-agent</string>
+    <string name="about_license">Лицензия</string>
+    <string name="about_license_summary">GNU GPL v3.0</string>
+    <string name="about_third_party">Сторонние ресурсы</string>
+    <string name="about_third_party_summary">Логотипы вендоров из Simple Icons и Lobe Icons</string>
+    <string name="about_private_note">Репозиторий откроется публично с релизом 1.0. До этого ссылки и проверка обновлений могут не работать.</string>
 </resources>

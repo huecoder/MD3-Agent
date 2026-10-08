@@ -30,8 +30,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Neurology
 import com.composables.icons.materialsymbols.rounded.Notifications_active
-import com.composables.icons.materialsymbols.rounded.Add
-import com.composables.icons.materialsymbols.rounded.Chat
+import com.composables.icons.materialsymbols.rounded.Extension
+import com.composables.icons.materialsymbols.rounded.Info
+import com.composables.icons.materialsymbols.rounded.Palette
 import com.composables.icons.materialsymbols.rounded.Chevron_right
 import com.composables.icons.materialsymbols.rounded.Dns
 import com.composables.icons.materialsymbols.rounded.Face
@@ -39,8 +40,8 @@ import com.composables.icons.materialsymbols.rounded.Handyman
 import com.composables.icons.materialsymbols.rounded.Shield_person
 import com.composables.icons.materialsymbols.rounded.Hub
 import com.composables.icons.materialsymbols.rounded.Mic
-import com.composables.icons.materialsymbols.roundedfilled.Check_circle
 import dev.huecoder.md3agent.App
+import dev.huecoder.md3agent.BuildConfig
 import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.feature.main.MainNavBarClearance
 import dev.huecoder.md3agent.data.settings.EmbeddingKind
@@ -58,13 +59,14 @@ import kotlinx.coroutines.flow.map
 
 @Immutable
 data class SettingsDestinations(
-    val editProvider: (providerId: String?) -> Unit,
+    val models: () -> Unit,
+    val appearance: () -> Unit,
+    val about: () -> Unit,
     val agent: () -> Unit,
     val memory: () -> Unit,
     val network: () -> Unit,
     val tools: () -> Unit,
     val reminders: () -> Unit,
-    val chat: () -> Unit,
     val voice: () -> Unit,
     val access: () -> Unit,
     val mcp: () -> Unit,
@@ -83,6 +85,20 @@ fun SettingsScreen(destinations: SettingsDestinations) {
 
     SettingsScaffold(stringResource(R.string.settings_title), onBack = null) { padding ->
         val current = settings ?: return@SettingsScaffold
+        val generalEntries = listOf(
+            SettingsEntry(
+                icon = MaterialSymbols.Rounded.Hub,
+                title = stringResource(R.string.settings_models),
+                summary = modelsSummary(current),
+                onClick = destinations.models,
+            ),
+            SettingsEntry(
+                icon = MaterialSymbols.Rounded.Palette,
+                title = stringResource(R.string.settings_appearance),
+                summary = stringResource(R.string.settings_appearance_summary),
+                onClick = destinations.appearance,
+            ),
+        )
         val assistantEntries = listOf(
             SettingsEntry(
                 icon = MaterialSymbols.Rounded.Face,
@@ -102,12 +118,6 @@ fun SettingsScreen(destinations: SettingsDestinations) {
                 summary = voiceSummary(current),
                 onClick = destinations.voice,
             ),
-            SettingsEntry(
-                icon = MaterialSymbols.Rounded.Chat,
-                title = stringResource(R.string.settings_chat),
-                summary = chatSummary(current),
-                onClick = destinations.chat,
-            ),
         )
         val capabilityEntries = listOf(
             SettingsEntry(
@@ -117,22 +127,22 @@ fun SettingsScreen(destinations: SettingsDestinations) {
                 onClick = destinations.tools,
             ),
             SettingsEntry(
-                icon = MaterialSymbols.Rounded.Notifications_active,
-                title = stringResource(R.string.settings_reminders),
-                summary = remindersSummary(reminderCount),
-                onClick = destinations.reminders,
-            ),
-            SettingsEntry(
                 icon = MaterialSymbols.Rounded.Shield_person,
                 title = stringResource(R.string.settings_access),
                 summary = accessSummary(current, isAssistant),
                 onClick = destinations.access,
             ),
             SettingsEntry(
-                icon = MaterialSymbols.Rounded.Hub,
+                icon = MaterialSymbols.Rounded.Extension,
                 title = stringResource(R.string.settings_mcp),
                 summary = mcpSummary(current),
                 onClick = destinations.mcp,
+            ),
+            SettingsEntry(
+                icon = MaterialSymbols.Rounded.Notifications_active,
+                title = stringResource(R.string.settings_reminders),
+                summary = remindersSummary(reminderCount),
+                onClick = destinations.reminders,
             ),
         )
         val systemEntries = listOf(
@@ -142,17 +152,23 @@ fun SettingsScreen(destinations: SettingsDestinations) {
                 summary = networkSummary(current),
                 onClick = destinations.network,
             ),
+            SettingsEntry(
+                icon = MaterialSymbols.Rounded.Info,
+                title = stringResource(R.string.settings_about),
+                summary = stringResource(R.string.settings_about_summary, BuildConfig.VERSION_NAME),
+                onClick = destinations.about,
+            ),
         )
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = padding.calculateTopPadding(), bottom = MainNavBarClearance),
             verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
         ) {
+            item { SectionHeader(stringResource(R.string.settings_section_general)) }
+            entryGroup(generalEntries)
+
             item { SectionHeader(stringResource(R.string.settings_section_assistant)) }
             entryGroup(assistantEntries)
-
-            item { SectionHeader(stringResource(R.string.settings_section_providers)) }
-            providerItems(current, destinations.editProvider)
 
             item { SectionHeader(stringResource(R.string.settings_section_capabilities)) }
             entryGroup(capabilityEntries)
@@ -160,45 +176,6 @@ fun SettingsScreen(destinations: SettingsDestinations) {
             item { SectionHeader(stringResource(R.string.settings_section_system)) }
             entryGroup(systemEntries)
         }
-    }
-}
-
-private fun LazyListScope.providerItems(settings: AppSettings, onEditProvider: (String?) -> Unit) {
-    val count = settings.providers.size + 1
-    itemsIndexed(settings.providers, key = { _, provider -> provider.id }) { index, provider ->
-        val isActive = settings.activeSelection?.providerId == provider.id
-        SegmentedListItem(
-            onClick = { onEditProvider(provider.id) },
-            shapes = ListItemDefaults.segmentedShapes(index, count),
-            colors = groupedListColors(),
-            leadingContent = { ShapeBadge(MaterialSymbols.Rounded.Hub) },
-            supportingContent = {
-                Text(
-                    if (isActive) settings.activeSelection?.modelId.orEmpty() else provider.baseUrl,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            },
-            trailingContent = if (isActive) {
-                { Icon(MaterialSymbols.RoundedFilled.Check_circle, contentDescription = stringResource(R.string.settings_provider_active), tint = MaterialTheme.colorScheme.primary) }
-            } else {
-                null
-            },
-        ) { Text(provider.name, style = MaterialTheme.typography.titleMediumEmphasized) }
-    }
-    item(key = "add-provider") {
-        SegmentedListItem(
-            onClick = { onEditProvider(null) },
-            shapes = ListItemDefaults.segmentedShapes(count - 1, count),
-            colors = groupedListColors(),
-            leadingContent = {
-                ShapeBadge(
-                    MaterialSymbols.Rounded.Add,
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                    contentColor = MaterialTheme.colorScheme.onSurface,
-                )
-            },
-        ) { Text(stringResource(R.string.settings_add_provider), style = MaterialTheme.typography.titleMediumEmphasized) }
     }
 }
 
@@ -231,8 +208,11 @@ private fun mcpSummary(settings: AppSettings): String {
 }
 
 @Composable
-private fun chatSummary(settings: AppSettings): String =
-    stringResource(if (settings.chat.showTokenUsage) R.string.settings_tokens_shown else R.string.settings_tokens_hidden)
+private fun modelsSummary(settings: AppSettings): String {
+    val selection = settings.activeSelection ?: return stringResource(R.string.settings_models_summary_none)
+    val provider = settings.provider(selection.providerId)?.name.orEmpty()
+    return stringResource(R.string.settings_models_summary, selection.modelId, provider)
+}
 
 @Composable
 private fun voiceSummary(settings: AppSettings): String {

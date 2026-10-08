@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Check
 import com.composables.icons.materialsymbols.rounded.Close
+import dev.huecoder.md3agent.ui.haptics.rememberHaptics
 
 @Composable
 fun LabeledSwitch(
@@ -28,11 +29,15 @@ fun LabeledSwitch(
     modifier: Modifier = Modifier,
     summary: String? = null,
 ) {
+    val haptics = rememberHaptics()
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
             .fillMaxWidth()
-            .toggleable(value = checked, role = Role.Switch, onValueChange = onCheckedChange)
+            .toggleable(value = checked, role = Role.Switch, onValueChange = {
+                haptics.toggle(it)
+                onCheckedChange(it)
+            })
             .padding(vertical = 8.dp),
     ) {
         Column(Modifier.weight(1f).padding(end = 16.dp)) {

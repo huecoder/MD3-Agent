@@ -12,7 +12,9 @@ import androidx.navigation.toRoute
 import dev.huecoder.md3agent.feature.chat.ChatScreen
 import dev.huecoder.md3agent.feature.main.MainScreen
 import dev.huecoder.md3agent.feature.settings.AgentSettingsScreen
-import dev.huecoder.md3agent.feature.settings.ChatSettingsScreen
+import dev.huecoder.md3agent.feature.settings.AboutScreen
+import dev.huecoder.md3agent.feature.settings.AppearanceScreen
+import dev.huecoder.md3agent.feature.settings.ModelsScreen
 import dev.huecoder.md3agent.feature.settings.RemindersScreen
 import dev.huecoder.md3agent.feature.settings.DeviceAccessScreen
 import dev.huecoder.md3agent.feature.settings.MemorySettingsScreen
@@ -45,13 +47,14 @@ fun AppNavHost(chatToOpen: String?, onChatOpened: () -> Unit) {
             MainScreen(
                 onOpenChat = { navController.navigate(ChatRoute(it)) },
                 settingsDestinations = SettingsDestinations(
-                    editProvider = { navController.navigate(ProviderEditorRoute(it)) },
+                    models = { navController.navigate(ModelsRoute) },
+                    appearance = { navController.navigate(AppearanceRoute) },
+                    about = { navController.navigate(AboutRoute) },
                     agent = { navController.navigate(AgentSettingsRoute) },
                     memory = { navController.navigate(MemorySettingsRoute) },
                     network = { navController.navigate(NetworkSettingsRoute) },
                     tools = { navController.navigate(ToolSettingsRoute) },
                     reminders = { navController.navigate(RemindersRoute) },
-                    chat = { navController.navigate(ChatSettingsRoute) },
                     voice = { navController.navigate(VoiceSettingsRoute) },
                     access = { navController.navigate(DeviceAccessRoute) },
                     mcp = { navController.navigate(McpServersRoute) },
@@ -70,7 +73,14 @@ fun AppNavHost(chatToOpen: String?, onChatOpened: () -> Unit) {
         screen<ToolSettingsRoute>(navController) { ToolSettingsScreen(onBack = navController::popBackStack) }
         screen<RemindersRoute>(navController) { RemindersScreen(onBack = navController::popBackStack) }
         screen<DeviceAccessRoute>(navController) { DeviceAccessScreen(onBack = navController::popBackStack) }
-        screen<ChatSettingsRoute>(navController) { ChatSettingsScreen(onBack = navController::popBackStack) }
+        screen<AppearanceRoute>(navController) { AppearanceScreen(onBack = navController::popBackStack) }
+        screen<AboutRoute>(navController) { AboutScreen(onBack = navController::popBackStack) }
+        screen<ModelsRoute>(navController) {
+            ModelsScreen(
+                onBack = navController::popBackStack,
+                onEditProvider = { navController.navigate(ProviderEditorRoute(it)) },
+            )
+        }
         screen<VoiceSettingsRoute>(navController) {
             VoiceSettingsScreen(
                 onBack = navController::popBackStack,

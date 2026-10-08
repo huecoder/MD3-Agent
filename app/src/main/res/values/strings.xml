@@ -8,8 +8,6 @@
     <string name="settings_section_capabilities">Capabilities</string>
     <string name="settings_tools">Tools</string>
     <string name="settings_tools_summary">%1$d of %2$d enabled · search, weather, screen</string>
-    <string name="settings_tokens_shown">Token usage shown under replies</string>
-    <string name="settings_tokens_hidden">Token usage hidden</string>
     <string name="settings_section_providers">Providers</string>
     <string name="settings_provider_active">Active</string>
     <string name="settings_add_provider">Add provider</string>
@@ -198,7 +196,6 @@
     <string name="chat_tool_screen">Screen</string>
     <string name="chat_tool_quoted">“%1$s”</string>
 
-    <string name="settings_chat">Chat</string>
     <string name="settings_voice">Voice</string>
     <string name="settings_voice_summary">%1$s · reads replies %2$s</string>
     <string name="settings_voice_no_provider">No voice provider</string>
@@ -502,4 +499,31 @@
     <string name="access_group_elevated">Elevated access</string>
     <string name="access_section_backends">Access mode</string>
     <string name="tools_category_enabled">%1$d of %2$d on</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_appearance_summary">Avatar, replies, vibration</string>
+    <string name="settings_models">Models</string>
+    <string name="settings_models_summary">%1$s via %2$s</string>
+    <string name="settings_models_summary_none">Add a provider to start chatting</string>
+    <string name="settings_section_general">General</string>
+    <string name="settings_about">About</string>
+    <string name="settings_about_summary">Version %1$s, updates, source code</string>
+    <string name="appearance_section_feedback">Feedback</string>
+    <string name="appearance_haptics">Vibration on touch</string>
+    <string name="appearance_haptics_summary">Light taps on buttons, switches and tab changes</string>
+    <string name="about_version">Version %1$s (%2$d)</string>
+    <string name="about_check_updates">Check for updates</string>
+    <string name="about_update_download">Download update</string>
+    <string name="about_update_idle">Looks for a newer release on GitHub</string>
+    <string name="about_update_running">Checking...</string>
+    <string name="about_update_latest">You have the latest version (%1$s)</string>
+    <string name="about_update_available">Version %1$s is out, tap to download</string>
+    <string name="about_update_not_published">No public releases yet</string>
+    <string name="about_update_unreachable">Couldn\'t reach GitHub, try again later</string>
+    <string name="about_source">Source code</string>
+    <string name="about_source_summary">github.com/huecoder/md3-agent</string>
+    <string name="about_license">License</string>
+    <string name="about_license_summary">GNU GPL v3.0</string>
+    <string name="about_third_party">Third-party assets</string>
+    <string name="about_third_party_summary">Vendor logos from Simple Icons and Lobe Icons</string>
+    <string name="about_private_note">The repository opens to the public with the 1.0 release. Until then the links and update checks may not work.</string>
 </resources>

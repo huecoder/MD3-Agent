@@ -19,25 +19,39 @@ import dev.huecoder.md3agent.ui.components.SettingsScaffold
 import dev.huecoder.md3agent.ui.components.appViewModel
 
 @Composable
-fun ChatSettingsScreen(onBack: () -> Unit) {
+fun AppearanceScreen(onBack: () -> Unit) {
     val viewModel = appViewModel { SettingsViewModel(it.settings) }
     val settings by viewModel.settings.collectAsStateWithLifecycle()
 
-    SettingsScaffold(stringResource(R.string.settings_chat), onBack) { padding ->
-        val chat = settings?.chat ?: return@SettingsScaffold
+    SettingsScaffold(stringResource(R.string.settings_appearance), onBack) { padding ->
+        val current = settings ?: return@SettingsScaffold
         Column(
             modifier = Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            SectionHeader(stringResource(R.string.agent_avatar))
+            AvatarPicker(
+                style = current.agent.avatar,
+                restShape = current.agent.restShape,
+                onStyle = { style -> viewModel.updateAgent { it.copy(avatar = style) } },
+                onRestShape = { shape -> viewModel.updateAgent { it.copy(restShape = shape) } },
+            )
             SectionHeader(stringResource(R.string.chat_settings_section_replies))
             LabeledSwitch(
                 title = stringResource(R.string.chat_settings_show_tokens),
                 summary = stringResource(R.string.chat_settings_show_tokens_summary),
-                checked = chat.showTokenUsage,
+                checked = current.chat.showTokenUsage,
                 onCheckedChange = { value -> viewModel.updateChat { it.copy(showTokenUsage = value) } },
             )
             SectionHeader(stringResource(R.string.chat_settings_section_typing))
-            TypingSettingsCard(chat.typing, onChange = { style -> viewModel.updateChat { it.copy(typing = style) } })
+            TypingSettingsCard(current.chat.typing, onChange = { style -> viewModel.updateChat { it.copy(typing = style) } })
+            SectionHeader(stringResource(R.string.appearance_section_feedback))
+            LabeledSwitch(
+                title = stringResource(R.string.appearance_haptics),
+                summary = stringResource(R.string.appearance_haptics_summary),
+                checked = current.ui.haptics,
+                onCheckedChange = { value -> viewModel.updateInterface { it.copy(haptics = value) } },
+            )
         }
     }
 }

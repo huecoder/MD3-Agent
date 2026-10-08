@@ -54,8 +54,11 @@ class SettingsRepository(context: Context, private val cipher: SecretCipher) {
         if (effort == null) prefs.remove(Keys.ACTIVE_REASONING) else prefs[Keys.ACTIVE_REASONING] = effort.wireName
     }
 
-    suspend fun updateAgent(agent: AgentProfile) = store.edit { prefs ->
-        prefs[Keys.AGENT] = json.encodeToString(AgentProfile.serializer(), agent)
+    suspend fun updateAgent(agent: AgentProfile) = updateAgent { agent }
+
+    suspend fun updateAgent(transform: (AgentProfile) -> AgentProfile) = store.edit { prefs ->
+        val current = decodeOrDefault(prefs[Keys.AGENT], AgentProfile.serializer(), AgentProfile()).migrated()
+        prefs[Keys.AGENT] = json.encodeToString(AgentProfile.serializer(), transform(current))
     }
 
     suspend fun updateNetwork(network: NetworkSettings) = store.edit { prefs ->

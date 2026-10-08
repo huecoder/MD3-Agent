@@ -30,8 +30,6 @@ import androidx.compose.ui.unit.dp
 import dev.huecoder.md3agent.App
 import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.data.settings.AgentProfile
-import dev.huecoder.md3agent.data.settings.AvatarRestShape
-import dev.huecoder.md3agent.data.settings.AvatarStyle
 import dev.huecoder.md3agent.ui.components.SectionHeader
 import dev.huecoder.md3agent.ui.components.FormField
 import dev.huecoder.md3agent.ui.components.SaveAction
@@ -45,8 +43,6 @@ fun AgentSettingsScreen(onBack: () -> Unit) {
     var name by remember { mutableStateOf<String?>(null) }
     var prompt by remember { mutableStateOf(TextFieldValue()) }
     var preview by remember { mutableStateOf<String?>(null) }
-    var avatar by remember { mutableStateOf(AvatarStyle.CLASSIC) }
-    var restShape by remember { mutableStateOf(AvatarRestShape.CIRCLE) }
     var saved by remember { mutableStateOf<AgentProfile?>(null) }
 
     LaunchedEffect(Unit) {
@@ -54,15 +50,13 @@ fun AgentSettingsScreen(onBack: () -> Unit) {
         saved = agent
         name = agent.name
         prompt = TextFieldValue(agent.systemPromptTemplate)
-        avatar = agent.avatar
-        restShape = agent.restShape
     }
 
-    val draft = name?.let { AgentProfile(it.trim().ifEmpty { AgentProfile.DEFAULT_AGENT_NAME }, prompt.text, avatar, restShape) }
+    val draft = name?.let { AgentProfile(it.trim().ifEmpty { AgentProfile.DEFAULT_AGENT_NAME }, prompt.text) }
     val save = draft?.let { profile ->
-        SaveAction(isDirty = profile != saved, canSave = true) {
+        SaveAction(isDirty = profile.name != saved?.name || profile.systemPromptTemplate != saved?.systemPromptTemplate, canSave = true) {
             scope.launch {
-                container.settings.updateAgent(profile)
+                container.settings.updateAgent { it.copy(name = profile.name, systemPromptTemplate = profile.systemPromptTemplate) }
                 saved = profile
                 onBack()
             }
@@ -85,8 +79,6 @@ fun AgentSettingsScreen(onBack: () -> Unit) {
                 label = stringResource(R.string.agent_name),
                 modifier = Modifier.fillMaxWidth(),
             )
-            SectionHeader(stringResource(R.string.agent_avatar))
-            AvatarPicker(avatar, restShape, onStyle = { avatar = it }, onRestShape = { restShape = it })
             SectionHeader(stringResource(R.string.agent_system_prompt))
             OutlinedTextField(
                 value = prompt,

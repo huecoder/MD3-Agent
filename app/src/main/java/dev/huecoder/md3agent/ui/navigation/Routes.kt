@@ -27,7 +27,13 @@ data object ToolSettingsRoute
 data object RemindersRoute
 
 @Serializable
-data object ChatSettingsRoute
+data object AppearanceRoute
+
+@Serializable
+data object ModelsRoute
+
+@Serializable
+data object AboutRoute
 
 @Serializable
 data object VoiceSettingsRoute

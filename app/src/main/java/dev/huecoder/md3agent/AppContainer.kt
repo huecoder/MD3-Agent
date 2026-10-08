@@ -12,6 +12,7 @@ import dev.huecoder.md3agent.data.models.ModelCatalog
 import dev.huecoder.md3agent.conversation.ToolApprovals
 import dev.huecoder.md3agent.data.attachments.AttachmentStore
 import dev.huecoder.md3agent.data.chat.ChatDrafts
+import dev.huecoder.md3agent.data.updates.UpdateChecker
 import dev.huecoder.md3agent.data.chat.ChatRepository
 import dev.huecoder.md3agent.data.db.AppDatabase
 import dev.huecoder.md3agent.data.memory.MemoryStore
@@ -147,6 +148,8 @@ class AppContainer(context: Context) {
             SystemSpeechSynthesizer(appContext, voice.language)
         }
     }
+
+    val updates = UpdateChecker(httpClients, BuildConfig.VERSION_NAME)
 
     val approvals = ToolApprovals()
 
