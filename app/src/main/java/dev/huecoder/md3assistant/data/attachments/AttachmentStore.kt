@@ -1,10 +1,13 @@
 package dev.huecoder.md3assistant.data.attachments
 
 import android.content.ContentResolver
+import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.ImageDecoder
 import android.net.Uri
+import android.os.Environment
+import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.util.Base64
 import android.webkit.MimeTypeMap
@@ -101,6 +104,25 @@ class AttachmentStore(private val context: Context) {
         attachments.forEach { file(it).delete() }
     }
 
+    suspend fun exportToDownloads(attachment: Attachment) = withContext(Dispatchers.IO) {
+        val resolver = context.contentResolver
+        val details = ContentValues().apply {
+            put(MediaStore.Downloads.DISPLAY_NAME, attachment.name)
+            put(MediaStore.Downloads.MIME_TYPE, attachment.mimeType)
+            put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/" + DOWNLOADS_FOLDER)
+            put(MediaStore.Downloads.IS_PENDING, 1)
+        }
+        val target = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, details) ?: throw IOException("Could not create the file in Downloads")
+        try {
+            resolver.openOutputStream(target)?.use { output -> file(attachment).inputStream().use { it.copyTo(output) } }
+                ?: throw IOException("Could not write to Downloads")
+            resolver.update(target, ContentValues().apply { put(MediaStore.Downloads.IS_PENDING, 0) }, null, null)
+        } catch (e: IOException) {
+            resolver.delete(target, null, null)
+            throw e
+        }
+    }
+
     private fun storeImageForModel(name: String, source: () -> ImageDecoder.Source): Attachment {
         val id = newId(JPEG_EXTENSION)
         val target = File(directory, id)
@@ -154,6 +176,7 @@ class AttachmentStore(private val context: Context) {
 
     private companion object {
         const val DIRECTORY = "attachments"
+        const val DOWNLOADS_FOLDER = "MD3 Assistant"
         const val FALLBACK_NAME = "file"
         const val STORED_IMAGE_MIME = "image/jpeg"
         const val JPEG_EXTENSION = "jpg"

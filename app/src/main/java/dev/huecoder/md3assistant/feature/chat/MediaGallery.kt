@@ -57,6 +57,7 @@ private fun Album(images: List<Attachment>) {
                 row.forEach { image ->
                     AttachmentImage(
                         image,
+                        gallery = images,
                         modifier = Modifier
                             .weight(1f)
                             .aspectRatio(if (row.size == 1) WIDE_TILE_RATIO else SQUARE_TILE_RATIO)
@@ -76,7 +77,7 @@ private fun Slider(images: List<Attachment>) {
         itemSpacing = GAP,
         modifier = Modifier.fillMaxWidth().height(SLIDER_HEIGHT),
     ) { index ->
-        AttachmentImage(images[index], modifier = Modifier.fillMaxSize().maskClip(MaterialTheme.shapes.extraLarge))
+        AttachmentImage(images[index], gallery = images, modifier = Modifier.fillMaxSize().maskClip(MaterialTheme.shapes.extraLarge))
     }
 }
 

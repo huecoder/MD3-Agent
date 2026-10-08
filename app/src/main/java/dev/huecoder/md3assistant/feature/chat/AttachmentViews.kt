@@ -37,6 +37,7 @@ import com.composables.icons.materialsymbols.rounded.Description
 import dev.huecoder.md3assistant.App
 import dev.huecoder.md3assistant.R
 import dev.huecoder.md3assistant.data.attachments.Attachment
+import dev.huecoder.md3assistant.feature.chat.lightbox.LocalLightbox
 
 @Composable
 fun AttachmentStrip(attachments: List<Attachment>, modifier: Modifier = Modifier, onRemove: ((Attachment) -> Unit)? = null) {
@@ -46,9 +47,10 @@ fun AttachmentStrip(attachments: List<Attachment>, modifier: Modifier = Modifier
         modifier = modifier.horizontalScroll(rememberScrollState()),
     ) {
         val context = LocalContext.current
+        val images = attachments.filter { it.isImage }
         attachments.forEach { attachment ->
             Box {
-                if (attachment.isImage) ImageThumb(attachment) else FilePill(attachment, onClick = { context.openAttachment(attachment) })
+                if (attachment.isImage) ImageThumb(attachment, images) else FilePill(attachment, onClick = { context.openAttachment(attachment) })
                 onRemove?.let { remove ->
                     FilledTonalIconButton(
                         onClick = { remove(attachment) },
@@ -63,19 +65,27 @@ fun AttachmentStrip(attachments: List<Attachment>, modifier: Modifier = Modifier
 }
 
 @Composable
-private fun ImageThumb(attachment: Attachment) {
-    AttachmentImage(attachment, Modifier.size(THUMB_SIZE).clip(MaterialTheme.shapes.medium))
+private fun ImageThumb(attachment: Attachment, gallery: List<Attachment>) {
+    AttachmentImage(attachment, Modifier.size(THUMB_SIZE).clip(MaterialTheme.shapes.medium), gallery = gallery)
 }
 
 @Composable
-fun AttachmentImage(attachment: Attachment, modifier: Modifier = Modifier, contentScale: ContentScale = ContentScale.Crop) {
+fun AttachmentImage(
+    attachment: Attachment,
+    modifier: Modifier = Modifier,
+    contentScale: ContentScale = ContentScale.Crop,
+    gallery: List<Attachment> = listOf(attachment),
+) {
     val context = LocalContext.current
     val store = (context.applicationContext as App).container.attachments
+    val lightbox = LocalLightbox.current
     AsyncImage(
         model = store.file(attachment),
         contentDescription = attachment.name,
         contentScale = contentScale,
-        modifier = modifier.clickable { context.openAttachment(attachment) },
+        modifier = modifier.clickable {
+            if (lightbox != null) lightbox.show(gallery, gallery.indexOf(attachment)) else context.openAttachment(attachment)
+        },
     )
 }
 

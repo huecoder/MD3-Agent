@@ -320,4 +320,9 @@
     <string name="tools_show_chart_title">Графики</string>
     <string name="tools_show_chart_summary">Рисует линейные, столбчатые и круговые графики в чате</string>
     <string name="chat_tool_chart">График %1$s</string>
+    <string name="lightbox_close">Закрыть</string>
+    <string name="lightbox_open">Открыть в другом приложении</string>
+    <string name="lightbox_download">Сохранить в загрузки</string>
+    <string name="lightbox_saved">Сохранено в Загрузки/MD3 Assistant</string>
+    <string name="lightbox_save_failed">Не получилось сохранить картинку</string>
 </resources>

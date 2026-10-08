@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.huecoder.md3assistant.R
 import dev.huecoder.md3assistant.conversation.ApprovalDecision
+import dev.huecoder.md3assistant.feature.chat.lightbox.LightboxHost
 import dev.huecoder.md3assistant.ui.components.AgentAvatar
 import dev.huecoder.md3assistant.ui.components.BackButton
 import dev.huecoder.md3assistant.ui.components.appViewModel
@@ -77,44 +78,46 @@ fun ChatScreen(chatId: String?, onBack: () -> Unit) {
         }
     }
 
-    Scaffold(
-        topBar = { ChatTopBar(title = state.title.asString(), model = state.modelId, onBack = onBack) },
-        snackbarHost = { SnackbarHost(snackbarHost) },
-    ) { padding ->
-        Box(Modifier.fillMaxSize().padding(top = padding.calculateTopPadding()).imePadding()) {
-            if (state.messages.isEmpty()) {
-                EmptyConversation(Modifier.align(Alignment.Center))
-            } else {
-                MessageList(
-                    messages = state.messages,
-                    showUsage = state.showTokenUsage,
-                    speakingId = speakingId,
-                    onRegenerate = viewModel::regenerate,
-                    onToggleSpeech = viewModel::toggleSpeech,
-                    onSend = viewModel::send,
-                    onApproval = viewModel::respondToApproval,
+    LightboxHost {
+        Scaffold(
+            topBar = { ChatTopBar(title = state.title.asString(), model = state.modelId, onBack = onBack) },
+            snackbarHost = { SnackbarHost(snackbarHost) },
+        ) { padding ->
+            Box(Modifier.fillMaxSize().padding(top = padding.calculateTopPadding()).imePadding()) {
+                if (state.messages.isEmpty()) {
+                    EmptyConversation(Modifier.align(Alignment.Center))
+                } else {
+                    MessageList(
+                        messages = state.messages,
+                        showUsage = state.showTokenUsage,
+                        speakingId = speakingId,
+                        onRegenerate = viewModel::regenerate,
+                        onToggleSpeech = viewModel::toggleSpeech,
+                        onSend = viewModel::send,
+                        onApproval = viewModel::respondToApproval,
+                    )
+                }
+                ChatInput(
+                    text = input,
+                    onTextChange = { input = it },
+                    isStreaming = state.isStreaming,
+                    canSend = state.canSend(input),
+                    onSend = {
+                        viewModel.send(input)
+                        input = ""
+                    },
+                    onStop = viewModel::stop,
+                    attachments = state.pendingAttachments,
+                    isImporting = state.isImporting,
+                    onAttach = { pickFiles.launch(PICKABLE_MIME_TYPES) },
+                    onRemoveAttachment = viewModel::removeAttachment,
+                    dictation = dictation,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .navigationBarsPadding()
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
                 )
             }
-            ChatInput(
-                text = input,
-                onTextChange = { input = it },
-                isStreaming = state.isStreaming,
-                canSend = state.canSend(input),
-                onSend = {
-                    viewModel.send(input)
-                    input = ""
-                },
-                onStop = viewModel::stop,
-                attachments = state.pendingAttachments,
-                isImporting = state.isImporting,
-                onAttach = { pickFiles.launch(PICKABLE_MIME_TYPES) },
-                onRemoveAttachment = viewModel::removeAttachment,
-                dictation = dictation,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .navigationBarsPadding()
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
-            )
         }
     }
 }

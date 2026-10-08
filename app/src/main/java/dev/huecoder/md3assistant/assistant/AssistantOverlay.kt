@@ -39,6 +39,7 @@ import dev.huecoder.md3assistant.feature.chat.ChatInput
 import dev.huecoder.md3assistant.feature.chat.ChatViewModel
 import dev.huecoder.md3assistant.feature.chat.EmptyConversation
 import dev.huecoder.md3assistant.feature.chat.MessageList
+import dev.huecoder.md3assistant.feature.chat.lightbox.LightboxHost
 import dev.huecoder.md3assistant.feature.chat.appendDictated
 import dev.huecoder.md3assistant.feature.chat.rememberDictationControls
 import dev.huecoder.md3assistant.ui.components.appViewModel
@@ -97,16 +98,18 @@ fun AssistantOverlay(activation: Int, onDismiss: () -> Unit, onOpenInApp: (chatI
                     style = MaterialTheme.typography.headlineSmallEmphasized,
                 )
             } else {
-                MessageList(
-                    messages = state.messages,
-                    showUsage = state.showTokenUsage,
-                    speakingId = speakingId,
-                    onRegenerate = viewModel::regenerate,
-                    onToggleSpeech = viewModel::toggleSpeech,
-                    onSend = viewModel::send,
-                    onApproval = viewModel::respondToApproval,
-                    bottomPadding = 8.dp,
-                )
+                LightboxHost {
+                    MessageList(
+                        messages = state.messages,
+                        showUsage = state.showTokenUsage,
+                        speakingId = speakingId,
+                        onRegenerate = viewModel::regenerate,
+                        onToggleSpeech = viewModel::toggleSpeech,
+                        onSend = viewModel::send,
+                        onApproval = viewModel::respondToApproval,
+                        bottomPadding = 8.dp,
+                    )
+                }
             }
         }
         ChatInput(
