@@ -27,6 +27,7 @@ import com.composables.icons.materialsymbols.rounded.Event_upcoming
 import com.composables.icons.materialsymbols.rounded.Notification_add
 import com.composables.icons.materialsymbols.rounded.Notifications_off
 import com.composables.icons.materialsymbols.rounded.Timer
+import com.composables.icons.materialsymbols.rounded.Account_tree
 import com.composables.icons.materialsymbols.rounded.Forum
 import com.composables.icons.materialsymbols.rounded.Article
 import com.composables.icons.materialsymbols.rounded.File_save
@@ -35,6 +36,7 @@ import dev.huecoder.md3agent.mcp.McpTool
 import dev.huecoder.md3agent.tools.AskUserTool
 import dev.huecoder.md3agent.tools.ReadScreenTool
 import dev.huecoder.md3agent.tools.ShowChartTool
+import dev.huecoder.md3agent.tools.ShowDiagramTool
 import dev.huecoder.md3agent.tools.ShowUiTool
 import dev.huecoder.md3agent.tools.Tool
 import dev.huecoder.md3agent.tools.chats.ExportChatTool
@@ -90,6 +92,7 @@ object ToolCatalog {
         WeatherTool.NAME to known(ToolCategory.WEB, MaterialSymbols.Rounded.Partly_cloudy_day, R.string.tools_weather_title, R.string.tools_weather_summary),
         ReadScreenTool.NAME to known(ToolCategory.SCREEN, MaterialSymbols.Rounded.Screenshot_monitor, R.string.tools_read_screen_title, R.string.tools_read_screen_summary),
         ShowUiTool.NAME to known(ToolCategory.SCREEN, MaterialSymbols.Rounded.Smart_button, R.string.tools_show_ui_title, R.string.tools_show_ui_summary),
+        ShowDiagramTool.NAME to known(ToolCategory.SCREEN, MaterialSymbols.Rounded.Account_tree, R.string.tools_show_diagram_title, R.string.tools_show_diagram_summary),
         ShowChartTool.NAME to known(ToolCategory.SCREEN, MaterialSymbols.Rounded.Bar_chart, R.string.tools_show_chart_title, R.string.tools_show_chart_summary),
         RunCommandTool.NAME to known(ToolCategory.SYSTEM, MaterialSymbols.Rounded.Terminal, R.string.tools_run_command_title, R.string.tools_run_command_summary),
         RunPythonTool.NAME to known(ToolCategory.SYSTEM, MaterialSymbols.Rounded.Code, R.string.tools_run_python_title, R.string.tools_run_python_summary),

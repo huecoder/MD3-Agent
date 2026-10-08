@@ -540,4 +540,7 @@
     <string name="tools_read_chat_summary">Reads messages from another chat to pick up its context</string>
     <string name="tools_export_chat_title">Save chat to a file</string>
     <string name="tools_export_chat_summary">Writes a chat as a Markdown file on the phone</string>
+    <string name="chat_tool_diagram">Diagram %1$s</string>
+    <string name="tools_show_diagram_title">Show a diagram</string>
+    <string name="tools_show_diagram_summary">Draws plans and processes as blocks with arrows</string>
 </resources>

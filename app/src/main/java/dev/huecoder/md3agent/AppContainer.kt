@@ -38,6 +38,7 @@ import dev.huecoder.md3agent.prompt.DeviceInfoProvider
 import dev.huecoder.md3agent.prompt.SystemPromptRenderer
 import dev.huecoder.md3agent.tools.ReadScreenTool
 import dev.huecoder.md3agent.tools.ShowChartTool
+import dev.huecoder.md3agent.tools.ShowDiagramTool
 import dev.huecoder.md3agent.tools.ShowUiTool
 import dev.huecoder.md3agent.tools.system.RunCommandTool
 import dev.huecoder.md3agent.tools.system.RunPythonTool
@@ -117,6 +118,7 @@ class AppContainer(context: Context) {
             ReadScreenTool(screenContext),
             ShowUiTool(),
             ShowChartTool(),
+            ShowDiagramTool(),
             AskUserTool(prompts),
             MemorySaveTool(memories),
             MemoryUpdateTool(memories),

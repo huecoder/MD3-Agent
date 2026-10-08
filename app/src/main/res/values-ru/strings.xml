@@ -544,4 +544,7 @@
     <string name="tools_read_chat_summary">Читает сообщения из другого чата чтобы подхватить контекст</string>
     <string name="tools_export_chat_title">Сохранить чат в файл</string>
     <string name="tools_export_chat_summary">Записывает чат в Markdown-файл на телефоне</string>
+    <string name="chat_tool_diagram">Схема %1$s</string>
+    <string name="tools_show_diagram_title">Показать схему</string>
+    <string name="tools_show_diagram_summary">Рисует планы и процессы блоками со стрелками</string>
 </resources>

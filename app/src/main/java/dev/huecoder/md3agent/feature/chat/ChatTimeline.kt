@@ -12,6 +12,8 @@ import dev.huecoder.md3agent.llm.ToolCall
 import dev.huecoder.md3agent.tools.ChartSpec
 import dev.huecoder.md3agent.tools.ReplyUi
 import dev.huecoder.md3agent.tools.ShowChartTool
+import dev.huecoder.md3agent.tools.ShowDiagramTool
+import dev.huecoder.md3agent.tools.DiagramSpec
 import dev.huecoder.md3agent.tools.ShowUiTool
 import dev.huecoder.md3agent.tools.web.ReadWebpageTool
 import dev.huecoder.md3agent.tools.web.SearchResults
@@ -64,6 +66,8 @@ sealed interface ReplyPart {
     data class Media(val attachments: List<Attachment>) : ReplyPart
 
     data class Chart(val spec: ChartSpec) : ReplyPart
+
+    data class Diagram(val spec: DiagramSpec) : ReplyPart
 
     data class Error(val text: UiText) : ReplyPart
 }
@@ -140,6 +144,9 @@ object ChatTimeline {
                 toolCalls.filter { it.name == ShowChartTool.NAME && it.status == ToolStatus.DONE }
                     .mapNotNull { ChartSpec.parse(it.arguments).getOrNull() }
                     .forEach { add(ReplyPart.Chart(it)) }
+                toolCalls.filter { it.name == ShowDiagramTool.NAME && it.status == ToolStatus.DONE }
+                    .mapNotNull { DiagramSpec.parse(it.arguments).getOrNull() }
+                    .forEach { add(ReplyPart.Diagram(it)) }
             }
             when {
                 isLive -> Unit

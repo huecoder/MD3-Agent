@@ -32,6 +32,7 @@ import com.composables.icons.materialsymbols.rounded.Refresh
 import com.composables.icons.materialsymbols.rounded.Stop_circle
 import com.composables.icons.materialsymbols.rounded.Volume_up
 import dev.huecoder.md3agent.R
+import dev.huecoder.md3agent.feature.chat.diagram.DiagramCard
 import dev.huecoder.md3agent.data.settings.TypingStyle
 import dev.huecoder.md3agent.conversation.ApprovalDecision
 import dev.huecoder.md3agent.ui.components.AgentAvatar
@@ -97,6 +98,7 @@ fun AssistantReply(
                     }
                     is ReplyPart.Media -> MediaGallery(part.attachments)
                     is ReplyPart.Chart -> ChartCard(part.spec)
+                    is ReplyPart.Diagram -> DiagramCard(part.spec)
                     is ReplyPart.Error -> ErrorNotice(part.text.asString())
                 }
             }
