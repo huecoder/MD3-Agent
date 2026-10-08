@@ -96,7 +96,6 @@
     <string name="home_title">Chats</string>
     <string name="home_new_chat">New chat</string>
     <string name="home_delete_chat">Delete</string>
-    <string name="home_delete_chat_title">Delete chat?</string>
     <string name="home_delete_chat_body">Messages will be deleted permanently.</string>
     <string name="home_delete_chat_cancel">Cancel</string>
     <string name="home_age_today">Today</string>
@@ -434,4 +433,30 @@
     <string name="memory_tier_instant">Instant</string>
     <string name="memory_tier_long_term">Long-term</string>
     <string name="memory_cancel">Cancel</string>
+    <string name="home_search_hint">Search chats and messages</string>
+    <string name="home_search_clear">Clear search</string>
+    <string name="home_search_empty">Nothing found</string>
+    <string name="home_folder_all">All</string>
+    <string name="home_folder_new">New group</string>
+    <string name="home_folder_name">Group name</string>
+    <string name="home_folder_rename">Rename group</string>
+    <string name="home_folder_delete">Delete group</string>
+    <string name="home_folder_delete_body">Chats stay where they are, they just leave the group.</string>
+    <string name="home_folder_create">Create</string>
+    <string name="home_rename">Rename</string>
+    <string name="home_rename_title">Rename chat</string>
+    <string name="home_chat_name">Chat name</string>
+    <string name="home_move">Move to group</string>
+    <string name="home_move_none">No group</string>
+    <string name="home_select">Select</string>
+    <string name="home_select_all">Select all</string>
+    <string name="home_selection_close">Cancel selection</string>
+    <plurals name="home_selected">
+        <item quantity="one">%d selected</item>
+        <item quantity="other">%d selected</item>
+    </plurals>
+    <plurals name="home_delete_chats_title">
+        <item quantity="one">Delete %d chat?</item>
+        <item quantity="other">Delete %d chats?</item>
+    </plurals>
 </resources>

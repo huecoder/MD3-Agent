@@ -4,6 +4,8 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.ListItemDefaults
@@ -14,10 +16,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Chat
+import com.composables.icons.materialsymbols.rounded.Check
 import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.feature.main.MainNavBarClearance
 import dev.huecoder.md3agent.conversation.ChatActivity
@@ -32,9 +36,11 @@ import dev.huecoder.md3agent.ui.components.groupedListColors
 fun ChatList(
     groups: List<ChatGroup>,
     activity: Map<String, ChatActivity>,
+    selection: Set<String>,
     contentPadding: PaddingValues,
-    onOpenChat: (String) -> Unit,
-    onDeleteRequest: (String) -> Unit,
+    onClick: (String) -> Unit,
+    onLongClick: (String) -> Unit,
+    header: @Composable () -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -46,16 +52,29 @@ fun ChatList(
         ),
         verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
     ) {
+        item(key = "filters") { header() }
+        if (groups.isEmpty()) {
+            item(key = "empty") {
+                Text(
+                    stringResource(R.string.home_search_empty),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 32.dp).fillMaxWidth(),
+                    textAlign = TextAlign.Center,
+                )
+            }
+        }
         groups.forEach { group ->
             item(key = "header-${group.age}") { SectionHeader(stringResource(group.age.label)) }
             itemsIndexed(group.chats, key = { _, chat -> chat.id }) { index, chat ->
                 ChatRow(
                     chat = chat,
                     activity = activity[chat.id],
+                    selected = chat.id in selection,
                     index = index,
                     count = group.chats.size,
-                    onClick = { onOpenChat(chat.id) },
-                    onLongClick = { onDeleteRequest(chat.id) },
+                    onClick = { onClick(chat.id) },
+                    onLongClick = { onLongClick(chat.id) },
                     modifier = Modifier.animateItem(),
                 )
             }
@@ -67,6 +86,7 @@ fun ChatList(
 private fun ChatRow(
     chat: ChatSummary,
     activity: ChatActivity?,
+    selected: Boolean,
     index: Int,
     count: Int,
     onClick: () -> Unit,
@@ -76,11 +96,17 @@ private fun ChatRow(
     SegmentedListItem(
         onClick = onClick,
         onLongClick = onLongClick,
-        onLongClickLabel = stringResource(R.string.home_delete_chat),
+        onLongClickLabel = stringResource(R.string.home_select),
         shapes = ListItemDefaults.segmentedShapes(index = index, count = count),
-        colors = groupedListColors(),
+        colors = if (selected) ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.secondaryContainer) else groupedListColors(),
         modifier = modifier,
-        leadingContent = { if (activity != null) WorkingBadge(activity) else ShapeBadge(icon = MaterialSymbols.Rounded.Chat) },
+        leadingContent = {
+            when {
+                selected -> ShapeBadge(icon = MaterialSymbols.Rounded.Check)
+                activity != null -> WorkingBadge(activity)
+                else -> ShapeBadge(icon = MaterialSymbols.Rounded.Chat)
+            }
+        },
         supportingContent = chat.lastMessage?.let(ChatPreview::of)?.takeIf { it.isNotEmpty() }?.let { preview ->
             {
                 Text(

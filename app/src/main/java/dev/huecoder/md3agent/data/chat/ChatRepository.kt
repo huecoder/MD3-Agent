@@ -5,6 +5,8 @@ import dev.huecoder.md3agent.data.attachments.AttachmentStore
 import dev.huecoder.md3agent.data.db.ChatDao
 import dev.huecoder.md3agent.data.db.ChatEntity
 import dev.huecoder.md3agent.data.db.ChatSummary
+import dev.huecoder.md3agent.data.db.FolderDao
+import dev.huecoder.md3agent.data.db.FolderEntity
 import dev.huecoder.md3agent.data.db.MessageDao
 import dev.huecoder.md3agent.data.db.MessageEntity
 import dev.huecoder.md3agent.data.db.MessageRole
@@ -16,10 +18,16 @@ import java.util.UUID
 class ChatRepository(
     private val chatDao: ChatDao,
     private val messageDao: MessageDao,
+    private val folderDao: FolderDao,
     private val attachments: AttachmentStore,
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
     fun observeSummaries(): Flow<List<ChatSummary>> = chatDao.observeSummaries()
+
+    fun observeFolders(): Flow<List<FolderEntity>> = folderDao.observeAll()
+
+    suspend fun searchChatIds(query: String): Set<String> =
+        chatDao.search(query.trim().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")).toSet()
 
     fun observeChat(chatId: String): Flow<ChatEntity?> = chatDao.observe(chatId)
 
@@ -71,6 +79,20 @@ class ChatRepository(
     }
 
     suspend fun rename(chatId: String, title: String) = chatDao.rename(chatId, title)
+
+    suspend fun renameByUser(chatId: String, title: String) = chatDao.renameByUser(chatId, title.trim())
+
+    suspend fun moveToFolder(chatIds: Collection<String>, folderId: String?) = chatDao.moveToFolder(chatIds.toList(), folderId)
+
+    suspend fun createFolder(name: String): FolderEntity {
+        val folder = FolderEntity(id = UUID.randomUUID().toString(), name = name.trim(), createdAt = clock())
+        folderDao.insert(folder)
+        return folder
+    }
+
+    suspend fun renameFolder(folderId: String, name: String) = folderDao.rename(folderId, name.trim())
+
+    suspend fun deleteFolder(folderId: String) = folderDao.delete(folderId)
 
     suspend fun setModel(chatId: String, selection: ModelSelection) =
         chatDao.setModel(chatId, selection.providerId, selection.modelId, selection.reasoningEffort?.wireName)

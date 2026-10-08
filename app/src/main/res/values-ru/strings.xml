@@ -90,7 +90,6 @@
     <string name="home_title">Чаты</string>
     <string name="home_new_chat">Новый чат</string>
     <string name="home_delete_chat">Удалить</string>
-    <string name="home_delete_chat_title">Удалить чат?</string>
     <string name="home_delete_chat_body">Сообщения удалятся без возможности восстановления.</string>
     <string name="home_delete_chat_cancel">Отмена</string>
     <string name="home_age_today">Сегодня</string>
@@ -432,4 +431,34 @@
     <string name="memory_tier_instant">Мгновенная</string>
     <string name="memory_tier_long_term">Долгая</string>
     <string name="memory_cancel">Отмена</string>
+    <string name="home_search_hint">Поиск по чатам и сообщениям</string>
+    <string name="home_search_clear">Очистить поиск</string>
+    <string name="home_search_empty">Ничего не нашлось</string>
+    <string name="home_folder_all">Все</string>
+    <string name="home_folder_new">Новая группа</string>
+    <string name="home_folder_name">Название группы</string>
+    <string name="home_folder_rename">Переименовать группу</string>
+    <string name="home_folder_delete">Удалить группу</string>
+    <string name="home_folder_delete_body">Чаты останутся на месте, просто выйдут из группы.</string>
+    <string name="home_folder_create">Создать</string>
+    <string name="home_rename">Переименовать</string>
+    <string name="home_rename_title">Переименовать чат</string>
+    <string name="home_chat_name">Название чата</string>
+    <string name="home_move">В группу</string>
+    <string name="home_move_none">Без группы</string>
+    <string name="home_select">Выбрать</string>
+    <string name="home_select_all">Выбрать все</string>
+    <string name="home_selection_close">Отменить выбор</string>
+    <plurals name="home_selected">
+        <item quantity="one">Выбран %d</item>
+        <item quantity="few">Выбрано %d</item>
+        <item quantity="many">Выбрано %d</item>
+        <item quantity="other">Выбрано %d</item>
+    </plurals>
+    <plurals name="home_delete_chats_title">
+        <item quantity="one">Удалить %d чат?</item>
+        <item quantity="few">Удалить %d чата?</item>
+        <item quantity="many">Удалить %d чатов?</item>
+        <item quantity="other">Удалить %d чата?</item>
+    </plurals>
 </resources>

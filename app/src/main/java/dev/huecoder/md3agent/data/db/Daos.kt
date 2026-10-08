@@ -12,6 +12,7 @@ data class ChatSummary(
     val title: String,
     val updatedAt: Long,
     val modelId: String?,
+    val folderId: String?,
     val lastMessage: String?,
 )
 
@@ -19,7 +20,7 @@ data class ChatSummary(
 interface ChatDao {
     @Query(
         """
-        SELECT c.id, c.title, c.updatedAt, c.modelId,
+        SELECT c.id, c.title, c.updatedAt, c.modelId, c.folderId,
             (SELECT m.content FROM messages m
              WHERE m.chatId = c.id AND m.role IN ('USER', 'ASSISTANT') AND m.content != ''
              ORDER BY m.createdAt DESC LIMIT 1) AS lastMessage
@@ -41,6 +42,24 @@ interface ChatDao {
     @Query("UPDATE chats SET title = :title WHERE id = :id")
     suspend fun rename(id: String, title: String)
 
+    @Query("UPDATE chats SET title = :title, titleSource = 'USER' WHERE id = :id")
+    suspend fun renameByUser(id: String, title: String)
+
+    @Query("UPDATE chats SET folderId = :folderId WHERE id IN (:ids)")
+    suspend fun moveToFolder(ids: List<String>, folderId: String?)
+
+    @Query(
+        """
+        SELECT c.id FROM chats c
+        WHERE c.title LIKE '%' || :query || '%' ESCAPE '\'
+            OR EXISTS (
+                SELECT 1 FROM messages m
+                WHERE m.chatId = c.id AND m.role IN ('USER', 'ASSISTANT') AND m.content LIKE '%' || :query || '%' ESCAPE '\'
+            )
+        """,
+    )
+    suspend fun search(query: String): List<String>
+
     @Query("UPDATE chats SET updatedAt = :updatedAt WHERE id = :id")
     suspend fun touch(id: String, updatedAt: Long)
 
@@ -48,6 +67,21 @@ interface ChatDao {
     suspend fun setModel(id: String, providerId: String?, modelId: String?, reasoningEffort: String?)
 
     @Query("DELETE FROM chats WHERE id = :id")
+    suspend fun delete(id: String)
+}
+
+@Dao
+interface FolderDao {
+    @Query("SELECT * FROM folders ORDER BY createdAt ASC")
+    fun observeAll(): Flow<List<FolderEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insert(folder: FolderEntity)
+
+    @Query("UPDATE folders SET name = :name WHERE id = :id")
+    suspend fun rename(id: String, name: String)
+
+    @Query("DELETE FROM folders WHERE id = :id")
     suspend fun delete(id: String)
 }
 

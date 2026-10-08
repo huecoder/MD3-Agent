@@ -74,7 +74,7 @@ class AppContainer(context: Context) {
 
     private val database = AppDatabase.build(context)
     val attachments = AttachmentStore(context)
-    val chats = ChatRepository(database.chatDao(), database.messageDao(), attachments)
+    val chats = ChatRepository(database.chatDao(), database.messageDao(), database.folderDao(), attachments)
     val memories = MemoryStore(database.memoryDao(), EmbeddingClient(httpClients), settings.settings.map { it.tools.memory })
 
     val completions = ChatCompletionClient(httpClients)
