@@ -93,9 +93,9 @@ fun AssistantSheet(state: AssistantSheetState, onDismissed: () -> Unit, content:
         val windowHeight = constraints.maxHeight.toFloat()
         BoxWithConstraints(Modifier.fillMaxSize().imePadding()) {
             val fullHeight = constraints.maxHeight.toFloat()
-            val halfHeight = (windowHeight * HALF_HEIGHT_FRACTION).coerceAtMost(fullHeight)
+            val halfHeight = minOf(windowHeight * HALF_HEIGHT_FRACTION, fullHeight * MAX_HALF_OF_AVAILABLE)
 
-            LaunchedEffect(fullHeight, halfHeight) {
+            LaunchedEffect(draggable, fullHeight, halfHeight) {
                 val anchors = DraggableAnchors {
                     SheetValue.Full at 0f
                     SheetValue.Half at fullHeight - halfHeight
@@ -193,7 +193,8 @@ private class SheetNestedScroll(
     }
 }
 
-private const val HALF_HEIGHT_FRACTION = 0.6f
+private const val HALF_HEIGHT_FRACTION = 0.45f
+private const val MAX_HALF_OF_AVAILABLE = 0.7f
 private const val SCRIM_ALPHA = 0.32f
 private const val HANDLE_ALPHA = 0.4f
 private val CORNER = 28.dp
