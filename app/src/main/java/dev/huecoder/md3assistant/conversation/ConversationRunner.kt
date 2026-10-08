@@ -94,13 +94,12 @@ class ConversationRunner(
         val (provider, model) = resolveModel(chatId, current)
             ?: return chats.save(errorMessage(chatId, NO_MODEL_SELECTED))
         try {
-            repeat(MAX_TOOL_ROUNDS) {
+            while (true) {
                 val round = streamRound(chatId, provider, model, current) ?: return
                 if (round.toolCalls.isEmpty()) return
                 val endsTurn = runTools(chatId, round, current)
                 if (endsTurn) return
             }
-            chats.save(errorMessage(chatId, "The model was stopped after $MAX_TOOL_ROUNDS consecutive rounds of tool calls"))
         } finally {
             val self = currentCoroutineContext()[Job]
             _drafts.update { drafts -> if (jobs[chatId].let { it == null || it === self }) drafts - chatId else drafts }
@@ -196,7 +195,6 @@ class ConversationRunner(
     }
 
     private companion object {
-        const val MAX_TOOL_ROUNDS = 8
         const val TITLE_MAX_CHARS = 48
         const val NO_MODEL_SELECTED = "No model selected. Add a provider in settings."
         val WHITESPACE = Regex("""\s+""")

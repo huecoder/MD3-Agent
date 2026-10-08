@@ -136,14 +136,14 @@ fun DeviceAccessScreen(onBack: () -> Unit) {
 
             item { SectionHeader(stringResource(R.string.access_section_shell)) }
             item { SectionHint(R.string.access_shell_hint) }
-            optionItems(ShellMode.entries, shell, { statusOf(it.requiredPermission()) }, viewModel::selectShell) { it.presentation }
+            optionItems("shell", ShellMode.entries, shell, { statusOf(it.requiredPermission()) }, viewModel::selectShell) { it.presentation }
             if (shell == ShellMode.TERMUX && statusOf(DevicePermission.TERMUX) == AccessStatus.READY) {
                 item { TermuxNote(Modifier.padding(top = 12.dp)) }
             }
 
             item { SectionHeader(stringResource(R.string.access_section_files)) }
             item { SectionHint(R.string.access_files_hint) }
-            optionItems(FileScope.entries, files, { statusOf(it.requiredPermission()) }, viewModel::selectFiles) { it.presentation }
+            optionItems("files", FileScope.entries, files, { statusOf(it.requiredPermission()) }, viewModel::selectFiles) { it.presentation }
         }
     }
 }
@@ -202,13 +202,14 @@ private fun PermissionItem(
 }
 
 private fun <T> LazyListScope.optionItems(
+    group: String,
     options: List<T>,
     selected: T,
     statusOf: (T) -> AccessStatus,
     onSelect: (T) -> Unit,
     presentationOf: (T) -> Presentation,
 ) {
-    itemsIndexed(options, key = { _, option -> "option-$option" }) { index, option ->
+    itemsIndexed(options, key = { _, option -> "$group-$option" }) { index, option ->
         val presentation = presentationOf(option)
         val status = statusOf(option)
         SegmentedListItem(
