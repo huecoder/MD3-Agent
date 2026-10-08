@@ -533,4 +533,11 @@
     <string name="chat_look_hint">The agent picks these after the first reply. Anything you set here stays.</string>
     <string name="chat_settings_auto_title">Name chats automatically</string>
     <string name="chat_settings_auto_title_summary">After the first reply the model picks a short title, icon and color. Chats you renamed stay as they are.</string>
+    <string name="tools_category_chats">Chats</string>
+    <string name="tools_list_chats_title">List chats</string>
+    <string name="tools_list_chats_summary">Finds your other chats by title or text</string>
+    <string name="tools_read_chat_title">Read a chat</string>
+    <string name="tools_read_chat_summary">Reads messages from another chat to pick up its context</string>
+    <string name="tools_export_chat_title">Save chat to a file</string>
+    <string name="tools_export_chat_summary">Writes a chat as a Markdown file on the phone</string>
 </resources>

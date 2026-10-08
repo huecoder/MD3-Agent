@@ -12,6 +12,9 @@ import dev.huecoder.md3agent.data.models.ModelCatalog
 import dev.huecoder.md3agent.conversation.ToolApprovals
 import dev.huecoder.md3agent.data.attachments.AttachmentStore
 import dev.huecoder.md3agent.data.chat.ChatDrafts
+import dev.huecoder.md3agent.tools.chats.ExportChatTool
+import dev.huecoder.md3agent.tools.chats.ListChatsTool
+import dev.huecoder.md3agent.tools.chats.ReadChatTool
 import dev.huecoder.md3agent.data.updates.UpdateChecker
 import dev.huecoder.md3agent.data.chat.ChatRepository
 import dev.huecoder.md3agent.data.db.AppDatabase
@@ -130,6 +133,9 @@ class AppContainer(context: Context) {
             CancelReminderTool(reminders),
             SetAlarmTool(clockApp),
             SetTimerTool(clockApp),
+            ListChatsTool(chats),
+            ReadChatTool(chats),
+            ExportChatTool(chats, deviceFiles),
         ),
         sources = listOf(mcp),
     )

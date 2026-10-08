@@ -537,4 +537,11 @@
     <string name="chat_look_hint">Агент подбирает это сам после первого ответа. То что выберешь тут вручную, он уже не тронет.</string>
     <string name="chat_settings_auto_title">Автоназвания чатов</string>
     <string name="chat_settings_auto_title_summary">После первого ответа модель придумывает короткое название, иконку и цвет. Переименованные тобой чаты не трогает.</string>
+    <string name="tools_category_chats">Чаты</string>
+    <string name="tools_list_chats_title">Список чатов</string>
+    <string name="tools_list_chats_summary">Находит другие твои чаты по названию или тексту</string>
+    <string name="tools_read_chat_title">Читать чат</string>
+    <string name="tools_read_chat_summary">Читает сообщения из другого чата чтобы подхватить контекст</string>
+    <string name="tools_export_chat_title">Сохранить чат в файл</string>
+    <string name="tools_export_chat_summary">Записывает чат в Markdown-файл на телефоне</string>
 </resources>
