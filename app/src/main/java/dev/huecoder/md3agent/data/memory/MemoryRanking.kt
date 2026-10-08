@@ -62,7 +62,7 @@ object MemoryRanking {
 
     private fun matches(wanted: String, candidate: String): Boolean {
         if (wanted == candidate) return true
-        val stem = wanted.take(STEM_LENGTH)
+        val stem = wanted.take(minOf(STEM_LENGTH, wanted.length - 1))
         return stem.length >= STEM_LENGTH - 1 && candidate.startsWith(stem)
     }
 }

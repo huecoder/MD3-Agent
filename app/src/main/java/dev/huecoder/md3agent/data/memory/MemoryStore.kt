@@ -52,6 +52,9 @@ class MemoryStore(
 
     suspend fun delete(id: String): Boolean = dao.delete(id.trim().lowercase()) > 0
 
+    suspend fun probeEmbeddings(settings: MemorySettings): Int =
+        embeddings.embed(listOf(PROBE_TEXT), EmbeddingPurpose.QUERY, settings).single().size
+
     suspend fun search(query: String, limit: Int, tiers: Set<MemoryTier> = setOf(MemoryTier.LONG_TERM)): MemorySearchResult {
         val candidates = tiers.flatMap { dao.listTier(it) }
         if (candidates.isEmpty()) return MemorySearchResult(emptyList(), semantic = false, warning = null)
@@ -117,6 +120,7 @@ class MemoryStore(
         const val MAX_INSTANT_CONTENT = 600
         const val MAX_CONTENT = 4_000
         private const val TAG = "MemoryStore"
+        private const val PROBE_TEXT = "ping"
         private const val ID_LENGTH = 5
         private const val ID_ATTEMPTS = 20
         private const val ID_ALPHABET = "abcdefghijkmnpqrstuvwxyz23456789"

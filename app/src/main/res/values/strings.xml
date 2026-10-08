@@ -399,4 +399,39 @@
     <string name="tools_memory_delete_summary">Deletes memories that are wrong or outdated</string>
     <string name="tools_memory_search_title">Search memory</string>
     <string name="tools_memory_search_summary">Finds long-term memories by keywords, or by meaning when embeddings are set up</string>
+    <string name="settings_memory">Memory</string>
+    <string name="settings_memory_summary_off">Keyword search</string>
+    <string name="settings_memory_summary_gemini">Gemini embeddings</string>
+    <string name="settings_memory_summary_openai">Embeddings · %1$s</string>
+    <string name="memory_section_search">Long-term search</string>
+    <string name="memory_search_hint">Without embeddings the agent finds memories by keywords. Embeddings let it match by meaning, so "my cat" also finds "pet named Mochi".</string>
+    <string name="memory_kind_off">Keywords</string>
+    <string name="memory_kind_gemini">Gemini</string>
+    <string name="memory_kind_openai">OpenAI format</string>
+    <string name="memory_gemini_tip_title">Try Gemini Embedding 2</string>
+    <string name="memory_gemini_tip_body">It is free, handles 50 requests per minute and understands Russian well. A key from Google AI Studio takes a minute to get.</string>
+    <string name="memory_gemini_tip_use">Use Gemini</string>
+    <string name="memory_get_key">Get a free key</string>
+    <string name="memory_api_key">API key</string>
+    <string name="memory_model">Model</string>
+    <string name="memory_base_url">Base URL</string>
+    <string name="memory_model_placeholder_openai" translatable="false">text-embedding-3-small</string>
+    <string name="memory_base_url_placeholder_openai" translatable="false">https://api.openai.com/v1</string>
+    <string name="memory_optional_default">Leave empty for the default</string>
+    <string name="memory_probe">Check</string>
+    <string name="memory_probe_ok">Works, vectors have %1$d dimensions</string>
+    <string name="memory_section_instant">Instant memory</string>
+    <string name="memory_instant_hint">Always in the system prompt, so the agent knows it without searching. %1$d of %2$d used.</string>
+    <string name="memory_section_long_term">Long-term memory</string>
+    <string name="memory_long_term_hint">The agent searches here when it needs something.</string>
+    <string name="memory_empty">Nothing here yet</string>
+    <string name="memory_add">Add memory</string>
+    <string name="memory_edit">Edit memory</string>
+    <string name="memory_delete">Delete</string>
+    <string name="memory_title">Title</string>
+    <string name="memory_content">What to remember</string>
+    <string name="memory_tier">Kind</string>
+    <string name="memory_tier_instant">Instant</string>
+    <string name="memory_tier_long_term">Long-term</string>
+    <string name="memory_cancel">Cancel</string>
 </resources>

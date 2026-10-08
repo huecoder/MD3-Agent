@@ -14,6 +14,7 @@ import dev.huecoder.md3agent.feature.home.HomeScreen
 import dev.huecoder.md3agent.feature.settings.AgentSettingsScreen
 import dev.huecoder.md3agent.feature.settings.ChatSettingsScreen
 import dev.huecoder.md3agent.feature.settings.DeviceAccessScreen
+import dev.huecoder.md3agent.feature.settings.MemorySettingsScreen
 import dev.huecoder.md3agent.feature.settings.NetworkSettingsScreen
 import dev.huecoder.md3agent.feature.settings.ProviderEditorScreen
 import dev.huecoder.md3agent.feature.settings.SettingsScreen
@@ -53,6 +54,7 @@ fun AppNavHost(chatToOpen: String?, onChatOpened: () -> Unit) {
                 onBack = navController::popBackStack,
                 onEditProvider = { navController.navigate(ProviderEditorRoute(it)) },
                 onOpenAgent = { navController.navigate(AgentSettingsRoute) },
+                onOpenMemory = { navController.navigate(MemorySettingsRoute) },
                 onOpenNetwork = { navController.navigate(NetworkSettingsRoute) },
                 onOpenTools = { navController.navigate(ToolSettingsRoute) },
                 onOpenChat = { navController.navigate(ChatSettingsRoute) },
@@ -65,6 +67,7 @@ fun AppNavHost(chatToOpen: String?, onChatOpened: () -> Unit) {
             ProviderEditorScreen(providerId = entry.toRoute<ProviderEditorRoute>().providerId, onDone = navController::popBackStack)
         }
         screen<AgentSettingsRoute>(navController) { AgentSettingsScreen(onBack = navController::popBackStack) }
+        screen<MemorySettingsRoute>(navController) { MemorySettingsScreen(onBack = navController::popBackStack) }
         screen<NetworkSettingsRoute>(navController) { NetworkSettingsScreen(onBack = navController::popBackStack) }
         screen<ToolSettingsRoute>(navController) { ToolSettingsScreen(onBack = navController::popBackStack) }
         screen<DeviceAccessRoute>(navController) { DeviceAccessScreen(onBack = navController::popBackStack) }

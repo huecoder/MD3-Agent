@@ -21,6 +21,9 @@ data object AgentSettingsRoute
 data object NetworkSettingsRoute
 
 @Serializable
+data object MemorySettingsRoute
+
+@Serializable
 data object ToolSettingsRoute
 
 @Serializable

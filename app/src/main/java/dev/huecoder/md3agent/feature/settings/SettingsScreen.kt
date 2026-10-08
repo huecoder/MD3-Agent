@@ -27,6 +27,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composables.icons.materialsymbols.MaterialSymbols
+import com.composables.icons.materialsymbols.rounded.Neurology
 import com.composables.icons.materialsymbols.rounded.Add
 import com.composables.icons.materialsymbols.rounded.Chat
 import com.composables.icons.materialsymbols.rounded.Chevron_right
@@ -39,6 +40,7 @@ import com.composables.icons.materialsymbols.rounded.Mic
 import com.composables.icons.materialsymbols.roundedfilled.Check_circle
 import dev.huecoder.md3agent.App
 import dev.huecoder.md3agent.R
+import dev.huecoder.md3agent.data.settings.EmbeddingKind
 import dev.huecoder.md3agent.assistant.AssistantRole
 import dev.huecoder.md3agent.data.settings.AppSettings
 import dev.huecoder.md3agent.data.settings.SpeakReplies
@@ -55,6 +57,7 @@ fun SettingsScreen(
     onBack: () -> Unit,
     onEditProvider: (providerId: String?) -> Unit,
     onOpenAgent: () -> Unit,
+    onOpenMemory: () -> Unit,
     onOpenNetwork: () -> Unit,
     onOpenTools: () -> Unit,
     onOpenChat: () -> Unit,
@@ -77,6 +80,12 @@ fun SettingsScreen(
                 title = stringResource(R.string.settings_agent),
                 summary = stringResource(R.string.settings_agent_summary, current.agent.name),
                 onClick = onOpenAgent,
+            ),
+            SettingsEntry(
+                icon = MaterialSymbols.Rounded.Neurology,
+                title = stringResource(R.string.settings_memory),
+                summary = memorySummary(current),
+                onClick = onOpenMemory,
             ),
             SettingsEntry(
                 icon = MaterialSymbols.Rounded.Mic,
@@ -175,6 +184,16 @@ private fun LazyListScope.providerItems(settings: AppSettings, onEditProvider: (
                 )
             },
         ) { Text(stringResource(R.string.settings_add_provider), style = MaterialTheme.typography.titleMediumEmphasized) }
+    }
+}
+
+@Composable
+private fun memorySummary(settings: AppSettings): String {
+    val memory = settings.tools.memory
+    return when (memory.embeddingKind) {
+        EmbeddingKind.OFF -> stringResource(R.string.settings_memory_summary_off)
+        EmbeddingKind.GEMINI -> stringResource(R.string.settings_memory_summary_gemini)
+        EmbeddingKind.OPENAI -> stringResource(R.string.settings_memory_summary_openai, memory.model)
     }
 }
 
