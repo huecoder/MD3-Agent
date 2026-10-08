@@ -8,11 +8,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Matrix
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.unit.Dp
@@ -50,15 +48,12 @@ private fun DrawScope.drawBody(motion: BotMotion, side: Float, color: Color) {
 }
 
 private fun DrawScope.drawEye(eye: Eye, side: Float, color: Color) {
-    val center = Offset(center.x + eye.x * side, center.y + eye.y * side)
-    val width = eye.width * side
-    val height = eye.height * side
-    rotate(eye.tiltDegrees, pivot = center) {
-        drawRoundRect(
-            color = color,
-            topLeft = Offset(center.x - width / 2f, center.y - height / 2f),
-            size = Size(width, height),
-            cornerRadius = CornerRadius(width / 2f),
-        )
+    val outline = Path()
+    eye.xs.indices.forEach { index ->
+        val x = center.x + eye.xs[index] * side
+        val y = center.y + eye.ys[index] * side
+        if (index == 0) outline.moveTo(x, y) else outline.lineTo(x, y)
     }
+    outline.close()
+    drawPath(outline, color)
 }

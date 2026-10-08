@@ -1,14 +1,19 @@
 package dev.huecoder.md3assistant.ui.avatar
 
 import androidx.graphics.shapes.Cubic
+import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.hypot
-import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sin
+import kotlin.math.sqrt
 
-data class Eye(val x: Float, val y: Float, val width: Float, val height: Float, val tiltDegrees: Float) {
-    val reach: Float get() = hypot(x, y) + max(width, height) / 2f
+class Eye(val xs: FloatArray, val ys: FloatArray) {
+    val reach: Float get() = xs.indices.maxOf { hypot(xs[it], ys[it]) }
+    val width: Float get() = xs.max() - xs.min()
+    val height: Float get() = ys.max() - ys.min()
+    val centerX: Float get() = (xs.max() + xs.min()) / 2f
+    val centerY: Float get() = (ys.max() + ys.min()) / 2f
 }
 
 data class Gaze(val yaw: Float, val pitch: Float) {
@@ -22,19 +27,16 @@ data class Gaze(val yaw: Float, val pitch: Float) {
 object BotGeometry {
     const val CENTER = 0.5f
     private const val SAMPLES_PER_CUBIC = 24
-    private const val EYE_HEIGHT = 0.32f
-    private const val EYE_WIDTH = 0.125f
-    private const val EYE_SPREAD = 0.6f
-    private const val EYE_LIFT = 0.12f
-    private const val BASE_TILT = 10f
-    private const val TILT_PER_RADIAN = 8f
-    private const val MIN_SPHERE = 0.12f
-    private const val MIN_WIDTH_SCALE = 0.62f
-    private const val MIN_HEIGHT_SCALE = 0.6f
-    private const val CLOSED_EYE = 0.12f
-    private const val MAX_WOBBLE = 0.12f
-    private const val BLINK_STRETCH = 0.3f
-    private const val CLOSED_LINE_RATIO = 0.55f
+    private const val EYE_HEIGHT = 0.86f
+    private const val EYE_WIDTH = 0.32f
+    private const val EYE_SPREAD = 0.36f
+    private const val EYE_LIFT = 0.16f
+    private const val TILT_RADIANS = 0.18f
+    private const val CLOSED_EYE = 0.14f
+    private const val MAX_WOBBLE = 0.1f
+    private const val BLINK_STRETCH = 0.25f
+    private const val CAP_POINTS = 14
+    private const val EPSILON = 1e-4f
 
     fun innerRadius(cubics: List<Cubic>): Float {
         var nearest = Float.MAX_VALUE
@@ -50,32 +52,66 @@ object BotGeometry {
     }
 
     fun eyes(gaze: Gaze, blink: Float, wobble: Float, safeRadius: Float): Pair<Eye, Eye> {
-        val scale = min(1f, safeRadius / (EYE_HEIGHT / 2f + MIN_SPHERE))
-        val height = EYE_HEIGHT * scale
         val closing = blink.coerceIn(0f, 1f)
-        val width = EYE_WIDTH * scale * (1f + MAX_WOBBLE * wobble.coerceIn(-1f, 1f)) * (1f + BLINK_STRETCH * closing)
-        val sphere = safeRadius - height / 2f
+        val halfWidth = EYE_WIDTH / 2f * (1f + MAX_WOBBLE * wobble.coerceIn(-1f, 1f)) * (1f + BLINK_STRETCH * closing)
+        val halfHeight = EYE_HEIGHT / 2f * (1f - (1f - CLOSED_EYE) * closing)
+        val outline = capsule(halfWidth, halfHeight)
         val yaw = gaze.yaw.coerceIn(-Gaze.MAX_YAW, Gaze.MAX_YAW)
-        val pitch = (gaze.pitch.coerceIn(-Gaze.MAX_PITCH, Gaze.MAX_PITCH) + EYE_LIFT)
-        val openness = 1f - (1f - CLOSED_EYE) * closing
-        fun eye(eyeYaw: Float) = Eye(
-            x = sphere * sin(eyeYaw) * cos(pitch),
-            y = -sphere * sin(pitch),
-            width = width * max(MIN_WIDTH_SCALE, cos(eyeYaw)),
-            height = max(width * CLOSED_LINE_RATIO, height * max(MIN_HEIGHT_SCALE, cos(pitch)) * openness),
-            tiltDegrees = BASE_TILT + eyeYaw * TILT_PER_RADIAN,
-        )
-        return eye(yaw - EYE_SPREAD) to eye(yaw + EYE_SPREAD)
+        val pitch = gaze.pitch.coerceIn(-Gaze.MAX_PITCH, Gaze.MAX_PITCH) + EYE_LIFT
+        val left = place(tilted(outline, TILT_RADIANS), yaw - EYE_SPREAD, pitch, safeRadius)
+        val right = place(tilted(outline, -TILT_RADIANS), yaw + EYE_SPREAD, pitch, safeRadius)
+        return left to right
     }
 
     fun gazeTowards(dx: Float, dy: Float): Gaze = Gaze(dx * Gaze.MAX_YAW, -dy * Gaze.MAX_PITCH)
+
+    fun isInside(eye: Eye, safeRadius: Float) = eye.reach <= safeRadius + EPSILON
+
+    private fun capsule(halfWidth: Float, halfHeight: Float): List<Pair<Float, Float>> =
+        if (halfHeight >= halfWidth) {
+            uprightCapsule(halfWidth, halfHeight)
+        } else {
+            uprightCapsule(halfHeight, halfWidth).map { (u, v) -> v to u }
+        }
+
+    private fun uprightCapsule(halfWidth: Float, halfHeight: Float): List<Pair<Float, Float>> {
+        val straight = halfHeight - halfWidth
+        val half = PI.toFloat()
+        val top = (0..CAP_POINTS).map { step ->
+            val angle = half * step / CAP_POINTS
+            halfWidth * cos(angle) to -straight - halfWidth * sin(angle)
+        }
+        val bottom = (0..CAP_POINTS).map { step ->
+            val angle = half + half * step / CAP_POINTS
+            halfWidth * cos(angle) to straight - halfWidth * sin(angle)
+        }
+        return top + bottom
+    }
+
+    private fun tilted(outline: List<Pair<Float, Float>>, radians: Float): List<Pair<Float, Float>> {
+        val cosTilt = cos(radians)
+        val sinTilt = sin(radians)
+        return outline.map { (u, v) -> u * cosTilt - v * sinTilt to u * sinTilt + v * cosTilt }
+    }
+
+    private fun place(outline: List<Pair<Float, Float>>, yaw: Float, pitch: Float, radius: Float): Eye {
+        val xs = FloatArray(outline.size)
+        val ys = FloatArray(outline.size)
+        outline.forEachIndexed { index, (u, v) ->
+            val length = sqrt(u * u + v * v + 1f)
+            val onSphereX = u / length
+            val onSphereY = v / length
+            val onSphereZ = 1f / length
+            val liftedY = onSphereY * cos(pitch) - onSphereZ * sin(pitch)
+            val liftedZ = onSphereY * sin(pitch) + onSphereZ * cos(pitch)
+            xs[index] = (onSphereX * cos(yaw) + liftedZ * sin(yaw)) * radius
+            ys[index] = liftedY * radius
+        }
+        return Eye(xs, ys)
+    }
 
     private fun bezier(t: Float, p0: Float, p1: Float, p2: Float, p3: Float): Float {
         val u = 1f - t
         return u * u * u * p0 + 3 * u * u * t * p1 + 3 * u * t * t * p2 + t * t * t * p3
     }
-
-    fun isInside(eye: Eye, safeRadius: Float) = eye.reach <= safeRadius + EPSILON
-
-    private const val EPSILON = 1e-4f
 }

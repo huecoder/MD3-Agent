@@ -29,17 +29,18 @@ class BotGeometryTest {
     @Test
     fun `resting eyes look straight ahead and mirror each other`() {
         val (left, right) = BotGeometry.eyes(Gaze.Center, blink = 0f, wobble = 0f, safeRadius = 0.4f)
-        assertEquals(-left.x, right.x, 1e-5f)
-        assertEquals(left.y, right.y, 1e-5f)
-        assertEquals(left.height, right.height, 1e-5f)
-        assertTrue(left.y < 0f)
+        assertEquals(-left.centerX, right.centerX, 1e-4f)
+        assertEquals(left.centerY, right.centerY, 1e-4f)
+        assertEquals(left.height, right.height, 1e-4f)
+        assertTrue(left.centerY < 0f)
+        assertTrue(left.height > left.width * 1.5f)
     }
 
     @Test
     fun `looking sideways squeezes the far eye`() {
         val (left, right) = BotGeometry.eyes(Gaze(Gaze.MAX_YAW, 0f), blink = 0f, wobble = 0f, safeRadius = 0.4f)
         assertTrue(right.width < left.width)
-        assertTrue(right.x > 0f)
+        assertTrue(right.centerX > 0f)
     }
 
     @Test
@@ -47,7 +48,7 @@ class BotGeometryTest {
         val (open, _) = BotGeometry.eyes(Gaze.Center, blink = 0f, wobble = 0f, safeRadius = 0.4f)
         val (closed, _) = BotGeometry.eyes(Gaze.Center, blink = 1f, wobble = 0f, safeRadius = 0.4f)
         assertTrue(closed.height < open.height / 3f)
-        assertTrue(closed.width > open.width)
+        assertTrue(closed.width > closed.height * 2f)
         assertTrue(closed.height > 0f)
     }
 
@@ -63,7 +64,7 @@ class BotGeometryTest {
                     grid.forEach { dx ->
                         val (left, right) = BotGeometry.eyes(BotGeometry.gazeTowards(dx, dx / 2), blink = 0f, wobble = 1f, shapes.safeRadius)
                         assertTrue(left.reach <= inner && right.reach <= inner)
-                        assertTrue(hypot(left.x, left.y) < inner)
+                        assertTrue(hypot(left.centerX, left.centerY) < inner)
                     }
                 }
             }
