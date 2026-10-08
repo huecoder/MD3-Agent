@@ -4,6 +4,17 @@ import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Surface
+import com.composables.icons.materialsymbols.MaterialSymbols
+import com.composables.icons.materialsymbols.rounded.Arrow_drop_down
+import dev.huecoder.md3assistant.feature.models.ModelPickerSheet
+import dev.huecoder.md3assistant.feature.models.label
+import dev.huecoder.md3assistant.ui.components.VendorGlyph
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -48,13 +59,14 @@ import dev.huecoder.md3assistant.voice.DictationViewModel
 
 @Composable
 fun ChatScreen(chatId: String?, onBack: () -> Unit) {
-    val viewModel = appViewModel(key = "chat-$chatId") { ChatViewModel(chatId, it.chats, it.conversations, it.attachments, it.approvals, it.settings, it.applicationScope, it::newSpeechSynthesizer) }
+    val viewModel = appViewModel(key = "chat-$chatId") { ChatViewModel(chatId, it.chats, it.conversations, it.attachments, it.approvals, it.settings, it.modelCatalog, it.applicationScope, it::newSpeechSynthesizer) }
     val state by viewModel.state.collectAsStateWithLifecycle()
     val error by viewModel.errors.collectAsStateWithLifecycle()
     val speakingId by viewModel.speakingId.collectAsStateWithLifecycle()
     val snackbarHost = remember { SnackbarHostState() }
     val context = LocalContext.current
     var input by rememberSaveable { mutableStateOf("") }
+    var pickingModel by rememberSaveable { mutableStateOf(false) }
     val pickFiles = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
         if (uris.isNotEmpty()) viewModel.attach(uris)
     }
@@ -78,9 +90,13 @@ fun ChatScreen(chatId: String?, onBack: () -> Unit) {
         }
     }
 
+    if (pickingModel) {
+        ModelPickerSheet(current = state.selection, onSelect = viewModel::selectModel, onDismiss = { pickingModel = false })
+    }
+
     LightboxHost {
         Scaffold(
-            topBar = { ChatTopBar(title = state.title.asString(), model = state.modelId, onBack = onBack) },
+            topBar = { ChatTopBar(title = state.title.asString(), state = state, onBack = onBack, onPickModel = { pickingModel = true }) },
             snackbarHost = { SnackbarHost(snackbarHost) },
         ) { padding ->
             Box(Modifier.fillMaxSize().padding(top = padding.calculateTopPadding()).imePadding()) {
@@ -123,27 +139,46 @@ fun ChatScreen(chatId: String?, onBack: () -> Unit) {
 }
 
 @Composable
-private fun ChatTopBar(title: String, model: String?, onBack: () -> Unit) {
-    val navigationIcon = @Composable { BackButton(onBack) }
-    val titleContent = @Composable {
-        Text(title, style = MaterialTheme.typography.titleLargeEmphasized, maxLines = 1, overflow = TextOverflow.Ellipsis)
-    }
-    if (model.isNullOrBlank()) {
-        TopAppBar(title = titleContent, navigationIcon = navigationIcon)
-    } else {
-        TopAppBar(
-            title = titleContent,
-            subtitle = {
-                Text(
-                    model,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            },
-            navigationIcon = navigationIcon,
-        )
+private fun ChatTopBar(title: String, state: ChatUiState, onBack: () -> Unit, onPickModel: () -> Unit) {
+    TopAppBar(
+        title = { Text(title, style = MaterialTheme.typography.titleLargeEmphasized, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+        subtitle = { ModelChip(state, onPickModel) },
+        navigationIcon = { BackButton(onBack) },
+    )
+}
+
+@Composable
+private fun ModelChip(state: ChatUiState, onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        modifier = Modifier.padding(top = 2.dp),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            modifier = Modifier.padding(start = 8.dp, end = 4.dp, top = 2.dp, bottom = 2.dp),
+        ) {
+            VendorGlyph(state.modelFamily, size = 14.dp, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                listOfNotNull(
+                    state.modelName ?: stringResource(R.string.chat_change_model),
+                    state.selection?.reasoningEffort?.let { stringResource(it.label) },
+                ).joinToString(" · "),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.widthIn(max = MODEL_CHIP_MAX_WIDTH),
+            )
+            Icon(
+                MaterialSymbols.Rounded.Arrow_drop_down,
+                contentDescription = stringResource(R.string.chat_change_model),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp),
+            )
+        }
     }
 }
 
@@ -194,3 +229,4 @@ fun EmptyConversation(modifier: Modifier = Modifier, avatarSize: Dp = 96.dp, sty
 private val PICKABLE_MIME_TYPES = arrayOf("*/*")
 
 private val ComposerClearance = 104.dp
+private val MODEL_CHIP_MAX_WIDTH = 240.dp

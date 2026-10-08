@@ -53,7 +53,7 @@ fun AssistantOverlay(activation: Int, onDismiss: () -> Unit, onOpenInApp: (chatI
     val context = LocalContext.current
     val container = (context.applicationContext as App).container
     val viewModel = appViewModel(key = "overlay-$activation") {
-        ChatViewModel(null, it.chats, it.conversations, it.attachments, it.approvals, it.settings, it.applicationScope, it::newSpeechSynthesizer)
+        ChatViewModel(null, it.chats, it.conversations, it.attachments, it.approvals, it.settings, it.modelCatalog, it.applicationScope, it::newSpeechSynthesizer)
     }
     val state by viewModel.state.collectAsStateWithLifecycle()
     val error by viewModel.errors.collectAsStateWithLifecycle()

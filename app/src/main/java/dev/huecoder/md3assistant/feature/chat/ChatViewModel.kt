@@ -15,7 +15,11 @@ import dev.huecoder.md3assistant.data.attachments.AttachmentTooLargeException
 import dev.huecoder.md3assistant.data.chat.ChatRepository
 import dev.huecoder.md3assistant.data.db.ChatEntity
 import dev.huecoder.md3assistant.data.db.MessageEntity
+import dev.huecoder.md3assistant.data.db.selection
 import dev.huecoder.md3assistant.data.settings.AgentProfile
+import dev.huecoder.md3assistant.data.models.ModelCatalog
+import dev.huecoder.md3assistant.data.settings.ModelSelection
+import dev.huecoder.md3assistant.llm.models.ModelFamily
 import dev.huecoder.md3assistant.data.settings.SettingsRepository
 import dev.huecoder.md3assistant.data.settings.SpeakReplies
 import dev.huecoder.md3assistant.data.settings.VoiceSettings
@@ -44,6 +48,9 @@ data class ChatUiState(
     val title: UiText = NEW_CHAT_TITLE,
     val agentName: String = AgentProfile.DEFAULT_AGENT_NAME,
     val modelId: String? = null,
+    val selection: ModelSelection? = null,
+    val modelFamily: ModelFamily? = null,
+    val modelName: String? = null,
     val messages: List<ChatItem> = emptyList(),
     val showTokenUsage: Boolean = false,
     val isStreaming: Boolean = false,
@@ -64,13 +71,15 @@ class ChatViewModel(
     private val runner: ConversationRunner,
     private val attachments: AttachmentStore,
     private val approvals: ToolApprovals,
-    settings: SettingsRepository,
+    private val settings: SettingsRepository,
+    private val catalog: ModelCatalog,
     private val appScope: CoroutineScope,
     synthesizers: (VoiceSettings) -> SpeechSynthesizer,
 ) : ViewModel() {
     private val chatId = MutableStateFlow(initialChatId)
     private val _errors = MutableStateFlow<UiText?>(null)
     private val pending = MutableStateFlow(PendingAttachments())
+    private val pendingSelection = MutableStateFlow<ModelSelection?>(null)
 
     val errors: StateFlow<UiText?> = _errors.asStateFlow()
 
@@ -85,10 +94,14 @@ class ChatViewModel(
     val state: StateFlow<ChatUiState> = chatId
         .flatMapLatest { id ->
             if (id == null) {
-                appSettings.map { ChatUiState(modelId = it.activeSelection?.modelId, agentName = it.agent.name, showTokenUsage = it.chat.showTokenUsage) }
+                combine(appSettings, pendingSelection) { current, chosen ->
+                    ChatUiState(agentName = current.agent.name, showTokenUsage = current.chat.showTokenUsage).withSelection(chosen ?: current.activeSelection)
+                }
             } else {
                 combine(chats.observeChat(id), chats.observeMessages(id), runner.drafts, appSettings) { chat, messages, drafts, current ->
-                    buildState(id, chat, messages, drafts[id]).copy(agentName = current.agent.name, showTokenUsage = current.chat.showTokenUsage)
+                    buildState(id, chat, messages, drafts[id])
+                        .copy(agentName = current.agent.name, showTokenUsage = current.chat.showTokenUsage)
+                        .withSelection(chat?.selection ?: current.activeSelection)
                 }
             }
         }
@@ -118,12 +131,27 @@ class ChatViewModel(
         viewModelScope.launch {
             val id = chatId.value
             try {
-                if (id == null) chatId.value = runner.startChat(text, attached).id else runner.send(id, text, attached)
+                if (id == null) chatId.value = runner.startChat(text, attached, pendingSelection.value).id else runner.send(id, text, attached)
             } catch (e: NoModelConfiguredException) {
                 pending.update { it.copy(items = attached + it.items) }
                 _errors.value = UiText.Resource(R.string.chat_error_no_model)
             }
         }
+    }
+
+    fun selectModel(selection: ModelSelection) {
+        val id = chatId.value
+        if (id == null) pendingSelection.value = selection
+        viewModelScope.launch {
+            if (id != null) chats.setModel(id, selection)
+            settings.setActiveSelection(selection)
+        }
+    }
+
+    private suspend fun ChatUiState.withSelection(selection: ModelSelection?): ChatUiState {
+        if (selection == null) return this
+        val info = catalog.infoLoaded(selection.providerId, selection.modelId)
+        return copy(selection = selection, modelId = selection.modelId, modelFamily = info.family, modelName = info.displayName)
     }
 
     fun attach(uris: List<Uri>) {

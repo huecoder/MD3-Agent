@@ -1,6 +1,8 @@
 package dev.huecoder.md3assistant.data.db
 
 import androidx.room.ColumnInfo
+import dev.huecoder.md3assistant.data.settings.ModelSelection
+import dev.huecoder.md3assistant.llm.models.ReasoningEffort
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -25,6 +27,9 @@ data class ChatEntity(
     val shapeKey: String? = null,
     @ColumnInfo(defaultValue = "FIRST_MESSAGE") val titleSource: TitleSource = TitleSource.FIRST_MESSAGE,
 )
+
+val ChatEntity.selection: ModelSelection?
+    get() = if (providerId != null && !modelId.isNullOrBlank()) ModelSelection(providerId, modelId, reasoningEffort?.let(ReasoningEffort::fromWire)) else null
 
 enum class TitleSource { FIRST_MESSAGE, GENERATED, USER }
 

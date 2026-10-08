@@ -329,4 +329,26 @@
     <string name="lightbox_download">Save to Downloads</string>
     <string name="lightbox_saved">Saved to Downloads/MD3 Assistant</string>
     <string name="lightbox_save_failed">Couldn\'t save the image</string>
+    <string name="model_picker_title">Model</string>
+    <string name="model_search">Search by name, company or id</string>
+    <string name="model_search_clear">Clear search</string>
+    <string name="model_refresh">Refresh the model list</string>
+    <string name="model_filter_vision">Vision</string>
+    <string name="model_filter_reasoning">Reasoning</string>
+    <string name="model_filter_images">Image generation</string>
+    <string name="model_empty">No models match</string>
+    <string name="model_context">%1$s context</string>
+    <string name="model_reasoning">Reasoning effort</string>
+    <string name="reasoning_default">Default</string>
+    <string name="reasoning_none">Off</string>
+    <string name="reasoning_minimal">Minimal</string>
+    <string name="reasoning_low">Low</string>
+    <string name="reasoning_medium">Medium</string>
+    <string name="reasoning_high">High</string>
+    <string name="reasoning_xhigh">Max</string>
+    <string name="chat_change_model">Change model</string>
+    <plurals name="model_picker_count">
+        <item quantity="one">%1$d model</item>
+        <item quantity="other">%1$d models</item>
+    </plurals>
 </resources>

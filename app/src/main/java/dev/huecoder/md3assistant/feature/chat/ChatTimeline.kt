@@ -129,6 +129,8 @@ object ChatTimeline {
             val isLive = live != null
             if (reasoning.isNotEmpty()) add(ReplyPart.Reasoning(reasoning, isStreaming = isLive && content.isEmpty() && calls.isEmpty()))
             if (content.isNotEmpty()) add(ReplyPart.Text(content))
+            val generated = Attachment.decode(row.attachmentsJson)
+            if (generated.isNotEmpty()) add(ReplyPart.Media(generated))
             val shown = calls.filter { it.name != ShowUiTool.NAME }
             if (shown.isNotEmpty()) {
                 val toolCalls = shown.map { it.toUi(results[it.id], live) }
@@ -142,7 +144,7 @@ object ChatTimeline {
             when {
                 isLive -> Unit
                 row.status == MessageStatus.ERROR -> add(ReplyPart.Error(row.errorText?.let(UiText::Raw) ?: UiText.Resource(R.string.chat_error_unknown)))
-                row.status == MessageStatus.COMPLETE && content.isEmpty() && calls.isEmpty() -> add(ReplyPart.Error(UiText.Resource(R.string.chat_error_empty_response)))
+                row.status == MessageStatus.COMPLETE && content.isEmpty() && calls.isEmpty() && generated.isEmpty() -> add(ReplyPart.Error(UiText.Resource(R.string.chat_error_empty_response)))
             }
         }
 

@@ -325,4 +325,28 @@
     <string name="lightbox_download">Сохранить в загрузки</string>
     <string name="lightbox_saved">Сохранено в Загрузки/MD3 Assistant</string>
     <string name="lightbox_save_failed">Не получилось сохранить картинку</string>
+    <string name="model_picker_title">Модель</string>
+    <string name="model_search">Поиск по имени, компании или id</string>
+    <string name="model_search_clear">Очистить поиск</string>
+    <string name="model_refresh">Обновить список моделей</string>
+    <string name="model_filter_vision">Зрение</string>
+    <string name="model_filter_reasoning">Рассуждения</string>
+    <string name="model_filter_images">Генерация картинок</string>
+    <string name="model_empty">Ничего не нашлось</string>
+    <string name="model_context">контекст %1$s</string>
+    <string name="model_reasoning">Глубина рассуждений</string>
+    <string name="reasoning_default">Авто</string>
+    <string name="reasoning_none">Выкл</string>
+    <string name="reasoning_minimal">Мин</string>
+    <string name="reasoning_low">Низкая</string>
+    <string name="reasoning_medium">Средняя</string>
+    <string name="reasoning_high">Высокая</string>
+    <string name="reasoning_xhigh">Макс</string>
+    <string name="chat_change_model">Сменить модель</string>
+    <plurals name="model_picker_count">
+        <item quantity="one">%1$d модель</item>
+        <item quantity="few">%1$d модели</item>
+        <item quantity="many">%1$d моделей</item>
+        <item quantity="other">%1$d модели</item>
+    </plurals>
 </resources>
