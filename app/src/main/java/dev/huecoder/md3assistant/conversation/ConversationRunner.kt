@@ -26,6 +26,7 @@ import dev.huecoder.md3assistant.llm.ToolCall
 import dev.huecoder.md3assistant.llm.ToolCallAccumulator
 import dev.huecoder.md3assistant.llm.TokenUsage
 import dev.huecoder.md3assistant.prompt.SystemPromptRenderer
+import dev.huecoder.md3assistant.tools.ToolContext
 import dev.huecoder.md3assistant.tools.ToolOutcome
 import dev.huecoder.md3assistant.tools.ToolRegistry
 import kotlinx.coroutines.CancellationException
@@ -37,7 +38,7 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -53,6 +54,7 @@ class ConversationRunner(
     private val tools: ToolRegistry,
     private val attachments: AttachmentStore,
     private val approvals: ToolApprovals,
+    private val questions: UserQuestions,
     private val catalog: ModelCatalog,
     private val generatedImages: GeneratedImages,
     private val scope: CoroutineScope,
@@ -63,9 +65,11 @@ class ConversationRunner(
 
     val drafts: StateFlow<Map<String, StreamingDraft>> = _drafts.asStateFlow()
 
-    val activity: Flow<Map<String, ChatActivity>> = _drafts
-        .map { drafts -> drafts.mapValues { (_, draft) -> if (draft.awaitingCallId != null) ChatActivity.NEEDS_APPROVAL else ChatActivity.WORKING } }
-        .distinctUntilChanged()
+    val activity: Flow<Map<String, ChatActivity>> = combine(_drafts, questions.pending) { drafts, asked ->
+        drafts.mapValues { (chatId, draft) ->
+            if (draft.awaitingCallId != null || chatId in asked) ChatActivity.NEEDS_INPUT else ChatActivity.WORKING
+        }
+    }.distinctUntilChanged()
 
     init {
         scope.launch { chats.recoverInterruptedStreams() }
@@ -166,7 +170,7 @@ class ConversationRunner(
         for (call in round.toolCalls) {
             val outcome = if (isApproved(chatId, round, call, current.tools)) {
                 publish(chatId, round.copy(runningCallIds = setOf(call.id)))
-                tools.run(call, current.tools)
+                tools.run(call, current.tools, ToolContext(chatId))
             } else {
                 ToolOutcome.denied()
             }
@@ -242,7 +246,7 @@ private val ToolOutcome.messageStatus: MessageStatus
         else -> MessageStatus.COMPLETE
     }
 
-enum class ChatActivity { WORKING, NEEDS_APPROVAL }
+enum class ChatActivity { WORKING, NEEDS_INPUT }
 
 data class StreamingDraft(
     val messageId: String,

@@ -64,10 +64,10 @@ class ToolsParsingTest {
         }
         val registry = ToolRegistry(listOf(echo))
 
-        assertTrue(registry.run(ToolCall("1", "missing", "{}"), ToolSettings()).isError)
-        assertTrue(registry.run(ToolCall("2", "echo", "{}"), ToolSettings().withPermission("echo", ToolPermission.OFF)).isError)
-        assertTrue(registry.run(ToolCall("3", "echo", "not json"), ToolSettings()).isError)
-        val ok = registry.run(ToolCall("4", "echo", """{"a":1}"""), ToolSettings())
+        assertTrue(registry.run(ToolCall("1", "missing", "{}"), ToolSettings(), ToolContext("chat")).isError)
+        assertTrue(registry.run(ToolCall("2", "echo", "{}"), ToolSettings().withPermission("echo", ToolPermission.OFF), ToolContext("chat")).isError)
+        assertTrue(registry.run(ToolCall("3", "echo", "not json"), ToolSettings(), ToolContext("chat")).isError)
+        val ok = registry.run(ToolCall("4", "echo", """{"a":1}"""), ToolSettings(), ToolContext("chat"))
         assertFalse(ok.isError)
         assertEquals("""{"a":1}""", ok.content)
         assertEquals(emptyList<ToolSpec>(), registry.specs(ToolSettings().withPermission("echo", ToolPermission.OFF)))

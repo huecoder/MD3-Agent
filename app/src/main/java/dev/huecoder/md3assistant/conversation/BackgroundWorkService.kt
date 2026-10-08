@@ -58,7 +58,7 @@ class BackgroundWorkService : Service() {
             return
         }
         notifications()?.notify(WORK_NOTIFICATION_ID, workNotification(activity.size))
-        val waiting = if (appVisible) emptySet() else activity.filterValues { it == ChatActivity.NEEDS_APPROVAL }.keys
+        val waiting = if (appVisible) emptySet() else activity.filterValues { it == ChatActivity.NEEDS_INPUT }.keys
         (approvalNotified - waiting).forEach { notifications()?.cancel(it, APPROVAL_NOTIFICATION_ID) }
         (waiting - approvalNotified).forEach { chatId ->
             val title = container.chats.chat(chatId)?.title.orEmpty()

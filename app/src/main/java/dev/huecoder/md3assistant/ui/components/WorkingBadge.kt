@@ -37,25 +37,25 @@ fun WorkingBadge(activity: ChatActivity, modifier: Modifier = Modifier, size: Dp
     val transition = rememberInfiniteTransition(label = "working")
     val sweep by transition.animateFloat(0f, FULL_TURN, infiniteRepeatable(tween(SWEEP_MS, easing = LinearEasing)), label = "sweep")
     val breath by transition.animateFloat(0f, 1f, infiniteRepeatable(tween(BREATH_MS), RepeatMode.Reverse), label = "breath")
-    val needsApproval = activity == ChatActivity.NEEDS_APPROVAL
-    val gradient = if (needsApproval) {
+    val needsInput = activity == ChatActivity.NEEDS_INPUT
+    val gradient = if (needsInput) {
         listOf(colors.tertiary, colors.tertiaryContainer, colors.tertiary)
     } else {
         listOf(colors.primary, colors.tertiary, colors.secondary, colors.primary)
     }
-    val label = stringResource(if (needsApproval) R.string.home_chat_needs_approval else R.string.home_chat_working)
+    val label = stringResource(if (needsInput) R.string.home_chat_needs_input else R.string.home_chat_working)
 
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
             .size(size)
-            .clip(MorphShape(morph, progress = if (needsApproval) 0f else breath, rotationDegrees = sweep / SHAPE_SPIN_DIVIDER))
+            .clip(MorphShape(morph, progress = if (needsInput) 0f else breath, rotationDegrees = sweep / SHAPE_SPIN_DIVIDER))
             .drawBehind { rotate(sweep) { drawRect(Brush.sweepGradient(gradient, center)) } },
     ) {
         Icon(
-            if (needsApproval) MaterialSymbols.Rounded.Pan_tool else MaterialSymbols.RoundedFilled.Auto_awesome,
+            if (needsInput) MaterialSymbols.Rounded.Pan_tool else MaterialSymbols.RoundedFilled.Auto_awesome,
             contentDescription = label,
-            tint = if (needsApproval) colors.onTertiary else colors.onPrimary,
+            tint = if (needsInput) colors.onTertiary else colors.onPrimary,
             modifier = Modifier.size(size * ICON_FRACTION),
         )
     }

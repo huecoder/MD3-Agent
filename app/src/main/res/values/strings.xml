@@ -356,7 +356,7 @@
     <string name="notification_channel_reminders">Reminders</string>
     <string name="notification_work_text">Replies keep going while the app is closed</string>
     <string name="notification_work_stop">Stop all</string>
-    <string name="notification_approval_title">The assistant needs your approval</string>
+    <string name="notification_approval_title">The assistant is waiting for you</string>
     <plurals name="notification_work_title">
         <item quantity="one">Working on %1$d chat</item>
         <item quantity="other">Working on %1$d chats</item>
@@ -364,5 +364,12 @@
     <string name="permission_notifications">Notifications</string>
     <string name="permission_notifications_summary">Background replies, approvals and reminders</string>
     <string name="home_chat_working">Working</string>
-    <string name="home_chat_needs_approval">Waiting for your approval</string>
+    <string name="home_chat_needs_input">Waiting for you</string>
+    <string name="question_header">Question</string>
+    <string name="question_custom">Your own answer</string>
+    <string name="question_skip">Skip</string>
+    <string name="question_send">Send</string>
+    <string name="tools_ask_user_title">Ask questions</string>
+    <string name="tools_ask_user_summary">Shows a poll with choices when the assistant needs a decision</string>
+    <string name="tools_category_assistant">Conversation</string>
 </resources>

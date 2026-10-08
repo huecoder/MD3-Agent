@@ -13,12 +13,14 @@ import com.composables.icons.materialsymbols.rounded.Hub
 import com.composables.icons.materialsymbols.rounded.Perm_media
 import com.composables.icons.materialsymbols.rounded.Language
 import com.composables.icons.materialsymbols.rounded.Partly_cloudy_day
+import com.composables.icons.materialsymbols.rounded.Quiz
 import com.composables.icons.materialsymbols.rounded.Screenshot_monitor
 import com.composables.icons.materialsymbols.rounded.Smart_button
 import com.composables.icons.materialsymbols.rounded.Terminal
 import com.composables.icons.materialsymbols.rounded.Travel_explore
 import dev.huecoder.md3assistant.R
 import dev.huecoder.md3assistant.mcp.McpTool
+import dev.huecoder.md3assistant.tools.AskUserTool
 import dev.huecoder.md3assistant.tools.ReadScreenTool
 import dev.huecoder.md3assistant.tools.ShowChartTool
 import dev.huecoder.md3assistant.tools.ShowUiTool
@@ -35,6 +37,7 @@ import dev.huecoder.md3assistant.tools.web.WebSearchTool
 import dev.huecoder.md3assistant.ui.text.UiText
 
 enum class ToolCategory(@StringRes val title: Int) {
+    ASSISTANT(R.string.tools_category_assistant),
     WEB(R.string.tools_category_web),
     SCREEN(R.string.tools_category_screen),
     FILES(R.string.tools_category_files),
@@ -47,6 +50,7 @@ data class ToolInfo(val icon: ImageVector, val title: UiText, val summary: UiTex
 
 object ToolCatalog {
     private val known = mapOf(
+        AskUserTool.NAME to known(ToolCategory.ASSISTANT, MaterialSymbols.Rounded.Quiz, R.string.tools_ask_user_title, R.string.tools_ask_user_summary),
         WebSearchTool.NAME to known(ToolCategory.WEB, MaterialSymbols.Rounded.Travel_explore, R.string.tools_web_search_title, R.string.tools_web_search_summary),
         ReadWebpageTool.NAME to known(ToolCategory.WEB, MaterialSymbols.Rounded.Language, R.string.tools_read_webpage_title, R.string.tools_read_webpage_summary),
         WeatherTool.NAME to known(ToolCategory.WEB, MaterialSymbols.Rounded.Partly_cloudy_day, R.string.tools_weather_title, R.string.tools_weather_summary),

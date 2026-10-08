@@ -9,6 +9,9 @@ import dev.huecoder.md3assistant.conversation.ConversationRunner
 import dev.huecoder.md3assistant.conversation.NoModelConfiguredException
 import dev.huecoder.md3assistant.conversation.StreamingDraft
 import dev.huecoder.md3assistant.conversation.ToolApprovals
+import dev.huecoder.md3assistant.conversation.PendingQuestion
+import dev.huecoder.md3assistant.conversation.QuestionAnswer
+import dev.huecoder.md3assistant.conversation.UserQuestions
 import dev.huecoder.md3assistant.data.attachments.Attachment
 import dev.huecoder.md3assistant.data.attachments.AttachmentStore
 import dev.huecoder.md3assistant.data.attachments.AttachmentTooLargeException
@@ -71,6 +74,7 @@ class ChatViewModel(
     private val runner: ConversationRunner,
     private val attachments: AttachmentStore,
     private val approvals: ToolApprovals,
+    private val questions: UserQuestions,
     private val settings: SettingsRepository,
     private val catalog: ModelCatalog,
     private val appScope: CoroutineScope,
@@ -90,6 +94,9 @@ class ChatViewModel(
     private var inputFromVoice = false
 
     val speakingId: StateFlow<String?> = speaker.speakingId
+
+    val pendingQuestion: StateFlow<PendingQuestion?> = combine(chatId, questions.pending) { id, asked -> id?.let(asked::get) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), null)
 
     val state: StateFlow<ChatUiState> = chatId
         .flatMapLatest { id ->
@@ -183,6 +190,8 @@ class ChatViewModel(
         chatId.value?.let(runner::cancel)
         stopSpeaking()
     }
+
+    fun answerQuestion(question: PendingQuestion, answer: QuestionAnswer) = questions.answer(question.chatId, question.id, answer)
 
     fun respondToApproval(call: ToolCallUi, decision: ApprovalDecision) {
         chatId.value?.let { approvals.respond(it, call.id, decision) }

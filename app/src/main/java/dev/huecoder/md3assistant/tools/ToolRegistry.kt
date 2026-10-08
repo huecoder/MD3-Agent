@@ -42,13 +42,13 @@ class ToolRegistry(private val builtIn: List<Tool>, private val sources: List<To
 
     fun endsTurn(call: ToolCall): Boolean = find(call.name)?.endsTurn == true
 
-    suspend fun run(call: ToolCall, settings: ToolSettings): ToolOutcome {
+    suspend fun run(call: ToolCall, settings: ToolSettings, context: ToolContext): ToolOutcome {
         val tool = find(call.name)?.takeIf { permission(it, settings) != ToolPermission.OFF }
             ?: return ToolOutcome.error("Tool \"${call.name}\" is not available")
         val arguments = parseArguments(call.arguments)
             ?: return ToolOutcome.error("Arguments are not a JSON object: ${call.arguments.take(ARGUMENT_PREVIEW_CHARS)}")
         return try {
-            withTimeout(tool.timeoutMs) { tool.execute(arguments, settings) }
+            withTimeout(tool.timeoutMs) { tool.execute(arguments, settings, context) }
         } catch (e: TimeoutCancellationException) {
             ToolOutcome.error("Tool did not respond within ${tool.timeoutMs / MS_PER_SECOND} s")
         } catch (e: CancellationException) {

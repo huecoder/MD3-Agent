@@ -28,6 +28,17 @@ interface Tool {
     fun promptNote(settings: ToolSettings): String? = null
 
     suspend fun execute(arguments: JsonObject, settings: ToolSettings): ToolOutcome
+
+    suspend fun execute(arguments: JsonObject, settings: ToolSettings, context: ToolContext): ToolOutcome = execute(arguments, settings)
+}
+
+data class ToolContext(val chatId: String)
+
+interface ContextualTool : Tool {
+    override suspend fun execute(arguments: JsonObject, settings: ToolSettings): ToolOutcome =
+        ToolOutcome.error("This tool only works inside a chat")
+
+    override suspend fun execute(arguments: JsonObject, settings: ToolSettings, context: ToolContext): ToolOutcome
 }
 
 const val DEFAULT_TOOL_TIMEOUT_MS = 45_000L
