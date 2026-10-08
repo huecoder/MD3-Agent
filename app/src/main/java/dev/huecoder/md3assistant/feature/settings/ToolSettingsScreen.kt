@@ -12,10 +12,12 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -26,6 +28,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -45,6 +48,7 @@ import dev.huecoder.md3assistant.ui.components.SectionHeader
 import dev.huecoder.md3assistant.ui.components.SettingsScaffold
 import dev.huecoder.md3assistant.ui.components.ShapeBadge
 import dev.huecoder.md3assistant.ui.components.ToolCatalog
+import dev.huecoder.md3assistant.ui.components.ToolCategory
 import dev.huecoder.md3assistant.ui.components.ToolInfo
 import dev.huecoder.md3assistant.ui.text.asString
 import kotlinx.coroutines.launch
@@ -65,26 +69,34 @@ fun ToolSettingsScreen(onBack: () -> Unit) {
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
         ) {
-            SectionHeader(stringResource(R.string.tools_section_available))
-            container.tools.all.forEach { tool ->
-                val name = tool.spec.name
-                ToolPermissionRow(
-                    info = ToolCatalog.of(name),
-                    permission = container.tools.permission(tool, current),
-                    onChange = { tools = current.withPermission(name, it) },
-                )
+            val grouped = container.tools.all.groupBy { ToolCatalog.of(it.spec.name).category }
+            ToolCategory.entries.forEach { category ->
+                val categoryTools = grouped[category].orEmpty()
+                if (categoryTools.isEmpty()) return@forEach
+                SectionHeader(stringResource(category.title))
+                categoryTools.forEachIndexed { index, tool ->
+                    val name = tool.spec.name
+                    ToolPermissionRow(
+                        info = ToolCatalog.of(name),
+                        permission = container.tools.permission(tool, current),
+                        shape = ListItemDefaults.segmentedShapes(index, categoryTools.size).shape,
+                        onChange = { tools = current.withPermission(name, it) },
+                    )
+                }
+                if (category == ToolCategory.WEB) {
+                    ServiceCard(R.string.tools_section_search, Modifier.padding(top = 12.dp)) {
+                        SearchSection(current.search) { tools = current.copy(search = it) }
+                    }
+                    ServiceCard(R.string.tools_section_fetch) {
+                        FetchSection(current.fetch) { tools = current.copy(fetch = it) }
+                    }
+                    ServiceCard(R.string.tools_weather_title) {
+                        WeatherSection(current.weather) { tools = current.copy(weather = it) }
+                    }
+                }
             }
-
-            SectionHeader(stringResource(R.string.tools_section_search))
-            SearchSection(current.search) { tools = current.copy(search = it) }
-
-            SectionHeader(stringResource(R.string.tools_section_fetch))
-            FetchSection(current.fetch) { tools = current.copy(fetch = it) }
-
-            SectionHeader(stringResource(R.string.tools_weather_title))
-            WeatherSection(current.weather) { tools = current.copy(weather = it) }
 
             Button(
                 onClick = {
@@ -102,16 +114,28 @@ fun ToolSettingsScreen(onBack: () -> Unit) {
 }
 
 @Composable
-private fun ToolPermissionRow(info: ToolInfo, permission: ToolPermission, onChange: (ToolPermission) -> Unit) {
-    Column(Modifier.padding(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            ShapeBadge(info.icon, size = BADGE_SIZE)
-            Column(Modifier.weight(1f)) {
-                Text(info.title.asString(), style = MaterialTheme.typography.titleMedium)
-                Text(info.summary.asString(), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+private fun ToolPermissionRow(info: ToolInfo, permission: ToolPermission, shape: Shape, onChange: (ToolPermission) -> Unit) {
+    Surface(shape = shape, color = MaterialTheme.colorScheme.surfaceContainer, modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                ShapeBadge(info.icon, size = BADGE_SIZE)
+                Column(Modifier.weight(1f)) {
+                    Text(info.title.asString(), style = MaterialTheme.typography.titleMediumEmphasized)
+                    Text(info.summary.asString(), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
+            SegmentedChoices(PERMISSION_CHOICES, permission, onChange)
         }
-        SegmentedChoices(PERMISSION_CHOICES, permission, onChange)
+    }
+}
+
+@Composable
+private fun ServiceCard(@StringRes title: Int, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    Surface(shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surfaceContainer, modifier = modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(stringResource(title), style = MaterialTheme.typography.titleMediumEmphasized)
+            content()
+        }
     }
 }
 

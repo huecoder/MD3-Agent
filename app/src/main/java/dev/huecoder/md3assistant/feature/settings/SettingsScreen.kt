@@ -27,13 +27,12 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Add
-import com.composables.icons.materialsymbols.rounded.Assistant
 import com.composables.icons.materialsymbols.rounded.Chat
 import com.composables.icons.materialsymbols.rounded.Chevron_right
 import com.composables.icons.materialsymbols.rounded.Dns
 import com.composables.icons.materialsymbols.rounded.Face
 import com.composables.icons.materialsymbols.rounded.Handyman
-import com.composables.icons.materialsymbols.rounded.Terminal
+import com.composables.icons.materialsymbols.rounded.Shield_person
 import com.composables.icons.materialsymbols.rounded.Hub
 import com.composables.icons.materialsymbols.rounded.Mic
 import com.composables.icons.materialsymbols.roundedfilled.Check_circle
@@ -72,18 +71,22 @@ fun SettingsScreen(
         val current = settings ?: return@SettingsScaffold
         val assistantEntries = listOf(
             SettingsEntry(
-                icon = MaterialSymbols.Rounded.Assistant,
-                title = stringResource(R.string.settings_default_assistant),
-                summary = stringResource(
-                    if (isAssistant) R.string.settings_default_assistant_held else R.string.settings_default_assistant_not_held,
-                ),
-                onClick = { AssistantRole.openSystemPicker(context) },
-            ),
-            SettingsEntry(
                 icon = MaterialSymbols.Rounded.Face,
                 title = stringResource(R.string.settings_agent),
                 summary = stringResource(R.string.settings_agent_summary, current.agent.name),
                 onClick = onOpenAgent,
+            ),
+            SettingsEntry(
+                icon = MaterialSymbols.Rounded.Mic,
+                title = stringResource(R.string.settings_voice),
+                summary = voiceSummary(current),
+                onClick = onOpenVoice,
+            ),
+            SettingsEntry(
+                icon = MaterialSymbols.Rounded.Chat,
+                title = stringResource(R.string.settings_chat),
+                summary = chatSummary(current),
+                onClick = onOpenChat,
             ),
         )
         val capabilityEntries = listOf(
@@ -94,22 +97,10 @@ fun SettingsScreen(
                 onClick = onOpenTools,
             ),
             SettingsEntry(
-                icon = MaterialSymbols.Rounded.Terminal,
+                icon = MaterialSymbols.Rounded.Shield_person,
                 title = stringResource(R.string.settings_access),
-                summary = accessSummary(current),
+                summary = accessSummary(current, isAssistant),
                 onClick = onOpenAccess,
-            ),
-            SettingsEntry(
-                icon = MaterialSymbols.Rounded.Chat,
-                title = stringResource(R.string.settings_chat),
-                summary = chatSummary(current),
-                onClick = onOpenChat,
-            ),
-            SettingsEntry(
-                icon = MaterialSymbols.Rounded.Mic,
-                title = stringResource(R.string.settings_voice),
-                summary = voiceSummary(current),
-                onClick = onOpenVoice,
             ),
         )
         val systemEntries = listOf(
@@ -128,11 +119,11 @@ fun SettingsScreen(
             item { SectionHeader(stringResource(R.string.settings_section_assistant)) }
             entryGroup(assistantEntries)
 
-            item { SectionHeader(stringResource(R.string.settings_section_capabilities)) }
-            entryGroup(capabilityEntries)
-
             item { SectionHeader(stringResource(R.string.settings_section_providers)) }
             providerItems(current, onEditProvider)
+
+            item { SectionHeader(stringResource(R.string.settings_section_capabilities)) }
+            entryGroup(capabilityEntries)
 
             item { SectionHeader(stringResource(R.string.settings_section_system)) }
             entryGroup(systemEntries)
@@ -184,7 +175,12 @@ private fun toolsSummary(settings: AppSettings, registry: ToolRegistry): String 
     stringResource(R.string.settings_tools_summary, registry.all.count { registry.permission(it, settings.tools) != ToolPermission.OFF }, registry.all.size)
 
 @Composable
-private fun accessSummary(settings: AppSettings): String = stringResource(settings.tools.access.shell.title)
+private fun accessSummary(settings: AppSettings, isAssistant: Boolean): String =
+    if (isAssistant) {
+        stringResource(R.string.settings_access_summary, stringResource(settings.tools.access.shell.title), stringResource(settings.tools.access.files.title))
+    } else {
+        stringResource(R.string.settings_access_summary_not_assistant)
+    }
 
 @Composable
 private fun chatSummary(settings: AppSettings): String =

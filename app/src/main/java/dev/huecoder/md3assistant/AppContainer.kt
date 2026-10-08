@@ -42,7 +42,7 @@ import kotlinx.coroutines.Dispatchers
 import java.io.File
 
 class AppContainer(context: Context) {
-    private val appContext = context.applicationContext
+    val appContext: Context = context.applicationContext
     val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     val settings = SettingsRepository(context, SecretCipher())

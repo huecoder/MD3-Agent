@@ -27,25 +27,33 @@ import dev.huecoder.md3assistant.tools.web.ReadWebpageTool
 import dev.huecoder.md3assistant.tools.web.WebSearchTool
 import dev.huecoder.md3assistant.ui.text.UiText
 
-data class ToolInfo(val icon: ImageVector, val title: UiText, val summary: UiText)
+enum class ToolCategory(@StringRes val title: Int) {
+    WEB(R.string.tools_category_web),
+    SCREEN(R.string.tools_category_screen),
+    FILES(R.string.tools_category_files),
+    SYSTEM(R.string.tools_category_system),
+    OTHER(R.string.tools_category_other),
+}
+
+data class ToolInfo(val icon: ImageVector, val title: UiText, val summary: UiText, val category: ToolCategory)
 
 object ToolCatalog {
     private val known = mapOf(
-        WebSearchTool.NAME to known(MaterialSymbols.Rounded.Travel_explore, R.string.tools_web_search_title, R.string.tools_web_search_summary),
-        ReadWebpageTool.NAME to known(MaterialSymbols.Rounded.Language, R.string.tools_read_webpage_title, R.string.tools_read_webpage_summary),
-        WeatherTool.NAME to known(MaterialSymbols.Rounded.Partly_cloudy_day, R.string.tools_weather_title, R.string.tools_weather_summary),
-        ReadScreenTool.NAME to known(MaterialSymbols.Rounded.Screenshot_monitor, R.string.tools_read_screen_title, R.string.tools_read_screen_summary),
-        ShowUiTool.NAME to known(MaterialSymbols.Rounded.Smart_button, R.string.tools_show_ui_title, R.string.tools_show_ui_summary),
-        RunCommandTool.NAME to known(MaterialSymbols.Rounded.Terminal, R.string.tools_run_command_title, R.string.tools_run_command_summary),
-        ListFilesTool.NAME to known(MaterialSymbols.Rounded.Folder_open, R.string.tools_list_files_title, R.string.tools_list_files_summary),
-        ReadFileTool.NAME to known(MaterialSymbols.Rounded.Description, R.string.tools_read_file_title, R.string.tools_read_file_summary),
-        WriteFileTool.NAME to known(MaterialSymbols.Rounded.Edit_document, R.string.tools_write_file_title, R.string.tools_write_file_summary),
-        SendFilesTool.NAME to known(MaterialSymbols.Rounded.Perm_media, R.string.tools_send_files_title, R.string.tools_send_files_summary),
+        WebSearchTool.NAME to known(ToolCategory.WEB, MaterialSymbols.Rounded.Travel_explore, R.string.tools_web_search_title, R.string.tools_web_search_summary),
+        ReadWebpageTool.NAME to known(ToolCategory.WEB, MaterialSymbols.Rounded.Language, R.string.tools_read_webpage_title, R.string.tools_read_webpage_summary),
+        WeatherTool.NAME to known(ToolCategory.WEB, MaterialSymbols.Rounded.Partly_cloudy_day, R.string.tools_weather_title, R.string.tools_weather_summary),
+        ReadScreenTool.NAME to known(ToolCategory.SCREEN, MaterialSymbols.Rounded.Screenshot_monitor, R.string.tools_read_screen_title, R.string.tools_read_screen_summary),
+        ShowUiTool.NAME to known(ToolCategory.SCREEN, MaterialSymbols.Rounded.Smart_button, R.string.tools_show_ui_title, R.string.tools_show_ui_summary),
+        RunCommandTool.NAME to known(ToolCategory.SYSTEM, MaterialSymbols.Rounded.Terminal, R.string.tools_run_command_title, R.string.tools_run_command_summary),
+        ListFilesTool.NAME to known(ToolCategory.FILES, MaterialSymbols.Rounded.Folder_open, R.string.tools_list_files_title, R.string.tools_list_files_summary),
+        ReadFileTool.NAME to known(ToolCategory.FILES, MaterialSymbols.Rounded.Description, R.string.tools_read_file_title, R.string.tools_read_file_summary),
+        WriteFileTool.NAME to known(ToolCategory.FILES, MaterialSymbols.Rounded.Edit_document, R.string.tools_write_file_title, R.string.tools_write_file_summary),
+        SendFilesTool.NAME to known(ToolCategory.FILES, MaterialSymbols.Rounded.Perm_media, R.string.tools_send_files_title, R.string.tools_send_files_summary),
     )
 
     fun of(toolName: String): ToolInfo =
-        known[toolName] ?: ToolInfo(MaterialSymbols.Rounded.Build, UiText.Raw(toolName), UiText.Raw(""))
+        known[toolName] ?: ToolInfo(MaterialSymbols.Rounded.Build, UiText.Raw(toolName), UiText.Raw(""), ToolCategory.OTHER)
 
-    private fun known(icon: ImageVector, @StringRes title: Int, @StringRes summary: Int): ToolInfo =
-        ToolInfo(icon, UiText.Resource(title), UiText.Resource(summary))
+    private fun known(category: ToolCategory, icon: ImageVector, @StringRes title: Int, @StringRes summary: Int): ToolInfo =
+        ToolInfo(icon, UiText.Resource(title), UiText.Resource(summary), category)
 }

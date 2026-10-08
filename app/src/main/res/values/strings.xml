@@ -3,9 +3,6 @@
     <string name="app_name" translatable="false">MD3 Assistant</string>
     <string name="settings_title">Settings</string>
     <string name="settings_section_assistant">Assistant</string>
-    <string name="settings_default_assistant">Default assistant</string>
-    <string name="settings_default_assistant_held">On, long-press the button to invoke</string>
-    <string name="settings_default_assistant_not_held">Not set, tap to choose</string>
     <string name="settings_agent">Agent</string>
     <string name="settings_agent_summary">%1$s · system prompt</string>
     <string name="settings_section_capabilities">Capabilities</string>
@@ -44,7 +41,11 @@
     <string name="tools_show_ui_title">Buttons and reply options</string>
     <string name="tools_show_ui_summary">The model adds chips and buttons below its reply</string>
     <string name="provider_model_id">Model ID</string>
-    <string name="tools_section_available">Available to the model</string>
+    <string name="tools_category_web">Web</string>
+    <string name="tools_category_screen">Screen and interface</string>
+    <string name="tools_category_files">Files</string>
+    <string name="tools_category_system">System</string>
+    <string name="tools_category_other">Other</string>
     <string name="tools_section_search">Search</string>
     <string name="tools_searxng_url">SearXNG address</string>
     <string name="tools_searxng_url_placeholder">https://searx.example.com or http://127.0.0.1:8888</string>
@@ -213,7 +214,7 @@
     <string name="tools_run_command_summary">Runs commands on the phone. Where they run is set in Device access</string>
     <string name="chat_tool_running_command">Running %1$s</string>
     <string name="chat_tool_command">Command %1$s</string>
-    <string name="settings_access">Device access</string>
+    <string name="settings_access">Access and permissions</string>
     <string name="access_section_shell">Commands</string>
     <string name="access_shell_hint">Where the assistant runs shell commands. The assistant is told which one you picked, so it knows what it can reach.</string>
     <string name="access_mode_sandbox">App sandbox</string>
@@ -230,21 +231,8 @@
     <string name="access_status_not_running">Not running</string>
     <string name="access_status_needs_permission">Needs permission</string>
     <string name="access_status_unavailable">Not available</string>
-    <string name="access_setup_sandbox">Works out of the box. Commands run as the app itself in its private workspace, so they can\'t touch other apps or your files.</string>
-    <string name="access_setup_termux_install">Install Termux from F-Droid. The Play Store build is outdated and can\'t take commands from other apps.</string>
-    <string name="access_setup_termux_permission">Allow the assistant to send commands to Termux.</string>
     <string name="access_setup_termux_ready">Run this once in Termux so it accepts commands from other apps:</string>
-    <string name="access_setup_shizuku_start">Start Shizuku first: over wireless debugging, or with root.</string>
-    <string name="access_setup_shizuku_permission">Shizuku is running. Allow the assistant to use it.</string>
-    <string name="access_setup_shizuku_old">This Shizuku is too old, update it.</string>
-    <string name="access_setup_shizuku_ready">All set. Commands run with ADB privileges.</string>
-    <string name="access_setup_root">Your root manager will ask to grant superuser access. Commands will run as root, so keep confirmation on for this tool.</string>
-    <string name="access_setup_root_ready">Root is granted. Commands run as root, so keep confirmation on for this tool.</string>
-    <string name="access_action_get_termux">Get Termux</string>
     <string name="access_action_grant">Grant</string>
-    <string name="access_action_open_shizuku">Open Shizuku</string>
-    <string name="access_action_check_root">Check root</string>
-    <string name="access_action_checking">Checking…</string>
     <string name="tools_section_fetch">Page reading</string>
     <string name="tools_fetch_backend_direct">Direct</string>
     <string name="tools_fetch_backend_jina" translatable="false">Jina Reader</string>
@@ -281,11 +269,23 @@
     <string name="access_files_shared_summary">Download, DCIM, Documents and the rest, no root</string>
     <string name="access_files_root">Root</string>
     <string name="access_files_root_summary">Any path, other apps\' data included</string>
-    <string name="access_setup_files_app">Works out of the box. The assistant sees only its workspace and the files you attach to the chat.</string>
-    <string name="access_setup_files_shared">Turn on All files access for the app, then come back here.</string>
-    <string name="access_setup_files_shared_ready">All files access is on. Writing still asks first unless you change it in Tools.</string>
-    <string name="access_setup_files_shared_old">Needs Android 11 or newer.</string>
-    <string name="access_setup_files_root">Files are read and written through su. Your root manager will ask to grant access.</string>
-    <string name="access_setup_files_root_ready">Root is granted. Any file on the device is reachable.</string>
-    <string name="access_action_open_settings">Open settings</string>
+    <string name="access_action_open_settings">Settings</string>
+    <string name="access_section_permissions">Permissions</string>
+    <string name="access_permissions_hint">What the app can get from the system. Grant only what you are going to use.</string>
+    <string name="access_action_choose">Choose</string>
+    <string name="access_action_install">Install</string>
+    <string name="access_action_open">Open</string>
+    <string name="access_action_check">Check</string>
+    <string name="access_needs_setup">Grant access above first</string>
+    <string name="access_shell_root_summary">Commands as superuser, keep confirmation on</string>
+    <string name="permission_assistant">Default assistant</string>
+    <string name="permission_assistant_summary">Opens with the assist gesture or by holding the power button</string>
+    <string name="permission_microphone">Microphone</string>
+    <string name="permission_microphone_summary">Voice input and dictation</string>
+    <string name="permission_all_files">All files access</string>
+    <string name="permission_all_files_summary">Lets the assistant reach the phone storage</string>
+    <string name="permission_termux_summary">Runs commands in Termux</string>
+    <string name="permission_shizuku_summary">ADB-level commands without root</string>
+    <string name="settings_access_summary">%1$s · files: %2$s</string>
+    <string name="settings_access_summary_not_assistant">Not set as the default assistant</string>
 </resources>

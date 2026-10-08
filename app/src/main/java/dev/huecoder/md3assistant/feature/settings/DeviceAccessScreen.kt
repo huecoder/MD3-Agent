@@ -1,5 +1,6 @@
 package dev.huecoder.md3assistant.feature.settings
 
+import android.Manifest
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
@@ -14,14 +15,17 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.ListItemShapes
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SegmentedListItem
@@ -29,7 +33,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -44,13 +51,17 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Adb
+import com.composables.icons.materialsymbols.rounded.Assistant
 import com.composables.icons.materialsymbols.rounded.Content_copy
 import com.composables.icons.materialsymbols.rounded.Folder
+import com.composables.icons.materialsymbols.rounded.Mic
 import com.composables.icons.materialsymbols.rounded.Shield_lock
 import com.composables.icons.materialsymbols.rounded.Smartphone
 import com.composables.icons.materialsymbols.rounded.Storage
 import com.composables.icons.materialsymbols.rounded.Terminal
+import com.composables.icons.materialsymbols.roundedfilled.Check_circle
 import dev.huecoder.md3assistant.R
+import dev.huecoder.md3assistant.assistant.AssistantRole
 import dev.huecoder.md3assistant.data.settings.FileScope
 import dev.huecoder.md3assistant.data.settings.ShellMode
 import dev.huecoder.md3assistant.system.shell.AccessStatus
@@ -65,83 +76,81 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun DeviceAccessScreen(onBack: () -> Unit) {
-    val viewModel = appViewModel { DeviceAccessViewModel(it.settings, it.shellAccess, it.deviceFiles) }
-    val selected by viewModel.shellMode.collectAsStateWithLifecycle()
-    val statuses by viewModel.statuses.collectAsStateWithLifecycle()
-    val checkingRoot by viewModel.checkingRoot.collectAsStateWithLifecycle()
+    val viewModel = appViewModel { DeviceAccessViewModel(it.appContext, it.settings, it.shellAccess, it.deviceFiles) }
+    val shellMode by viewModel.shellMode.collectAsStateWithLifecycle()
     val fileScope by viewModel.fileScope.collectAsStateWithLifecycle()
-    val sharedStorage by viewModel.sharedStorage.collectAsStateWithLifecycle()
+    val permissions by viewModel.permissions.collectAsStateWithLifecycle()
+    val checkingRoot by viewModel.checkingRoot.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    var microphoneDenied by rememberSaveable { mutableStateOf(false) }
+    val askMicrophone = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        microphoneDenied = !granted
+        viewModel.refresh()
+    }
     val askTermux = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { viewModel.refresh() }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refresh() }
 
-    SettingsScaffold(stringResource(R.string.settings_access), onBack) { padding ->
-        val mode = selected ?: return@SettingsScaffold
-        val files = fileScope ?: return@SettingsScaffold
-        val rootStatus = statuses[ShellMode.ROOT] ?: AccessStatus.UNKNOWN
-        val fileStatus = { scope: FileScope ->
-            when (scope) {
-                FileScope.APP -> AccessStatus.READY
-                FileScope.SHARED_STORAGE -> sharedStorage
-                FileScope.ROOT -> rootStatus
+    val statusOf = { permission: DevicePermission? -> permission?.let { permissions[it] } ?: AccessStatus.READY }
+    val actionFor = { permission: DevicePermission, status: AccessStatus ->
+        when (permission) {
+            DevicePermission.ASSISTANT -> PermissionAction(R.string.access_action_choose) { AssistantRole.openSystemPicker(context) }
+            DevicePermission.MICROPHONE -> if (microphoneDenied) {
+                PermissionAction(R.string.access_action_open_settings) { context.openAppDetails() }
+            } else {
+                PermissionAction(R.string.access_action_grant) { askMicrophone.launch(Manifest.permission.RECORD_AUDIO) }
             }
+            DevicePermission.ALL_FILES -> PermissionAction(R.string.access_action_open_settings) { context.openAllFilesAccess() }.takeIf { status != AccessStatus.UNAVAILABLE }
+            DevicePermission.TERMUX -> when (status) {
+                AccessStatus.NOT_INSTALLED -> PermissionAction(R.string.access_action_install) { context.openUrl(TERMUX_URL) }
+                else -> PermissionAction(R.string.access_action_grant) { askTermux.launch(TermuxShell.PERMISSION) }
+            }
+            DevicePermission.SHIZUKU -> when (status) {
+                AccessStatus.NOT_RUNNING -> PermissionAction(R.string.access_action_open) { context.openShizuku() }
+                AccessStatus.NEEDS_PERMISSION -> PermissionAction(R.string.access_action_grant, viewModel::requestShizukuPermission)
+                else -> null
+            }
+            DevicePermission.ROOT -> PermissionAction(R.string.access_action_check, viewModel::checkRoot)
         }
+    }
+
+    SettingsScaffold(stringResource(R.string.settings_access), onBack) { padding ->
+        val shell = shellMode ?: return@SettingsScaffold
+        val files = fileScope ?: return@SettingsScaffold
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = padding.calculateTopPadding(), bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
         ) {
-            item { SectionHeader(stringResource(R.string.access_section_shell)) }
-            item { SectionHint(R.string.access_shell_hint) }
-            itemsIndexed(ShellMode.entries, key = { _, it -> it.name }) { index, option ->
-                AccessOptionItem(
-                    title = option.title,
-                    summary = option.summary,
-                    icon = option.icon,
-                    status = statuses[option] ?: AccessStatus.UNKNOWN,
-                    isSelected = option == mode,
-                    shapes = ListItemDefaults.segmentedShapes(index, ShellMode.entries.size),
-                    onSelect = { viewModel.select(option) },
-                )
-            }
-            item {
-                ShellSetup(
-                    mode = mode,
-                    status = statuses[mode] ?: AccessStatus.UNKNOWN,
-                    checkingRoot = checkingRoot,
-                    onGrantTermux = { askTermux.launch(TermuxShell.PERMISSION) },
-                    onGrantShizuku = viewModel::requestShizukuPermission,
-                    onCheckRoot = viewModel::checkRoot,
-                    modifier = Modifier.padding(top = 16.dp),
+            item { SectionHeader(stringResource(R.string.access_section_permissions)) }
+            item { SectionHint(R.string.access_permissions_hint) }
+            itemsIndexed(DevicePermission.entries, key = { _, it -> "permission-${it.name}" }) { index, permission ->
+                val status = statusOf(permission)
+                PermissionItem(
+                    permission = permission,
+                    status = status,
+                    action = actionFor(permission, status),
+                    isBusy = permission == DevicePermission.ROOT && checkingRoot,
+                    shapes = ListItemDefaults.segmentedShapes(index, DevicePermission.entries.size),
                 )
             }
 
-            item { SectionHeader(stringResource(R.string.access_section_files), Modifier.padding(top = 16.dp)) }
+            item { SectionHeader(stringResource(R.string.access_section_shell)) }
+            item { SectionHint(R.string.access_shell_hint) }
+            optionItems(ShellMode.entries, shell, { statusOf(it.requiredPermission()) }, viewModel::selectShell) { it.presentation }
+            if (shell == ShellMode.TERMUX && statusOf(DevicePermission.TERMUX) == AccessStatus.READY) {
+                item { TermuxNote(Modifier.padding(top = 12.dp)) }
+            }
+
+            item { SectionHeader(stringResource(R.string.access_section_files)) }
             item { SectionHint(R.string.access_files_hint) }
-            itemsIndexed(FileScope.entries, key = { _, it -> "files-${it.name}" }) { index, option ->
-                AccessOptionItem(
-                    title = option.title,
-                    summary = option.summary,
-                    icon = option.icon,
-                    status = fileStatus(option),
-                    isSelected = option == files,
-                    shapes = ListItemDefaults.segmentedShapes(index, FileScope.entries.size),
-                    onSelect = { viewModel.selectFiles(option) },
-                )
-            }
-            item {
-                FilesSetup(
-                    scope = files,
-                    status = fileStatus(files),
-                    checkingRoot = checkingRoot,
-                    onOpenAllFilesAccess = { context.openAllFilesAccess() },
-                    onCheckRoot = viewModel::checkRoot,
-                    modifier = Modifier.padding(top = 16.dp),
-                )
-            }
+            optionItems(FileScope.entries, files, { statusOf(it.requiredPermission()) }, viewModel::selectFiles) { it.presentation }
         }
     }
 }
+
+private data class PermissionAction(@StringRes val label: Int, val onClick: () -> Unit)
+
+private data class Presentation(@StringRes val title: Int, @StringRes val summary: Int, val icon: ImageVector)
 
 @Composable
 private fun SectionHint(@StringRes text: Int) {
@@ -154,120 +163,97 @@ private fun SectionHint(@StringRes text: Int) {
 }
 
 @Composable
-private fun AccessOptionItem(
-    @StringRes title: Int,
-    @StringRes summary: Int,
-    icon: ImageVector,
+private fun PermissionItem(
+    permission: DevicePermission,
     status: AccessStatus,
-    isSelected: Boolean,
+    action: PermissionAction?,
+    isBusy: Boolean,
     shapes: ListItemShapes,
-    onSelect: () -> Unit,
 ) {
+    val presentation = permission.presentation
     SegmentedListItem(
-        onClick = onSelect,
+        onClick = { if (status != AccessStatus.READY && !isBusy) action?.onClick?.invoke() },
+        enabled = status == AccessStatus.READY || action != null,
         shapes = shapes,
         colors = groupedListColors(),
-        leadingContent = { ShapeBadge(icon) },
+        leadingContent = { ShapeBadge(presentation.icon) },
         supportingContent = {
             Column {
-                Text(stringResource(summary))
-                Text(stringResource(status.label), color = status.color(), style = MaterialTheme.typography.labelLarge)
+                Text(stringResource(presentation.summary))
+                if (status != AccessStatus.READY) StatusLabel(status)
             }
         },
-        trailingContent = { RadioButton(selected = isSelected, onClick = null) },
-    ) { Text(stringResource(title), style = MaterialTheme.typography.titleMediumEmphasized) }
+        trailingContent = {
+            when {
+                isBusy -> LoadingIndicator(Modifier.size(BUSY_INDICATOR_SIZE))
+                status == AccessStatus.READY -> Icon(
+                    MaterialSymbols.RoundedFilled.Check_circle,
+                    contentDescription = stringResource(R.string.access_status_ready),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                action != null -> FilledTonalButton(
+                    onClick = action.onClick,
+                    shapes = ButtonDefaults.shapes(),
+                    contentPadding = ButtonDefaults.ExtraSmallContentPadding,
+                ) { Text(stringResource(action.label)) }
+            }
+        },
+    ) { Text(stringResource(presentation.title), style = MaterialTheme.typography.titleMediumEmphasized) }
 }
 
-@Composable
-private fun FilesSetup(
-    scope: FileScope,
-    status: AccessStatus,
-    checkingRoot: Boolean,
-    onOpenAllFilesAccess: () -> Unit,
-    onCheckRoot: () -> Unit,
-    modifier: Modifier = Modifier,
+private fun <T> LazyListScope.optionItems(
+    options: List<T>,
+    selected: T,
+    statusOf: (T) -> AccessStatus,
+    onSelect: (T) -> Unit,
+    presentationOf: (T) -> Presentation,
 ) {
-    when (scope) {
-        FileScope.APP -> SetupCard(R.string.access_setup_files_app, modifier)
-        FileScope.SHARED_STORAGE -> when (status) {
-            AccessStatus.READY -> SetupCard(R.string.access_setup_files_shared_ready, modifier)
-            AccessStatus.UNAVAILABLE -> SetupCard(R.string.access_setup_files_shared_old, modifier)
-            else -> SetupCard(R.string.access_setup_files_shared, modifier) {
-                SetupButton(R.string.access_action_open_settings, onClick = onOpenAllFilesAccess)
-            }
-        }
-        FileScope.ROOT -> SetupCard(if (status == AccessStatus.READY) R.string.access_setup_files_root_ready else R.string.access_setup_files_root, modifier) {
-            SetupButton(if (checkingRoot) R.string.access_action_checking else R.string.access_action_check_root, enabled = !checkingRoot, onClick = onCheckRoot)
-        }
+    itemsIndexed(options, key = { _, option -> "option-$option" }) { index, option ->
+        val presentation = presentationOf(option)
+        val status = statusOf(option)
+        SegmentedListItem(
+            onClick = { onSelect(option) },
+            shapes = ListItemDefaults.segmentedShapes(index, options.size),
+            colors = groupedListColors(),
+            leadingContent = { ShapeBadge(presentation.icon) },
+            supportingContent = {
+                Column {
+                    Text(stringResource(presentation.summary))
+                    if (status != AccessStatus.READY) Text(
+                        stringResource(R.string.access_needs_setup),
+                        color = status.color(),
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                }
+            },
+            trailingContent = { RadioButton(selected = option == selected, onClick = null) },
+        ) { Text(stringResource(presentation.title), style = MaterialTheme.typography.titleMediumEmphasized) }
     }
 }
 
 @Composable
-private fun ShellSetup(
-    mode: ShellMode,
-    status: AccessStatus,
-    checkingRoot: Boolean,
-    onGrantTermux: () -> Unit,
-    onGrantShizuku: () -> Unit,
-    onCheckRoot: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val context = LocalContext.current
-    when (mode) {
-        ShellMode.SANDBOX -> SetupCard(R.string.access_setup_sandbox, modifier)
-        ShellMode.TERMUX -> when (status) {
-            AccessStatus.NOT_INSTALLED -> SetupCard(R.string.access_setup_termux_install, modifier) {
-                SetupButton(R.string.access_action_get_termux) { context.openUrl(TERMUX_URL) }
-            }
-            AccessStatus.NEEDS_PERMISSION -> SetupCard(R.string.access_setup_termux_permission, modifier) {
-                SetupButton(R.string.access_action_grant, onClick = onGrantTermux)
-            }
-            else -> SetupCard(R.string.access_setup_termux_ready, modifier) { CopyableCommand(TermuxShell.ENABLE_EXTERNAL_APPS) }
-        }
-        ShellMode.SHIZUKU -> when (status) {
-            AccessStatus.NOT_RUNNING -> SetupCard(R.string.access_setup_shizuku_start, modifier) {
-                SetupButton(R.string.access_action_open_shizuku) { context.openShizuku() }
-            }
-            AccessStatus.NEEDS_PERMISSION -> SetupCard(R.string.access_setup_shizuku_permission, modifier) {
-                SetupButton(R.string.access_action_grant, onClick = onGrantShizuku)
-            }
-            AccessStatus.UNAVAILABLE -> SetupCard(R.string.access_setup_shizuku_old, modifier)
-            else -> SetupCard(R.string.access_setup_shizuku_ready, modifier)
-        }
-        ShellMode.ROOT -> SetupCard(if (status == AccessStatus.READY) R.string.access_setup_root_ready else R.string.access_setup_root, modifier) {
-            SetupButton(if (checkingRoot) R.string.access_action_checking else R.string.access_action_check_root, enabled = !checkingRoot, onClick = onCheckRoot)
-        }
-    }
+private fun StatusLabel(status: AccessStatus) {
+    Text(stringResource(status.label), color = status.color(), style = MaterialTheme.typography.labelLarge)
 }
 
 @Composable
-private fun SetupCard(@StringRes text: Int, modifier: Modifier = Modifier, actions: @Composable () -> Unit = {}) {
-    Surface(shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surfaceContainerHigh, modifier = modifier.fillMaxWidth()) {
-        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(stringResource(text), style = MaterialTheme.typography.bodyMedium)
-            actions()
-        }
-    }
-}
-
-@Composable
-private fun SetupButton(@StringRes label: Int, enabled: Boolean = true, onClick: () -> Unit) {
-    Button(onClick = onClick, enabled = enabled, shapes = ButtonDefaults.shapes()) { Text(stringResource(label)) }
-}
-
-@Composable
-private fun CopyableCommand(command: String) {
+private fun TermuxNote(modifier: Modifier = Modifier) {
     val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
-    Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainerLowest) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 12.dp)) {
-            Text(
-                command,
-                style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
-                modifier = Modifier.weight(1f).padding(vertical = 12.dp),
-            )
-            IconButton(onClick = { scope.launch { clipboard.copyText(command) } }) {
-                Icon(MaterialSymbols.Rounded.Content_copy, contentDescription = stringResource(R.string.chat_copy))
+    Surface(shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surfaceContainerHigh, modifier = modifier.fillMaxWidth()) {
+        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(stringResource(R.string.access_setup_termux_ready), style = MaterialTheme.typography.bodyMedium)
+            Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainerLowest) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 12.dp)) {
+                    Text(
+                        TermuxShell.ENABLE_EXTERNAL_APPS,
+                        style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                        modifier = Modifier.weight(1f).padding(vertical = 12.dp),
+                    )
+                    IconButton(onClick = { scope.launch { clipboard.copyText(TermuxShell.ENABLE_EXTERNAL_APPS) } }) {
+                        Icon(MaterialSymbols.Rounded.Content_copy, contentDescription = stringResource(R.string.chat_copy))
+                    }
+                }
             }
         }
     }
@@ -291,54 +277,38 @@ private val AccessStatus.label: Int
         AccessStatus.UNAVAILABLE -> R.string.access_status_unavailable
     }
 
+private val DevicePermission.presentation: Presentation
+    get() = when (this) {
+        DevicePermission.ASSISTANT -> Presentation(R.string.permission_assistant, R.string.permission_assistant_summary, MaterialSymbols.Rounded.Assistant)
+        DevicePermission.MICROPHONE -> Presentation(R.string.permission_microphone, R.string.permission_microphone_summary, MaterialSymbols.Rounded.Mic)
+        DevicePermission.ALL_FILES -> Presentation(R.string.permission_all_files, R.string.permission_all_files_summary, MaterialSymbols.Rounded.Storage)
+        DevicePermission.TERMUX -> Presentation(R.string.access_mode_termux, R.string.permission_termux_summary, MaterialSymbols.Rounded.Terminal)
+        DevicePermission.SHIZUKU -> Presentation(R.string.access_mode_shizuku, R.string.permission_shizuku_summary, MaterialSymbols.Rounded.Adb)
+        DevicePermission.ROOT -> Presentation(R.string.access_mode_root, R.string.access_mode_root_summary, MaterialSymbols.Rounded.Shield_lock)
+    }
+
+private val ShellMode.presentation: Presentation
+    get() = when (this) {
+        ShellMode.SANDBOX -> Presentation(R.string.access_mode_sandbox, R.string.access_mode_sandbox_summary, MaterialSymbols.Rounded.Smartphone)
+        ShellMode.TERMUX -> Presentation(R.string.access_mode_termux, R.string.access_mode_termux_summary, MaterialSymbols.Rounded.Terminal)
+        ShellMode.SHIZUKU -> Presentation(R.string.access_mode_shizuku, R.string.access_mode_shizuku_summary, MaterialSymbols.Rounded.Adb)
+        ShellMode.ROOT -> Presentation(R.string.access_mode_root, R.string.access_shell_root_summary, MaterialSymbols.Rounded.Shield_lock)
+    }
+
 @get:StringRes
 internal val ShellMode.title: Int
+    get() = presentation.title
+
+private val FileScope.presentation: Presentation
     get() = when (this) {
-        ShellMode.SANDBOX -> R.string.access_mode_sandbox
-        ShellMode.TERMUX -> R.string.access_mode_termux
-        ShellMode.SHIZUKU -> R.string.access_mode_shizuku
-        ShellMode.ROOT -> R.string.access_mode_root
+        FileScope.APP -> Presentation(R.string.access_files_app, R.string.access_files_app_summary, MaterialSymbols.Rounded.Folder)
+        FileScope.SHARED_STORAGE -> Presentation(R.string.access_files_shared, R.string.access_files_shared_summary, MaterialSymbols.Rounded.Storage)
+        FileScope.ROOT -> Presentation(R.string.access_files_root, R.string.access_files_root_summary, MaterialSymbols.Rounded.Shield_lock)
     }
 
 @get:StringRes
-private val ShellMode.summary: Int
-    get() = when (this) {
-        ShellMode.SANDBOX -> R.string.access_mode_sandbox_summary
-        ShellMode.TERMUX -> R.string.access_mode_termux_summary
-        ShellMode.SHIZUKU -> R.string.access_mode_shizuku_summary
-        ShellMode.ROOT -> R.string.access_mode_root_summary
-    }
-
-private val ShellMode.icon: ImageVector
-    get() = when (this) {
-        ShellMode.SANDBOX -> MaterialSymbols.Rounded.Smartphone
-        ShellMode.TERMUX -> MaterialSymbols.Rounded.Terminal
-        ShellMode.SHIZUKU -> MaterialSymbols.Rounded.Adb
-        ShellMode.ROOT -> MaterialSymbols.Rounded.Shield_lock
-    }
-
-@get:StringRes
-private val FileScope.title: Int
-    get() = when (this) {
-        FileScope.APP -> R.string.access_files_app
-        FileScope.SHARED_STORAGE -> R.string.access_files_shared
-        FileScope.ROOT -> R.string.access_files_root
-    }
-
-@get:StringRes
-private val FileScope.summary: Int
-    get() = when (this) {
-        FileScope.APP -> R.string.access_files_app_summary
-        FileScope.SHARED_STORAGE -> R.string.access_files_shared_summary
-        FileScope.ROOT -> R.string.access_files_root_summary
-    }
-
-private val FileScope.icon: ImageVector
-    get() = when (this) {
-        FileScope.APP -> MaterialSymbols.Rounded.Folder
-        FileScope.SHARED_STORAGE -> MaterialSymbols.Rounded.Storage
-        FileScope.ROOT -> MaterialSymbols.Rounded.Shield_lock
-    }
+internal val FileScope.title: Int
+    get() = presentation.title
 
 private fun Context.openAllFilesAccess() {
     val forApp = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, "package:$packageName".toUri())
@@ -349,6 +319,9 @@ private fun Context.openAllFilesAccess() {
     }
 }
 
+private fun Context.openAppDetails() =
+    startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, "package:$packageName".toUri()))
+
 private fun Context.openUrl(url: String) = startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
 
 private fun Context.openShizuku() {
@@ -356,6 +329,7 @@ private fun Context.openShizuku() {
     if (launch != null) startActivity(launch) else openUrl(SHIZUKU_URL)
 }
 
+private val BUSY_INDICATOR_SIZE = 32.dp
 private const val TERMUX_URL = "https://f-droid.org/packages/com.termux/"
 private const val SHIZUKU_PACKAGE = "moe.shizuku.privileged.api"
 private const val SHIZUKU_URL = "https://shizuku.rikka.app/download/"
