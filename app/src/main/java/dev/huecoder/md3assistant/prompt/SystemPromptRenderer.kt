@@ -11,11 +11,13 @@ class SystemPromptRenderer(
     private val now: () -> ZonedDateTime = ZonedDateTime::now,
     private val locale: () -> Locale = Locale::getDefault,
 ) {
-    fun render(agent: AgentProfile): String {
+    fun render(agent: AgentProfile, accessNotes: List<String> = emptyList()): String {
         val values = variables(agent)
-        return PLACEHOLDER.replace(agent.systemPromptTemplate) { match ->
+        val prompt = PLACEHOLDER.replace(agent.systemPromptTemplate) { match ->
             values[match.groupValues[1]]?.invoke() ?: match.value
         }
+        if (accessNotes.isEmpty()) return prompt
+        return prompt + "\n\n" + ACCESS_HEADER + accessNotes.joinToString("") { "\n- $it" }
     }
 
     val supportedVariables: List<String> get() = variables(AgentProfile()).keys.toList()
@@ -37,6 +39,7 @@ class SystemPromptRenderer(
     }
 
     private companion object {
+        const val ACCESS_HEADER = "Device access available to you right now:"
         val PLACEHOLDER = Regex("""\{([a-z_]+)\}""")
         val TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm")
     }

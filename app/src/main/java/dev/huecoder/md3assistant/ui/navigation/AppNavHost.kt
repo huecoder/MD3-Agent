@@ -13,6 +13,7 @@ import dev.huecoder.md3assistant.feature.chat.ChatScreen
 import dev.huecoder.md3assistant.feature.home.HomeScreen
 import dev.huecoder.md3assistant.feature.settings.AgentSettingsScreen
 import dev.huecoder.md3assistant.feature.settings.ChatSettingsScreen
+import dev.huecoder.md3assistant.feature.settings.DeviceAccessScreen
 import dev.huecoder.md3assistant.feature.settings.NetworkSettingsScreen
 import dev.huecoder.md3assistant.feature.settings.ProviderEditorScreen
 import dev.huecoder.md3assistant.feature.settings.SettingsScreen
@@ -54,6 +55,7 @@ fun AppNavHost(chatToOpen: String?, onChatOpened: () -> Unit) {
                 onOpenTools = { navController.navigate(ToolSettingsRoute) },
                 onOpenChat = { navController.navigate(ChatSettingsRoute) },
                 onOpenVoice = { navController.navigate(VoiceSettingsRoute) },
+                onOpenAccess = { navController.navigate(DeviceAccessRoute) },
             )
         }
         screen<ProviderEditorRoute>(navController) { entry ->
@@ -62,6 +64,7 @@ fun AppNavHost(chatToOpen: String?, onChatOpened: () -> Unit) {
         screen<AgentSettingsRoute>(navController) { AgentSettingsScreen(onBack = navController::popBackStack) }
         screen<NetworkSettingsRoute>(navController) { NetworkSettingsScreen(onBack = navController::popBackStack) }
         screen<ToolSettingsRoute>(navController) { ToolSettingsScreen(onBack = navController::popBackStack) }
+        screen<DeviceAccessRoute>(navController) { DeviceAccessScreen(onBack = navController::popBackStack) }
         screen<ChatSettingsRoute>(navController) { ChatSettingsScreen(onBack = navController::popBackStack) }
         screen<VoiceSettingsRoute>(navController) {
             VoiceSettingsScreen(

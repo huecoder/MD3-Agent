@@ -1,1 +1,2 @@
 -dontwarn org.slf4j.**
+-keep class dev.huecoder.md3assistant.system.shell.ShellUserService { <init>(); }

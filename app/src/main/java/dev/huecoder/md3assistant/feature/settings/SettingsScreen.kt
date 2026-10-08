@@ -33,6 +33,7 @@ import com.composables.icons.materialsymbols.rounded.Chevron_right
 import com.composables.icons.materialsymbols.rounded.Dns
 import com.composables.icons.materialsymbols.rounded.Face
 import com.composables.icons.materialsymbols.rounded.Handyman
+import com.composables.icons.materialsymbols.rounded.Terminal
 import com.composables.icons.materialsymbols.rounded.Hub
 import com.composables.icons.materialsymbols.rounded.Mic
 import com.composables.icons.materialsymbols.roundedfilled.Check_circle
@@ -58,6 +59,7 @@ fun SettingsScreen(
     onOpenTools: () -> Unit,
     onOpenChat: () -> Unit,
     onOpenVoice: () -> Unit,
+    onOpenAccess: () -> Unit,
 ) {
     val viewModel = appViewModel { SettingsViewModel(it.settings) }
     val toolRegistry = (LocalContext.current.applicationContext as App).container.tools
@@ -90,6 +92,12 @@ fun SettingsScreen(
                 title = stringResource(R.string.settings_tools),
                 summary = toolsSummary(current, toolRegistry),
                 onClick = onOpenTools,
+            ),
+            SettingsEntry(
+                icon = MaterialSymbols.Rounded.Terminal,
+                title = stringResource(R.string.settings_access),
+                summary = accessSummary(current),
+                onClick = onOpenAccess,
             ),
             SettingsEntry(
                 icon = MaterialSymbols.Rounded.Chat,
@@ -174,6 +182,9 @@ private fun LazyListScope.providerItems(settings: AppSettings, onEditProvider: (
 @Composable
 private fun toolsSummary(settings: AppSettings, registry: ToolRegistry): String =
     stringResource(R.string.settings_tools_summary, registry.all.count { registry.permission(it, settings.tools) != ToolPermission.OFF }, registry.all.size)
+
+@Composable
+private fun accessSummary(settings: AppSettings): String = stringResource(settings.tools.access.shell.title)
 
 @Composable
 private fun chatSummary(settings: AppSettings): String =

@@ -49,7 +49,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    buildFeatures { compose = true }
+    buildFeatures {
+        compose = true
+        aidl = true
+    }
 
     testOptions { unitTests.isReturnDefaultValues = true }
 }
@@ -99,6 +102,8 @@ dependencies {
     implementation(libs.material.kolor)
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
+    implementation(libs.shizuku.api)
+    implementation(libs.shizuku.provider)
 
     testImplementation(libs.junit)
     testImplementation(libs.okhttp.mockwebserver)

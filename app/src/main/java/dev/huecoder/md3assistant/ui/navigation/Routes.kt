@@ -31,3 +31,6 @@ data object VoiceSettingsRoute
 
 @Serializable
 data class VoiceProviderEditorRoute(val providerId: String? = null)
+
+@Serializable
+data object DeviceAccessRoute

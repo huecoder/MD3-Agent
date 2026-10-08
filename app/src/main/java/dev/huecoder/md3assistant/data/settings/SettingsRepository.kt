@@ -59,8 +59,9 @@ class SettingsRepository(context: Context, private val cipher: SecretCipher) {
         prefs[Keys.NETWORK] = json.encodeToString(NetworkSettings.serializer(), network)
     }
 
-    suspend fun updateTools(tools: ToolSettings) = store.edit { prefs ->
-        prefs[Keys.TOOLS_ENCRYPTED] = cipher.encrypt(json.encodeToString(ToolSettings.serializer(), tools))
+    suspend fun updateTools(transform: (ToolSettings) -> ToolSettings) = store.edit { prefs ->
+        val updated = transform(decodeTools(prefs[Keys.TOOLS_ENCRYPTED]))
+        prefs[Keys.TOOLS_ENCRYPTED] = cipher.encrypt(json.encodeToString(ToolSettings.serializer(), updated))
     }
 
     suspend fun updateChat(transform: (ChatSettings) -> ChatSettings) = store.edit { prefs ->

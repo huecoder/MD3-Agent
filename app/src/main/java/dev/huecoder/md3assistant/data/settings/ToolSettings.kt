@@ -12,6 +12,7 @@ data class ToolSettings(
     val permissions: Map<String, ToolPermission> = emptyMap(),
     val weather: WeatherSettings = WeatherSettings(),
     val search: SearchSettings = SearchSettings(),
+    val access: AccessSettings = AccessSettings(),
 ) {
     fun permission(toolName: String, default: ToolPermission): ToolPermission = permissions[toolName] ?: default
 
@@ -41,3 +42,9 @@ data class SearchSettings(
     val searxngUrl: String = "",
     val apiKey: String = "",
 )
+
+@Serializable
+enum class ShellMode { SANDBOX, TERMUX, SHIZUKU, ROOT }
+
+@Serializable
+data class AccessSettings(val shell: ShellMode = ShellMode.SANDBOX)

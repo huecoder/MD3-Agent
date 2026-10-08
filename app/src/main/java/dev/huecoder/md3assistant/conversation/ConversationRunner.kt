@@ -159,7 +159,7 @@ class ConversationRunner(
         history.flatMap { Attachment.decode(it.attachmentsJson) }.forEach { attachment ->
             attachments.contentFor(attachment)?.let { contents[attachment.id] = it }
         }
-        return TurnAssembler.assemble(systemPrompt.render(current.agent), history, contents)
+        return TurnAssembler.assemble(systemPrompt.render(current.agent, tools.promptNotes(current.tools)), history, contents)
     }
 
     private suspend fun resolveModel(chatId: String, current: AppSettings): Pair<ProviderProfile, String>? {

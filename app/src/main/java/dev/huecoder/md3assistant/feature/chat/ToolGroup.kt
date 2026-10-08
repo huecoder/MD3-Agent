@@ -24,6 +24,7 @@ import com.composables.icons.materialsymbols.rounded.Shield_question
 import dev.huecoder.md3assistant.R
 import dev.huecoder.md3assistant.tools.ReadScreenTool
 import dev.huecoder.md3assistant.tools.optionalString
+import dev.huecoder.md3assistant.tools.system.RunCommandTool
 import dev.huecoder.md3assistant.tools.weather.WeatherTool
 import dev.huecoder.md3assistant.tools.web.ReadWebpageTool
 import dev.huecoder.md3assistant.tools.web.SearchResults
@@ -138,6 +139,7 @@ private fun ToolLook.titleText(): String = title.asString().trim()
 private data class ToolLook(val icon: ImageVector, val title: UiText) {
     companion object {
         private const val MAX_RESULT_CHARS = 3_000
+        private const val COMMAND_PREVIEW_CHARS = 48
         private val json = Json { ignoreUnknownKeys = true }
 
         fun of(call: ToolCallUi): ToolLook {
@@ -154,6 +156,10 @@ private data class ToolLook(val icon: ImageVector, val title: UiText) {
                 )
                 WeatherTool.NAME -> UiText.Resource(R.string.chat_tool_weather, listOf(args.optionalString("location").orEmpty()))
                 ReadScreenTool.NAME -> UiText.Resource(if (running) R.string.chat_tool_reading_screen else R.string.chat_tool_screen)
+                RunCommandTool.NAME -> UiText.Resource(
+                    if (running) R.string.chat_tool_running_command else R.string.chat_tool_command,
+                    listOf(args.optionalString("command")?.lineSequence()?.first()?.take(COMMAND_PREVIEW_CHARS).orEmpty()),
+                )
                 else -> UiText.Raw(call.name)
             }
             return ToolLook(ToolCatalog.of(call.name).icon, title)

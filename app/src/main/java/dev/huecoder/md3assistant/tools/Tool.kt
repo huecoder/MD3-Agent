@@ -23,6 +23,8 @@ interface Tool {
 
     val timeoutMs: Long get() = DEFAULT_TOOL_TIMEOUT_MS
 
+    fun promptNote(settings: ToolSettings): String? = null
+
     suspend fun execute(arguments: JsonObject, settings: ToolSettings): ToolOutcome
 }
 

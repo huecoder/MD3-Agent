@@ -1,5 +1,6 @@
 package dev.huecoder.md3assistant.tools
 
+import android.util.Log
 import dev.huecoder.md3assistant.data.settings.ToolPermission
 import dev.huecoder.md3assistant.data.settings.ToolSettings
 import dev.huecoder.md3assistant.llm.ToolCall
@@ -30,6 +31,9 @@ class ToolRegistry(private val tools: List<Tool>) {
     fun permission(toolName: String, settings: ToolSettings): ToolPermission =
         byName[toolName]?.let { permission(it, settings) } ?: ToolPermission.OFF
 
+    fun promptNotes(settings: ToolSettings): List<String> =
+        tools.filter { permission(it, settings) != ToolPermission.OFF }.mapNotNull { it.promptNote(settings) }
+
     fun endsTurn(call: ToolCall): Boolean = byName[call.name]?.endsTurn == true
 
     suspend fun run(call: ToolCall, settings: ToolSettings): ToolOutcome {
@@ -53,6 +57,9 @@ class ToolRegistry(private val tools: List<Tool>) {
             ToolOutcome.error("Service returned an unexpected response: ${e.message}")
         } catch (e: IllegalStateException) {
             ToolOutcome.error(e.message ?: e.javaClass.simpleName)
+        } catch (e: Exception) {
+            Log.w(TAG, "Tool ${call.name} failed", e)
+            ToolOutcome.error("Tool failed: ${e.message ?: e.javaClass.simpleName}")
         }
     }
 
@@ -60,6 +67,7 @@ class ToolRegistry(private val tools: List<Tool>) {
         runCatching { json.parseToJsonElement(raw.ifBlank { "{}" }) as? JsonObject }.getOrNull()
 
     private companion object {
+        const val TAG = "ToolRegistry"
         const val MS_PER_SECOND = 1_000L
         const val ARGUMENT_PREVIEW_CHARS = 200
     }

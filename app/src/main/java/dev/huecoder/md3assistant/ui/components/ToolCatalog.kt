@@ -8,10 +8,12 @@ import com.composables.icons.materialsymbols.rounded.Language
 import com.composables.icons.materialsymbols.rounded.Partly_cloudy_day
 import com.composables.icons.materialsymbols.rounded.Screenshot_monitor
 import com.composables.icons.materialsymbols.rounded.Smart_button
+import com.composables.icons.materialsymbols.rounded.Terminal
 import com.composables.icons.materialsymbols.rounded.Travel_explore
 import dev.huecoder.md3assistant.R
 import dev.huecoder.md3assistant.tools.ReadScreenTool
 import dev.huecoder.md3assistant.tools.ShowUiTool
+import dev.huecoder.md3assistant.tools.system.RunCommandTool
 import dev.huecoder.md3assistant.tools.weather.WeatherTool
 import dev.huecoder.md3assistant.tools.web.ReadWebpageTool
 import dev.huecoder.md3assistant.tools.web.WebSearchTool
@@ -26,6 +28,7 @@ object ToolCatalog {
         WeatherTool.NAME to known(MaterialSymbols.Rounded.Partly_cloudy_day, R.string.tools_weather_title, R.string.tools_weather_summary),
         ReadScreenTool.NAME to known(MaterialSymbols.Rounded.Screenshot_monitor, R.string.tools_read_screen_title, R.string.tools_read_screen_summary),
         ShowUiTool.NAME to known(MaterialSymbols.Rounded.Smart_button, R.string.tools_show_ui_title, R.string.tools_show_ui_summary),
+        RunCommandTool.NAME to known(MaterialSymbols.Rounded.Terminal, R.string.tools_run_command_title, R.string.tools_run_command_summary),
     )
 
     fun of(toolName: String): ToolInfo =

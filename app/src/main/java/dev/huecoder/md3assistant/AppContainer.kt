@@ -17,6 +17,8 @@ import dev.huecoder.md3assistant.prompt.DeviceInfoProvider
 import dev.huecoder.md3assistant.prompt.SystemPromptRenderer
 import dev.huecoder.md3assistant.tools.ReadScreenTool
 import dev.huecoder.md3assistant.tools.ShowUiTool
+import dev.huecoder.md3assistant.tools.system.RunCommandTool
+import dev.huecoder.md3assistant.system.shell.ShellAccess
 import dev.huecoder.md3assistant.tools.ToolRegistry
 import dev.huecoder.md3assistant.tools.weather.WeatherTool
 import dev.huecoder.md3assistant.tools.web.ReadWebpageTool
@@ -49,6 +51,7 @@ class AppContainer(context: Context) {
     val systemPrompt = SystemPromptRenderer(DeviceInfoProvider(context))
 
     val screenContext = ScreenContextStore()
+    val shellAccess = ShellAccess(appContext)
 
     val tools = ToolRegistry(
         listOf(
@@ -57,6 +60,7 @@ class AppContainer(context: Context) {
             WeatherTool(httpClients),
             ReadScreenTool(screenContext),
             ShowUiTool(),
+            RunCommandTool(shellAccess),
         ),
     )
 

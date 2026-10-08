@@ -84,7 +84,7 @@ fun ToolSettingsScreen(onBack: () -> Unit) {
             Button(
                 onClick = {
                     scope.launch {
-                        container.settings.updateTools(current.trimmed())
+                        container.settings.updateTools { saved -> current.trimmed().copy(access = saved.access) }
                         onBack()
                     }
                 },
