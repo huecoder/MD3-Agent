@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -55,6 +56,7 @@ import com.composables.icons.materialsymbols.rounded.Assistant
 import com.composables.icons.materialsymbols.rounded.Content_copy
 import com.composables.icons.materialsymbols.rounded.Folder
 import com.composables.icons.materialsymbols.rounded.Mic
+import com.composables.icons.materialsymbols.rounded.Notifications
 import com.composables.icons.materialsymbols.rounded.Shield_lock
 import com.composables.icons.materialsymbols.rounded.Smartphone
 import com.composables.icons.materialsymbols.rounded.Storage
@@ -87,6 +89,11 @@ fun DeviceAccessScreen(onBack: () -> Unit) {
         microphoneDenied = !granted
         viewModel.refresh()
     }
+    var notificationsDenied by rememberSaveable { mutableStateOf(false) }
+    val askNotifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        notificationsDenied = !granted
+        viewModel.refresh()
+    }
     val askTermux = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { viewModel.refresh() }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refresh() }
 
@@ -98,6 +105,11 @@ fun DeviceAccessScreen(onBack: () -> Unit) {
                 PermissionAction(R.string.access_action_open_settings) { context.openAppDetails() }
             } else {
                 PermissionAction(R.string.access_action_grant) { askMicrophone.launch(Manifest.permission.RECORD_AUDIO) }
+            }
+            DevicePermission.NOTIFICATIONS -> if (notificationsDenied || Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                PermissionAction(R.string.access_action_open_settings) { context.openNotificationSettings() }
+            } else {
+                PermissionAction(R.string.access_action_grant) { askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS) }
             }
             DevicePermission.ALL_FILES -> PermissionAction(R.string.access_action_open_settings) { context.openAllFilesAccess() }.takeIf { status != AccessStatus.UNAVAILABLE }
             DevicePermission.TERMUX -> when (status) {
@@ -282,6 +294,7 @@ private val DevicePermission.presentation: Presentation
     get() = when (this) {
         DevicePermission.ASSISTANT -> Presentation(R.string.permission_assistant, R.string.permission_assistant_summary, MaterialSymbols.Rounded.Assistant)
         DevicePermission.MICROPHONE -> Presentation(R.string.permission_microphone, R.string.permission_microphone_summary, MaterialSymbols.Rounded.Mic)
+        DevicePermission.NOTIFICATIONS -> Presentation(R.string.permission_notifications, R.string.permission_notifications_summary, MaterialSymbols.Rounded.Notifications)
         DevicePermission.ALL_FILES -> Presentation(R.string.permission_all_files, R.string.permission_all_files_summary, MaterialSymbols.Rounded.Storage)
         DevicePermission.TERMUX -> Presentation(R.string.access_mode_termux, R.string.permission_termux_summary, MaterialSymbols.Rounded.Terminal)
         DevicePermission.SHIZUKU -> Presentation(R.string.access_mode_shizuku, R.string.permission_shizuku_summary, MaterialSymbols.Rounded.Adb)
@@ -319,6 +332,9 @@ private fun Context.openAllFilesAccess() {
         startActivity(Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION))
     }
 }
+
+private fun Context.openNotificationSettings() =
+    startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName))
 
 private fun Context.openAppDetails() =
     startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, "package:$packageName".toUri()))

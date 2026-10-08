@@ -34,7 +34,10 @@ import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -59,6 +62,10 @@ class ConversationRunner(
     private val _drafts = MutableStateFlow<Map<String, StreamingDraft>>(emptyMap())
 
     val drafts: StateFlow<Map<String, StreamingDraft>> = _drafts.asStateFlow()
+
+    val activity: Flow<Map<String, ChatActivity>> = _drafts
+        .map { drafts -> drafts.mapValues { (_, draft) -> if (draft.awaitingCallId != null) ChatActivity.NEEDS_APPROVAL else ChatActivity.WORKING } }
+        .distinctUntilChanged()
 
     init {
         scope.launch { chats.recoverInterruptedStreams() }
@@ -86,6 +93,10 @@ class ConversationRunner(
 
     fun cancel(chatId: String) {
         jobs.remove(chatId)?.cancel()
+    }
+
+    fun cancelAll() {
+        jobs.keys.toList().forEach(::cancel)
     }
 
     private fun launchReply(chatId: String) {
@@ -230,6 +241,8 @@ private val ToolOutcome.messageStatus: MessageStatus
         isError -> MessageStatus.ERROR
         else -> MessageStatus.COMPLETE
     }
+
+enum class ChatActivity { WORKING, NEEDS_APPROVAL }
 
 data class StreamingDraft(
     val messageId: String,

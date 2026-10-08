@@ -19,6 +19,8 @@ import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Chat
 import dev.huecoder.md3assistant.R
+import dev.huecoder.md3assistant.conversation.ChatActivity
+import dev.huecoder.md3assistant.ui.components.WorkingBadge
 import dev.huecoder.md3assistant.data.db.ChatSummary
 import dev.huecoder.md3assistant.ui.components.SectionHeader
 import dev.huecoder.md3assistant.ui.components.ShapeBadge
@@ -29,6 +31,7 @@ private val FabClearance = 96.dp
 @Composable
 fun ChatList(
     groups: List<ChatGroup>,
+    activity: Map<String, ChatActivity>,
     contentPadding: PaddingValues,
     onOpenChat: (String) -> Unit,
     onDeleteRequest: (String) -> Unit,
@@ -48,6 +51,7 @@ fun ChatList(
             itemsIndexed(group.chats, key = { _, chat -> chat.id }) { index, chat ->
                 ChatRow(
                     chat = chat,
+                    activity = activity[chat.id],
                     index = index,
                     count = group.chats.size,
                     onClick = { onOpenChat(chat.id) },
@@ -62,6 +66,7 @@ fun ChatList(
 @Composable
 private fun ChatRow(
     chat: ChatSummary,
+    activity: ChatActivity?,
     index: Int,
     count: Int,
     onClick: () -> Unit,
@@ -75,7 +80,7 @@ private fun ChatRow(
         shapes = ListItemDefaults.segmentedShapes(index = index, count = count),
         colors = groupedListColors(),
         modifier = modifier,
-        leadingContent = { ShapeBadge(icon = MaterialSymbols.Rounded.Chat) },
+        leadingContent = { if (activity != null) WorkingBadge(activity) else ShapeBadge(icon = MaterialSymbols.Rounded.Chat) },
         supportingContent = chat.lastMessage?.let(ChatPreview::of)?.takeIf { it.isNotEmpty() }?.let { preview ->
             {
                 Text(

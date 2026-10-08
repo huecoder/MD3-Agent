@@ -2,7 +2,9 @@ package dev.huecoder.md3assistant
 
 import android.content.Context
 import dev.huecoder.md3assistant.assistant.ScreenContextStore
+import dev.huecoder.md3assistant.conversation.BackgroundWorkService
 import dev.huecoder.md3assistant.conversation.ConversationRunner
+import dev.huecoder.md3assistant.system.lifecycle.AppVisibility
 import dev.huecoder.md3assistant.conversation.GeneratedImages
 import dev.huecoder.md3assistant.data.models.ModelCatalog
 import dev.huecoder.md3assistant.conversation.ToolApprovals
@@ -48,11 +50,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 
 class AppContainer(context: Context) {
     val appContext: Context = context.applicationContext
     val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    val visibility = AppVisibility()
 
     val settings = SettingsRepository(context, SecretCipher())
     val httpClients = HttpClientProvider(settings.networkSettings, applicationScope)
@@ -93,12 +97,6 @@ class AppContainer(context: Context) {
         sources = listOf(mcp),
     )
 
-    init {
-        applicationScope.launch {
-            settings.settings.map { it.tools.mcpServers }.distinctUntilChanged().collect(mcp::sync)
-        }
-    }
-
     fun newVoiceRecorder() = VoiceRecorder(appContext)
 
     fun newSpeechSynthesizer(voice: VoiceSettings): SpeechSynthesizer {
@@ -116,6 +114,17 @@ class AppContainer(context: Context) {
         chats, settings, completions, systemPrompt, tools, attachments, approvals,
         modelCatalog, GeneratedImages(attachments, httpClients), applicationScope,
     )
+
+    init {
+        applicationScope.launch {
+            settings.settings.map { it.tools.mcpServers }.distinctUntilChanged().collect(mcp::sync)
+        }
+        applicationScope.launch {
+            conversations.activity.map { it.isNotEmpty() }.distinctUntilChanged().collect { busy ->
+                if (busy) withContext(Dispatchers.Main) { BackgroundWorkService.start(appContext) }
+            }
+        }
+    }
 
     private companion object {
         const val FILE_STAGING_DIR = "file-staging"

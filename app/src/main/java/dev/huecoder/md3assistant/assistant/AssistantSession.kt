@@ -82,10 +82,12 @@ class AssistantSession(context: Context) :
         super.onShow(args, showFlags)
         container.screenContext.clear()
         activation.intValue += 1
+        container.visibility.onOverlayShown(true)
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
     }
 
     override fun onHide() {
+        container.visibility.onOverlayShown(false)
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
         super.onHide()
     }

@@ -2,6 +2,8 @@ package dev.huecoder.md3assistant.feature.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dev.huecoder.md3assistant.conversation.ChatActivity
+import dev.huecoder.md3assistant.conversation.ConversationRunner
 import dev.huecoder.md3assistant.data.chat.ChatRepository
 import dev.huecoder.md3assistant.data.db.ChatSummary
 import dev.huecoder.md3assistant.data.settings.SettingsRepository
@@ -23,16 +25,19 @@ data class HomeUiState(
     val activeModel: String? = null,
     val hasProvider: Boolean = true,
     val isLoaded: Boolean = false,
+    val activity: Map<String, ChatActivity> = emptyMap(),
 )
 
 class HomeViewModel(
     private val chats: ChatRepository,
     settings: SettingsRepository,
+    runner: ConversationRunner,
     private val zone: () -> ZoneId = ZoneId::systemDefault,
 ) : ViewModel() {
 
-    val state: StateFlow<HomeUiState> = combine(chats.observeSummaries(), settings.settings) { summaries, current ->
+    val state: StateFlow<HomeUiState> = combine(chats.observeSummaries(), settings.settings, runner.activity) { summaries, current, activity ->
         HomeUiState(
+            activity = activity,
             groups = group(summaries),
             activeModel = current.activeSelection?.modelId,
             hasProvider = current.providers.isNotEmpty(),

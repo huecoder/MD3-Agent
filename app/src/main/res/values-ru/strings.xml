@@ -349,4 +349,20 @@
         <item quantity="many">%1$d моделей</item>
         <item quantity="other">%1$d модели</item>
     </plurals>
+    <string name="notification_channel_work">Ответы в фоне</string>
+    <string name="notification_channel_approvals">Подтверждение тулз</string>
+    <string name="notification_channel_reminders">Напоминания</string>
+    <string name="notification_work_text">Ответы продолжаются, даже если приложение закрыто</string>
+    <string name="notification_work_stop">Остановить все</string>
+    <string name="notification_approval_title">Ассистент ждёт подтверждения</string>
+    <plurals name="notification_work_title">
+        <item quantity="one">Работаю над %1$d чатом</item>
+        <item quantity="few">Работаю над %1$d чатами</item>
+        <item quantity="many">Работаю над %1$d чатами</item>
+        <item quantity="other">Работаю над %1$d чатами</item>
+    </plurals>
+    <string name="permission_notifications">Уведомления</string>
+    <string name="permission_notifications_summary">Ответы в фоне, подтверждения и напоминания</string>
+    <string name="home_chat_working">Работает</string>
+    <string name="home_chat_needs_approval">Ждёт подтверждения</string>
 </resources>

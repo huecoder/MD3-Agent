@@ -351,4 +351,18 @@
         <item quantity="one">%1$d model</item>
         <item quantity="other">%1$d models</item>
     </plurals>
+    <string name="notification_channel_work">Background replies</string>
+    <string name="notification_channel_approvals">Tool approvals</string>
+    <string name="notification_channel_reminders">Reminders</string>
+    <string name="notification_work_text">Replies keep going while the app is closed</string>
+    <string name="notification_work_stop">Stop all</string>
+    <string name="notification_approval_title">The assistant needs your approval</string>
+    <plurals name="notification_work_title">
+        <item quantity="one">Working on %1$d chat</item>
+        <item quantity="other">Working on %1$d chats</item>
+    </plurals>
+    <string name="permission_notifications">Notifications</string>
+    <string name="permission_notifications_summary">Background replies, approvals and reminders</string>
+    <string name="home_chat_working">Working</string>
+    <string name="home_chat_needs_approval">Waiting for your approval</string>
 </resources>

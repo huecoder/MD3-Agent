@@ -36,7 +36,7 @@ fun HomeScreen(
     onOpenChat: (chatId: String?) -> Unit,
     onOpenSettings: () -> Unit,
 ) {
-    val viewModel = appViewModel { HomeViewModel(it.chats, it.settings) }
+    val viewModel = appViewModel { HomeViewModel(it.chats, it.settings, it.conversations) }
     val state by viewModel.state.collectAsStateWithLifecycle()
     val topBarScroll = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     var pendingDeletion by rememberSaveable { mutableStateOf<String?>(null) }
@@ -72,6 +72,7 @@ fun HomeScreen(
                 state.groups.isEmpty() -> EmptyChats(Modifier.padding(padding))
                 else -> ChatList(
                     groups = state.groups,
+                    activity = state.activity,
                     contentPadding = padding,
                     onOpenChat = { onOpenChat(it) },
                     onDeleteRequest = { pendingDeletion = it },

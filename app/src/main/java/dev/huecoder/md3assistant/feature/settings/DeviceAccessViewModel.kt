@@ -1,6 +1,7 @@
 package dev.huecoder.md3assistant.feature.settings
 
 import android.Manifest
+import dev.huecoder.md3assistant.system.notifications.AppNotifications
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
@@ -23,7 +24,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-enum class DevicePermission { ASSISTANT, MICROPHONE, ALL_FILES, TERMUX, SHIZUKU, ROOT }
+enum class DevicePermission { ASSISTANT, MICROPHONE, NOTIFICATIONS, ALL_FILES, TERMUX, SHIZUKU, ROOT }
 
 class DeviceAccessViewModel(
     private val context: Context,
@@ -48,6 +49,7 @@ class DeviceAccessViewModel(
         val local = mapOf(
             DevicePermission.ASSISTANT to readyIf(AssistantRole.isHeld(context)),
             DevicePermission.MICROPHONE to readyIf(isGranted(Manifest.permission.RECORD_AUDIO)),
+            DevicePermission.NOTIFICATIONS to readyIf(AppNotifications.canPost(context)),
             DevicePermission.ALL_FILES to allFilesStatus(),
         )
         _permissions.update { it + local }
