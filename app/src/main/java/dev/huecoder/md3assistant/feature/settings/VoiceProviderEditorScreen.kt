@@ -42,7 +42,7 @@ import dev.huecoder.md3assistant.ui.text.asString
 
 @Composable
 fun VoiceProviderEditorScreen(providerId: String?, onDone: () -> Unit) {
-    val viewModel = appViewModel(key = "voice-provider-$providerId") { VoiceProviderEditorViewModel(providerId, it.settings, it.modelCatalog) }
+    val viewModel = appViewModel(key = "voice-provider-$providerId") { VoiceProviderEditorViewModel(providerId, it.settings, it.modelCatalogClient) }
     val form by viewModel.form.collectAsStateWithLifecycle()
     val chatProviders by viewModel.chatProviders.collectAsStateWithLifecycle()
     val fetch by viewModel.modelFetch.collectAsStateWithLifecycle()

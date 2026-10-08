@@ -109,7 +109,7 @@ object ChatTimeline {
         val last = views.last()
         val isActive = draft != null && isLatest
         val usages = rounds.mapNotNull { row ->
-            if (row.promptTokens != null && row.completionTokens != null) TokenUsage(row.promptTokens, row.completionTokens) else null
+            if (row.promptTokens != null && row.completionTokens != null) TokenUsage(row.promptTokens, row.completionTokens, row.cachedTokens ?: 0) else null
         } + listOfNotNull(live?.usage)
         return ChatItem.Reply(
             id = rounds.first().id,

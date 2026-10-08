@@ -44,8 +44,8 @@ interface ChatDao {
     @Query("UPDATE chats SET updatedAt = :updatedAt WHERE id = :id")
     suspend fun touch(id: String, updatedAt: Long)
 
-    @Query("UPDATE chats SET providerId = :providerId, modelId = :modelId WHERE id = :id")
-    suspend fun setModel(id: String, providerId: String?, modelId: String?)
+    @Query("UPDATE chats SET providerId = :providerId, modelId = :modelId, reasoningEffort = :reasoningEffort WHERE id = :id")
+    suspend fun setModel(id: String, providerId: String?, modelId: String?, reasoningEffort: String?)
 
     @Query("DELETE FROM chats WHERE id = :id")
     suspend fun delete(id: String)

@@ -58,7 +58,11 @@ object TurnAssembler {
             }
         }
         flushToolImages()
-        return turns
+        return markCacheBreakpoints(turns)
+    }
+
+    private fun markCacheBreakpoints(turns: List<ChatTurn>): List<ChatTurn> = turns.mapIndexed { index, turn ->
+        if (index == 0 || index == turns.lastIndex) turn.copy(cacheBreakpoint = true) else turn
     }
 
     private fun userTurn(message: MessageEntity, contents: List<AttachmentContent>): ChatTurn {
@@ -79,6 +83,10 @@ object TurnAssembler {
                     is AttachmentContent.Image -> Unit
                 }
             }
+            message.contextNote?.let { note ->
+                if (isNotEmpty()) append("\n\n")
+                append(CONTEXT_OPEN).append(note).append(CONTEXT_CLOSE)
+            }
         }
         return ChatTurn(
             role = ChatTurn.Role.USER,
@@ -88,4 +96,6 @@ object TurnAssembler {
     }
 
     private const val TOOL_IMAGES_NOTE = "Images returned by the tool calls above."
+    private const val CONTEXT_OPEN = "<context>"
+    private const val CONTEXT_CLOSE = "</context>"
 }

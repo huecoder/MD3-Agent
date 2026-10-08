@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import dev.huecoder.md3assistant.llm.models.ReasoningEffort
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
@@ -49,6 +50,8 @@ class SettingsRepository(context: Context, private val cipher: SecretCipher) {
     suspend fun setActiveSelection(selection: ModelSelection) = store.edit { prefs ->
         prefs[Keys.ACTIVE_PROVIDER] = selection.providerId
         prefs[Keys.ACTIVE_MODEL] = selection.modelId
+        val effort = selection.reasoningEffort
+        if (effort == null) prefs.remove(Keys.ACTIVE_REASONING) else prefs[Keys.ACTIVE_REASONING] = effort.wireName
     }
 
     suspend fun updateAgent(agent: AgentProfile) = store.edit { prefs ->
@@ -89,14 +92,14 @@ class SettingsRepository(context: Context, private val cipher: SecretCipher) {
         val activeProvider = prefs[Keys.ACTIVE_PROVIDER]
         val activeModel = prefs[Keys.ACTIVE_MODEL]
         val selection = if (activeProvider != null && activeModel != null && providers.any { it.id == activeProvider }) {
-            ModelSelection(activeProvider, activeModel)
+            ModelSelection(activeProvider, activeModel, prefs[Keys.ACTIVE_REASONING]?.let(ReasoningEffort::fromWire))
         } else {
             providers.firstOrNull { it.defaultModel.isNotBlank() }?.let { ModelSelection(it.id, it.defaultModel) }
         }
         return AppSettings(
             providers = providers,
             activeSelection = selection,
-            agent = decodeOrDefault(prefs[Keys.AGENT], AgentProfile.serializer(), AgentProfile()),
+            agent = decodeOrDefault(prefs[Keys.AGENT], AgentProfile.serializer(), AgentProfile()).migrated(),
             network = decodeOrDefault(prefs[Keys.NETWORK], NetworkSettings.serializer(), NetworkSettings()),
             tools = decodeTools(prefs[Keys.TOOLS_ENCRYPTED]),
             chat = decodeOrDefault(prefs[Keys.CHAT], ChatSettings.serializer(), ChatSettings()),
@@ -165,6 +168,7 @@ class SettingsRepository(context: Context, private val cipher: SecretCipher) {
         val PROVIDERS_ENCRYPTED = stringPreferencesKey("providers_encrypted")
         val ACTIVE_PROVIDER = stringPreferencesKey("active_provider")
         val ACTIVE_MODEL = stringPreferencesKey("active_model")
+        val ACTIVE_REASONING = stringPreferencesKey("active_reasoning")
         val AGENT = stringPreferencesKey("agent")
         val NETWORK = stringPreferencesKey("network")
         val TOOLS_ENCRYPTED = stringPreferencesKey("tools_encrypted")

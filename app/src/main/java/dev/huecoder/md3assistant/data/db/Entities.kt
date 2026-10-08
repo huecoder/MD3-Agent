@@ -1,11 +1,16 @@
 package dev.huecoder.md3assistant.data.db
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "chats", indices = [Index("updatedAt")])
+@Entity(
+    tableName = "chats",
+    indices = [Index("updatedAt"), Index("folderId")],
+    foreignKeys = [ForeignKey(entity = FolderEntity::class, parentColumns = ["id"], childColumns = ["folderId"], onDelete = ForeignKey.SET_NULL)],
+)
 data class ChatEntity(
     @PrimaryKey val id: String,
     val title: String,
@@ -13,6 +18,23 @@ data class ChatEntity(
     val updatedAt: Long,
     val providerId: String?,
     val modelId: String?,
+    val reasoningEffort: String? = null,
+    val folderId: String? = null,
+    val iconKey: String? = null,
+    val colorKey: String? = null,
+    val shapeKey: String? = null,
+    @ColumnInfo(defaultValue = "FIRST_MESSAGE") val titleSource: TitleSource = TitleSource.FIRST_MESSAGE,
+)
+
+enum class TitleSource { FIRST_MESSAGE, GENERATED, USER }
+
+@Entity(tableName = "folders")
+data class FolderEntity(
+    @PrimaryKey val id: String,
+    val name: String,
+    val createdAt: Long,
+    val iconKey: String? = null,
+    val colorKey: String? = null,
 )
 
 enum class MessageRole { SYSTEM, USER, ASSISTANT, TOOL }
@@ -47,4 +69,6 @@ data class MessageEntity(
     val finishedAt: Long? = null,
     val promptTokens: Int? = null,
     val completionTokens: Int? = null,
+    val cachedTokens: Int? = null,
+    val contextNote: String? = null,
 )

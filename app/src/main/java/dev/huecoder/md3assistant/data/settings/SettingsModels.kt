@@ -1,5 +1,6 @@
 package dev.huecoder.md3assistant.data.settings
 
+import dev.huecoder.md3assistant.llm.models.ReasoningEffort
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -26,11 +27,21 @@ data class AgentProfile(
 
         val DEFAULT_SYSTEM_PROMPT = """
             You are {agent_name}, a personal assistant on the user's Android device.
+            Today is {weekday}, {date} ({timezone}). Device: {device}, Android {android}, language {locale}.
+            Each user message ends with a <context> block holding the time and battery level at the moment it was sent.
+            Keep answers to the point, reply in the user's language, and use markdown when it makes the answer easier to read.
+        """.trimIndent()
+
+        private val LEGACY_SYSTEM_PROMPT = """
+            You are {agent_name}, a personal assistant on the user's Android device.
             It is {weekday}, {date}, {time} ({timezone}).
             Device: {device}, Android {android}, battery {battery}, language {locale}.
             Keep answers to the point, reply in the user's language, and use markdown when it makes the answer easier to read.
         """.trimIndent()
     }
+
+    fun migrated(): AgentProfile =
+        if (systemPromptTemplate == LEGACY_SYSTEM_PROMPT) copy(systemPromptTemplate = DEFAULT_SYSTEM_PROMPT) else this
 }
 
 @Serializable
@@ -39,7 +50,7 @@ data class NetworkSettings(
     val dohUrl: String = "",
 )
 
-data class ModelSelection(val providerId: String, val modelId: String)
+data class ModelSelection(val providerId: String, val modelId: String, val reasoningEffort: ReasoningEffort? = null)
 
 data class AppSettings(
     val providers: List<ProviderProfile>,

@@ -9,6 +9,7 @@ import dev.huecoder.md3assistant.data.db.MessageDao
 import dev.huecoder.md3assistant.data.db.MessageEntity
 import dev.huecoder.md3assistant.data.db.MessageRole
 import dev.huecoder.md3assistant.data.db.MessageStatus
+import dev.huecoder.md3assistant.data.settings.ModelSelection
 import kotlinx.coroutines.flow.Flow
 import java.util.UUID
 
@@ -28,23 +29,24 @@ class ChatRepository(
 
     suspend fun history(chatId: String): List<MessageEntity> = messageDao.listForChat(chatId)
 
-    suspend fun createChat(title: String, providerId: String?, modelId: String?): ChatEntity {
+    suspend fun createChat(title: String, selection: ModelSelection): ChatEntity {
         val now = clock()
         val chat = ChatEntity(
             id = UUID.randomUUID().toString(),
             title = title,
             createdAt = now,
             updatedAt = now,
-            providerId = providerId,
-            modelId = modelId,
+            providerId = selection.providerId,
+            modelId = selection.modelId,
+            reasoningEffort = selection.reasoningEffort?.wireName,
         )
         chatDao.insert(chat)
         return chat
     }
 
-    suspend fun appendUserMessage(chatId: String, text: String, attached: List<Attachment>): MessageEntity =
+    suspend fun appendUserMessage(chatId: String, text: String, attached: List<Attachment>, contextNote: String? = null): MessageEntity =
         newMessage(chatId, MessageRole.USER, text, MessageStatus.COMPLETE, modelId = null)
-            .copy(attachmentsJson = Attachment.encode(attached))
+            .copy(attachmentsJson = Attachment.encode(attached), contextNote = contextNote)
             .also { save(it) }
 
     suspend fun appendToolResult(chatId: String, toolCallId: String, content: String, status: MessageStatus, attached: List<Attachment>): MessageEntity =
@@ -70,8 +72,8 @@ class ChatRepository(
 
     suspend fun rename(chatId: String, title: String) = chatDao.rename(chatId, title)
 
-    suspend fun setModel(chatId: String, providerId: String?, modelId: String?) =
-        chatDao.setModel(chatId, providerId, modelId)
+    suspend fun setModel(chatId: String, selection: ModelSelection) =
+        chatDao.setModel(chatId, selection.providerId, selection.modelId, selection.reasoningEffort?.wireName)
 
     suspend fun delete(chatId: String) {
         val attached = messageDao.listForChat(chatId).flatMap { Attachment.decode(it.attachmentsJson) }

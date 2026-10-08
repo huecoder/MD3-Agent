@@ -15,6 +15,12 @@ import dev.huecoder.md3assistant.data.settings.ToolPermission
 import dev.huecoder.md3assistant.data.settings.ToolSettings
 import dev.huecoder.md3assistant.llm.ChatCompletionClient
 import dev.huecoder.md3assistant.llm.ChatTurn
+import dev.huecoder.md3assistant.llm.CompletionOptions
+import dev.huecoder.md3assistant.llm.models.ModelFamily
+import dev.huecoder.md3assistant.llm.models.ModelOutput
+import dev.huecoder.md3assistant.llm.models.ReasoningEffort
+import dev.huecoder.md3assistant.data.models.ModelCatalog
+import dev.huecoder.md3assistant.data.settings.ModelSelection
 import dev.huecoder.md3assistant.llm.CompletionEvent
 import dev.huecoder.md3assistant.llm.ToolCall
 import dev.huecoder.md3assistant.llm.ToolCallAccumulator
@@ -44,6 +50,8 @@ class ConversationRunner(
     private val tools: ToolRegistry,
     private val attachments: AttachmentStore,
     private val approvals: ToolApprovals,
+    private val catalog: ModelCatalog,
+    private val generatedImages: GeneratedImages,
     private val scope: CoroutineScope,
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
@@ -56,16 +64,15 @@ class ConversationRunner(
         scope.launch { chats.recoverInterruptedStreams() }
     }
 
-    suspend fun startChat(text: String, attached: List<Attachment>): ChatEntity {
-        val current = settings.current()
-        val selection = current.activeSelection ?: throw NoModelConfiguredException()
-        val chat = chats.createChat(titleFrom(text, attached), selection.providerId, selection.modelId)
+    suspend fun startChat(text: String, attached: List<Attachment>, selection: ModelSelection? = null): ChatEntity {
+        val chosen = selection ?: settings.current().activeSelection ?: throw NoModelConfiguredException()
+        val chat = chats.createChat(titleFrom(text, attached), chosen)
         send(chat.id, text, attached)
         return chat
     }
 
     suspend fun send(chatId: String, text: String, attached: List<Attachment>) {
-        chats.appendUserMessage(chatId, text.trim(), attached)
+        chats.appendUserMessage(chatId, text.trim(), attached, systemPrompt.contextNote())
         launchReply(chatId)
     }
 
@@ -91,11 +98,10 @@ class ConversationRunner(
 
     private suspend fun generateReply(chatId: String) {
         val current = settings.current()
-        val (provider, model) = resolveModel(chatId, current)
-            ?: return chats.save(errorMessage(chatId, NO_MODEL_SELECTED))
+        val model = resolveModel(chatId, current) ?: return chats.save(errorMessage(chatId, NO_MODEL_SELECTED))
         try {
             while (true) {
-                val round = streamRound(chatId, provider, model, current) ?: return
+                val round = streamRound(chatId, model, current) ?: return
                 if (round.toolCalls.isEmpty()) return
                 val endsTurn = runTools(chatId, round, current)
                 if (endsTurn) return
@@ -106,18 +112,28 @@ class ConversationRunner(
         }
     }
 
-    private suspend fun streamRound(chatId: String, provider: ProviderProfile, model: String, current: AppSettings): StreamingDraft? {
+    private suspend fun streamRound(chatId: String, model: ResolvedModel, current: AppSettings): StreamingDraft? {
         tools.awaitReady()
+        val info = catalog.infoLoaded(model.provider.id, model.modelId)
+        val traits = info.traits
+        val options = CompletionOptions(
+            reasoningEffort = model.reasoningEffort?.takeIf { traits.reasoning },
+            reasoningControl = traits.reasoningControl,
+            output = traits.output,
+            explicitCaching = info.family == ModelFamily.CLAUDE,
+        )
+        val toolSpecs = if (traits.output == ModelOutput.IMAGE || info.toolUse == false) emptyList() else tools.specs(current.tools)
         val turns = buildTurns(current, chats.history(chatId))
-        val message = chats.startAssistantMessage(chatId, model)
+        val message = chats.startAssistantMessage(chatId, model.modelId)
         val accumulator = ToolCallAccumulator()
         var draft = StreamingDraft(message.id, content = "", reasoning = "", toolCalls = emptyList(), runningCallIds = emptySet(), awaitingCallId = null, usage = null)
         publish(chatId, draft)
         try {
-            completions.stream(provider, model, turns, tools.specs(current.tools)).collect { event ->
+            completions.stream(model.provider, model.modelId, turns, toolSpecs, options).collect { event ->
                 draft = when (event) {
                     is CompletionEvent.ContentDelta -> draft.copy(content = draft.content + event.text)
                     is CompletionEvent.ReasoningDelta -> draft.copy(reasoning = draft.reasoning + event.text)
+                    is CompletionEvent.ImageOutput -> draft.copy(images = draft.images + event.url)
                     is CompletionEvent.ToolCallDelta -> draft.copy(toolCalls = accumulator.apply { add(event) }.calls())
                     is CompletionEvent.Finished -> draft
                     is CompletionEvent.Usage -> draft.copy(usage = event.usage)
@@ -162,16 +178,22 @@ class ConversationRunner(
         return TurnAssembler.assemble(systemPrompt.render(current.agent, tools.promptNotes(current.tools)), history, contents)
     }
 
-    private suspend fun resolveModel(chatId: String, current: AppSettings): Pair<ProviderProfile, String>? {
+    private suspend fun resolveModel(chatId: String, current: AppSettings): ResolvedModel? {
         val chat = chats.chat(chatId)
-        val provider = current.provider(chat?.providerId) ?: current.provider(current.activeSelection?.providerId)
-        val model = chat?.modelId?.takeIf { provider?.id == chat.providerId } ?: current.activeSelection?.modelId
-        return if (provider != null && !model.isNullOrBlank()) provider to model else null
+        val chatProvider = current.provider(chat?.providerId)
+        if (chatProvider != null && !chat?.modelId.isNullOrBlank()) {
+            return ResolvedModel(chatProvider, chat.modelId, chat.reasoningEffort?.let(ReasoningEffort::fromWire))
+        }
+        val active = current.activeSelection ?: return null
+        val provider = current.provider(active.providerId) ?: return null
+        return ResolvedModel(provider, active.modelId, active.reasoningEffort)
     }
 
     private suspend fun persist(message: MessageEntity, draft: StreamingDraft, status: MessageStatus, errorText: String?) {
+        val images = if (draft.images.isEmpty()) emptyList() else generatedImages.store(draft.images)
         chats.save(
             message.copy(
+                attachmentsJson = Attachment.encode(images),
                 content = draft.content,
                 reasoning = draft.reasoning.ifEmpty { null },
                 status = status,
@@ -180,6 +202,7 @@ class ConversationRunner(
                 finishedAt = clock(),
                 promptTokens = draft.usage?.promptTokens,
                 completionTokens = draft.usage?.completionTokens,
+                cachedTokens = draft.usage?.cachedTokens?.takeIf { it > 0 },
             ),
         )
     }
@@ -216,6 +239,9 @@ data class StreamingDraft(
     val runningCallIds: Set<String>,
     val awaitingCallId: String?,
     val usage: TokenUsage?,
+    val images: List<String> = emptyList(),
 )
+
+private data class ResolvedModel(val provider: ProviderProfile, val modelId: String, val reasoningEffort: ReasoningEffort?)
 
 class NoModelConfiguredException : IllegalStateException("Add a provider and choose a model in settings first")

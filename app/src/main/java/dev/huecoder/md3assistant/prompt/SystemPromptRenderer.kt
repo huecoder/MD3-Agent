@@ -20,6 +20,11 @@ class SystemPromptRenderer(
         return prompt + "\n\n" + ACCESS_HEADER + accessNotes.joinToString("") { "\n- $it" }
     }
 
+    fun contextNote(): String {
+        val time = now()
+        return "${time.format(DateTimeFormatter.ISO_LOCAL_DATE)} ${time.format(TIME_FORMAT)}, battery ${deviceInfo.batteryDescription()}"
+    }
+
     val supportedVariables: List<String> get() = variables(AgentProfile()).keys.toList()
 
     private fun variables(agent: AgentProfile): Map<String, () -> String> {

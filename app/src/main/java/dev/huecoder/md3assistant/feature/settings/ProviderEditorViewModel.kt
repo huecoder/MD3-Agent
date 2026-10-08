@@ -7,7 +7,7 @@ import dev.huecoder.md3assistant.data.settings.HeaderEntry
 import dev.huecoder.md3assistant.data.settings.ModelSelection
 import dev.huecoder.md3assistant.data.settings.ProviderProfile
 import dev.huecoder.md3assistant.data.settings.SettingsRepository
-import dev.huecoder.md3assistant.llm.ModelCatalogClient
+import dev.huecoder.md3assistant.data.models.ModelCatalog
 import dev.huecoder.md3assistant.llm.ProviderException
 import dev.huecoder.md3assistant.ui.text.UiText
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -54,7 +54,7 @@ sealed interface ModelFetchState {
 class ProviderEditorViewModel(
     private val providerId: String?,
     private val settings: SettingsRepository,
-    private val catalog: ModelCatalogClient,
+    private val catalog: ModelCatalog,
 ) : ViewModel() {
     private val _form = MutableStateFlow<ProviderForm?>(null)
     val form: StateFlow<ProviderForm?> = _form.asStateFlow()
@@ -91,7 +91,7 @@ class ProviderEditorViewModel(
         _modelFetch.value = ModelFetchState.Loading
         viewModelScope.launch {
             _modelFetch.value = try {
-                val models = catalog.listModels(current.toProfile())
+                val models = catalog.refresh(current.toProfile()).map { it.id }
                 edit { form -> form.copy(models = models, defaultModel = form.defaultModel.ifBlank { models.firstOrNull().orEmpty() }) }
                 ModelFetchState.Idle
             } catch (e: ProviderException) {
@@ -114,6 +114,7 @@ class ProviderEditorViewModel(
         val id = providerId ?: return onDeleted()
         viewModelScope.launch {
             settings.deleteProvider(id)
+            catalog.forget(id)
             onDeleted()
         }
     }

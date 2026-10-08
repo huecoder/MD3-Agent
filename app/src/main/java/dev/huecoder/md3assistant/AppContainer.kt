@@ -3,6 +3,8 @@ package dev.huecoder.md3assistant
 import android.content.Context
 import dev.huecoder.md3assistant.assistant.ScreenContextStore
 import dev.huecoder.md3assistant.conversation.ConversationRunner
+import dev.huecoder.md3assistant.conversation.GeneratedImages
+import dev.huecoder.md3assistant.data.models.ModelCatalog
 import dev.huecoder.md3assistant.conversation.ToolApprovals
 import dev.huecoder.md3assistant.data.attachments.AttachmentStore
 import dev.huecoder.md3assistant.data.chat.ChatRepository
@@ -60,7 +62,8 @@ class AppContainer(context: Context) {
     val chats = ChatRepository(database.chatDao(), database.messageDao(), attachments)
 
     val completions = ChatCompletionClient(httpClients)
-    val modelCatalog = ModelCatalogClient(httpClients)
+    val modelCatalogClient = ModelCatalogClient(httpClients)
+    val modelCatalog = ModelCatalog(modelCatalogClient, File(appContext.filesDir, MODEL_CATALOG_DIR))
     val transcriptions = TranscriptionClient(httpClients)
     val systemPrompt = SystemPromptRenderer(DeviceInfoProvider(context))
 
@@ -109,9 +112,13 @@ class AppContainer(context: Context) {
 
     val approvals = ToolApprovals()
 
-    val conversations = ConversationRunner(chats, settings, completions, systemPrompt, tools, attachments, approvals, applicationScope)
+    val conversations = ConversationRunner(
+        chats, settings, completions, systemPrompt, tools, attachments, approvals,
+        modelCatalog, GeneratedImages(attachments, httpClients), applicationScope,
+    )
 
     private companion object {
         const val FILE_STAGING_DIR = "file-staging"
+        const val MODEL_CATALOG_DIR = "model-catalog"
     }
 }
