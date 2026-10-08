@@ -498,4 +498,12 @@
         <item quantity="many">Удалить %d чатов?</item>
         <item quantity="other">Удалить %d чата?</item>
     </plurals>
+    <string name="common_expanded">Развёрнуто</string>
+    <string name="common_collapsed">Свёрнуто</string>
+    <string name="access_group_ready">готово %1$d из %2$d</string>
+    <string name="access_group_essentials">Основные</string>
+    <string name="access_group_storage">Хранилище</string>
+    <string name="access_group_elevated">Расширенный доступ</string>
+    <string name="access_section_backends">Режим доступа</string>
+    <string name="tools_category_enabled">включено %1$d из %2$d</string>
 </resources>

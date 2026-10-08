@@ -42,7 +42,14 @@ import dev.huecoder.md3agent.data.settings.ToolPermission
 import dev.huecoder.md3agent.data.settings.ToolSettings
 import dev.huecoder.md3agent.data.settings.WeatherSettings
 import dev.huecoder.md3agent.ui.components.FormField
-import dev.huecoder.md3agent.ui.components.SectionHeader
+import dev.huecoder.md3agent.ui.components.FoldableHeader
+import dev.huecoder.md3agent.ui.components.rememberSectionFolds
+import dev.huecoder.md3agent.ui.theme.LayoutMotion
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import dev.huecoder.md3agent.ui.components.SaveAction
 import dev.huecoder.md3agent.ui.components.SettingsScaffold
 import dev.huecoder.md3agent.ui.components.ShapeBadge
@@ -72,6 +79,8 @@ fun ToolSettingsScreen(onBack: () -> Unit) {
         }
     }
 
+    val folds = rememberSectionFolds()
+
     SettingsScaffold(stringResource(R.string.settings_tools), onBack, save = save) { padding ->
         val current = tools ?: return@SettingsScaffold
         Column(
@@ -86,25 +95,39 @@ fun ToolSettingsScreen(onBack: () -> Unit) {
             ToolCategory.entries.forEach { category ->
                 val categoryTools = grouped[category].orEmpty()
                 if (categoryTools.isEmpty()) return@forEach
-                SectionHeader(stringResource(category.title))
-                categoryTools.forEachIndexed { index, tool ->
-                    val name = tool.spec.name
-                    ToolPermissionRow(
-                        info = ToolCatalog.of(tool),
-                        permission = container.tools.permission(tool, current),
-                        shape = ListItemDefaults.segmentedShapes(index, categoryTools.size).shape,
-                        onChange = { tools = current.withPermission(name, it) },
-                    )
-                }
-                if (category == ToolCategory.WEB) {
-                    ServiceCard(R.string.tools_section_search, Modifier.padding(top = 12.dp)) {
-                        SearchSection(current.search) { tools = current.copy(search = it) }
-                    }
-                    ServiceCard(R.string.tools_section_fetch) {
-                        FetchSection(current.fetch) { tools = current.copy(fetch = it) }
-                    }
-                    ServiceCard(R.string.tools_weather_title) {
-                        WeatherSection(current.weather) { tools = current.copy(weather = it) }
+                val enabled = categoryTools.count { container.tools.permission(it, current) != ToolPermission.OFF }
+                FoldableHeader(
+                    title = stringResource(category.title),
+                    expanded = folds.isOpen(category.name),
+                    onToggle = { folds.toggle(category.name) },
+                    summary = stringResource(R.string.tools_category_enabled, enabled, categoryTools.size),
+                )
+                AnimatedVisibility(
+                    visible = folds.isOpen(category.name),
+                    enter = expandVertically(LayoutMotion.settle()) + fadeIn(),
+                    exit = shrinkVertically(LayoutMotion.settle()) + fadeOut(),
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)) {
+                        categoryTools.forEachIndexed { index, tool ->
+                            val name = tool.spec.name
+                            ToolPermissionRow(
+                                info = ToolCatalog.of(tool),
+                                permission = container.tools.permission(tool, current),
+                                shape = ListItemDefaults.segmentedShapes(index, categoryTools.size).shape,
+                                onChange = { tools = current.withPermission(name, it) },
+                            )
+                        }
+                        if (category == ToolCategory.WEB) {
+                            ServiceCard(R.string.tools_section_search, Modifier.padding(top = 12.dp)) {
+                                SearchSection(current.search) { tools = current.copy(search = it) }
+                            }
+                            ServiceCard(R.string.tools_section_fetch) {
+                                FetchSection(current.fetch) { tools = current.copy(fetch = it) }
+                            }
+                            ServiceCard(R.string.tools_weather_title) {
+                                WeatherSection(current.weather) { tools = current.copy(weather = it) }
+                            }
+                        }
                     }
                 }
             }

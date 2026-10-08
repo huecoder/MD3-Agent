@@ -494,4 +494,12 @@
         <item quantity="one">Delete %d chat?</item>
         <item quantity="other">Delete %d chats?</item>
     </plurals>
+    <string name="common_expanded">Expanded</string>
+    <string name="common_collapsed">Collapsed</string>
+    <string name="access_group_ready">%1$d of %2$d ready</string>
+    <string name="access_group_essentials">Basics</string>
+    <string name="access_group_storage">Storage</string>
+    <string name="access_group_elevated">Elevated access</string>
+    <string name="access_section_backends">Access mode</string>
+    <string name="tools_category_enabled">%1$d of %2$d on</string>
 </resources>

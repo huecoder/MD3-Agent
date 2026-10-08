@@ -68,7 +68,9 @@ import dev.huecoder.md3agent.data.settings.FileScope
 import dev.huecoder.md3agent.data.settings.ShellMode
 import dev.huecoder.md3agent.system.shell.AccessStatus
 import dev.huecoder.md3agent.system.shell.TermuxShell
+import dev.huecoder.md3agent.ui.components.FoldableHeader
 import dev.huecoder.md3agent.ui.components.SectionHeader
+import dev.huecoder.md3agent.ui.components.rememberSectionFolds
 import dev.huecoder.md3agent.ui.components.SettingsScaffold
 import dev.huecoder.md3agent.ui.components.ShapeBadge
 import dev.huecoder.md3agent.ui.components.appViewModel
@@ -125,6 +127,8 @@ fun DeviceAccessScreen(onBack: () -> Unit) {
         }
     }
 
+    val folds = rememberSectionFolds(PermissionGroup.ESSENTIALS.name)
+
     SettingsScaffold(stringResource(R.string.settings_access), onBack) { padding ->
         val shell = shellMode ?: return@SettingsScaffold
         val files = fileScope ?: return@SettingsScaffold
@@ -135,42 +139,86 @@ fun DeviceAccessScreen(onBack: () -> Unit) {
         ) {
             item { SectionHeader(stringResource(R.string.access_section_permissions)) }
             item { SectionHint(R.string.access_permissions_hint) }
-            itemsIndexed(DevicePermission.entries, key = { _, it -> "permission-${it.name}" }) { index, permission ->
-                val status = statusOf(permission)
-                PermissionItem(
-                    permission = permission,
-                    status = status,
-                    action = actionFor(permission, status),
-                    isBusy = permission == DevicePermission.ROOT && checkingRoot,
-                    shapes = ListItemDefaults.segmentedShapes(index, DevicePermission.entries.size),
+            PermissionGroup.entries.forEach { group ->
+                val open = folds.isOpen(group.name)
+                item(key = "group-${group.name}") {
+                    FoldableHeader(
+                        title = stringResource(group.title),
+                        expanded = open,
+                        onToggle = { folds.toggle(group.name) },
+                        summary = stringResource(R.string.access_group_ready, group.permissions.count { statusOf(it) == AccessStatus.READY }, group.permissions.size),
+                        modifier = Modifier.animateItem(),
+                    )
+                }
+                if (open) {
+                    itemsIndexed(group.permissions, key = { _, it -> "permission-${it.name}" }) { index, permission ->
+                        val status = statusOf(permission)
+                        PermissionItem(
+                            permission = permission,
+                            status = status,
+                            action = actionFor(permission, status),
+                            isBusy = permission == DevicePermission.ROOT && checkingRoot,
+                            shapes = ListItemDefaults.segmentedShapes(index, group.permissions.size),
+                            modifier = Modifier.animateItem(),
+                        )
+                    }
+                }
+            }
+
+            item { SectionHeader(stringResource(R.string.access_section_backends)) }
+            item(key = "fold-shell") {
+                FoldableHeader(
+                    title = stringResource(R.string.access_section_shell),
+                    expanded = folds.isOpen(FOLD_SHELL),
+                    onToggle = { folds.toggle(FOLD_SHELL) },
+                    summary = stringResource(shell.title),
+                    modifier = Modifier.animateItem(),
                 )
             }
-
-            item { SectionHeader(stringResource(R.string.access_section_shell)) }
-            item { SectionHint(R.string.access_shell_hint) }
-            optionItems("shell", ShellMode.entries, shell, { statusOf(it.requiredPermission()) }, viewModel::selectShell) { it.presentation }
-            if (shell == ShellMode.TERMUX && statusOf(DevicePermission.TERMUX) == AccessStatus.READY) {
-                item { TermuxNote(Modifier.padding(top = 12.dp)) }
+            if (folds.isOpen(FOLD_SHELL)) {
+                item(key = "hint-shell") { SectionHint(R.string.access_shell_hint, Modifier.animateItem()) }
+                optionItems("shell", ShellMode.entries, shell, { statusOf(it.requiredPermission()) }, viewModel::selectShell) { it.presentation }
+                if (shell == ShellMode.TERMUX && statusOf(DevicePermission.TERMUX) == AccessStatus.READY) {
+                    item(key = "termux-note") { TermuxNote(Modifier.padding(top = 12.dp).animateItem()) }
+                }
             }
-
-            item { SectionHeader(stringResource(R.string.access_section_files)) }
-            item { SectionHint(R.string.access_files_hint) }
-            optionItems("files", FileScope.entries, files, { statusOf(it.requiredPermission()) }, viewModel::selectFiles) { it.presentation }
+            item(key = "fold-files") {
+                FoldableHeader(
+                    title = stringResource(R.string.access_section_files),
+                    expanded = folds.isOpen(FOLD_FILES),
+                    onToggle = { folds.toggle(FOLD_FILES) },
+                    summary = stringResource(files.title),
+                    modifier = Modifier.animateItem(),
+                )
+            }
+            if (folds.isOpen(FOLD_FILES)) {
+                item(key = "hint-files") { SectionHint(R.string.access_files_hint, Modifier.animateItem()) }
+                optionItems("files", FileScope.entries, files, { statusOf(it.requiredPermission()) }, viewModel::selectFiles) { it.presentation }
+            }
         }
     }
 }
+
+private enum class PermissionGroup(@StringRes val title: Int, val permissions: List<DevicePermission>) {
+    ESSENTIALS(R.string.access_group_essentials, listOf(DevicePermission.ASSISTANT, DevicePermission.MICROPHONE, DevicePermission.NOTIFICATIONS)),
+    STORAGE(R.string.access_group_storage, listOf(DevicePermission.ALL_FILES)),
+    ELEVATED(R.string.access_group_elevated, listOf(DevicePermission.TERMUX, DevicePermission.SHIZUKU, DevicePermission.ROOT)),
+}
+
+private const val FOLD_SHELL = "shell"
+private const val FOLD_FILES = "files"
 
 private data class PermissionAction(@StringRes val label: Int, val onClick: () -> Unit)
 
 private data class Presentation(@StringRes val title: Int, @StringRes val summary: Int, val icon: ImageVector)
 
 @Composable
-private fun SectionHint(@StringRes text: Int) {
+private fun SectionHint(@StringRes text: Int, modifier: Modifier = Modifier) {
     Text(
         stringResource(text),
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
+        modifier = modifier.padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
     )
 }
 
@@ -181,6 +229,7 @@ private fun PermissionItem(
     action: PermissionAction?,
     isBusy: Boolean,
     shapes: ListItemShapes,
+    modifier: Modifier = Modifier,
 ) {
     val presentation = permission.presentation
     SegmentedListItem(
@@ -188,6 +237,7 @@ private fun PermissionItem(
         enabled = status == AccessStatus.READY || action != null,
         shapes = shapes,
         colors = groupedListColors(),
+        modifier = modifier,
         leadingContent = { ShapeBadge(presentation.icon) },
         supportingContent = {
             Column {
@@ -228,6 +278,7 @@ private fun <T> LazyListScope.optionItems(
             onClick = { onSelect(option) },
             shapes = ListItemDefaults.segmentedShapes(index, options.size),
             colors = groupedListColors(),
+            modifier = Modifier.animateItem(),
             leadingContent = { ShapeBadge(presentation.icon) },
             supportingContent = {
                 Column {
