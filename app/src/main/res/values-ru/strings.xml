@@ -317,4 +317,7 @@
     <string name="tools_run_python_summary">Запускает скрипты на Python для расчётов и работы с данными</string>
     <string name="chat_tool_running_python">Выполняю Python</string>
     <string name="chat_tool_python">Скрипт на Python</string>
+    <string name="tools_show_chart_title">Графики</string>
+    <string name="tools_show_chart_summary">Рисует линейные, столбчатые и круговые графики в чате</string>
+    <string name="chat_tool_chart">График %1$s</string>
 </resources>

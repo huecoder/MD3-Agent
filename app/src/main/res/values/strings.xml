@@ -321,4 +321,7 @@
     <string name="tools_run_python_summary">Runs Python scripts for calculations and data work</string>
     <string name="chat_tool_running_python">Running Python</string>
     <string name="chat_tool_python">Python script</string>
+    <string name="tools_show_chart_title">Charts</string>
+    <string name="tools_show_chart_summary">Draws line, bar and pie charts in the chat</string>
+    <string name="chat_tool_chart">Chart %1$s</string>
 </resources>

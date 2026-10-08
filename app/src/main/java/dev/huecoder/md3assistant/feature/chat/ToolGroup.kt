@@ -29,6 +29,7 @@ import dev.huecoder.md3assistant.tools.files.SendFilesTool
 import dev.huecoder.md3assistant.tools.files.WriteFileTool
 import dev.huecoder.md3assistant.tools.optionalArray
 import dev.huecoder.md3assistant.tools.optionalString
+import dev.huecoder.md3assistant.tools.ShowChartTool
 import dev.huecoder.md3assistant.tools.system.RunCommandTool
 import dev.huecoder.md3assistant.tools.system.RunPythonTool
 import dev.huecoder.md3assistant.tools.weather.WeatherTool
@@ -168,6 +169,7 @@ private data class ToolLook(val icon: ImageVector, val title: UiText) {
                     if (running) R.string.chat_tool_running_command else R.string.chat_tool_command,
                     listOf(args.optionalString("command")?.lineSequence()?.first()?.take(COMMAND_PREVIEW_CHARS).orEmpty()),
                 )
+                ShowChartTool.NAME -> UiText.Resource(R.string.chat_tool_chart, listOf(args.optionalString("title").orEmpty()))
                 RunPythonTool.NAME -> UiText.Resource(if (running) R.string.chat_tool_running_python else R.string.chat_tool_python)
                 ListFilesTool.NAME -> UiText.Resource(R.string.chat_tool_list_files, listOf(fileName(args.optionalString("path"))))
                 ReadFileTool.NAME -> UiText.Resource(

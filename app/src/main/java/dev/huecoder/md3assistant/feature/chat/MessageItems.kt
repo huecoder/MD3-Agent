@@ -95,6 +95,7 @@ fun AssistantReply(
                         }
                     }
                     is ReplyPart.Media -> MediaGallery(part.attachments)
+            is ReplyPart.Chart -> ChartCard(part.spec)
                     is ReplyPart.Error -> ErrorNotice(part.text.asString())
                 }
             }

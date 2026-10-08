@@ -17,6 +17,7 @@ import dev.huecoder.md3assistant.net.HttpClientProvider
 import dev.huecoder.md3assistant.prompt.DeviceInfoProvider
 import dev.huecoder.md3assistant.prompt.SystemPromptRenderer
 import dev.huecoder.md3assistant.tools.ReadScreenTool
+import dev.huecoder.md3assistant.tools.ShowChartTool
 import dev.huecoder.md3assistant.tools.ShowUiTool
 import dev.huecoder.md3assistant.tools.system.RunCommandTool
 import dev.huecoder.md3assistant.tools.system.RunPythonTool
@@ -78,6 +79,7 @@ class AppContainer(context: Context) {
             WeatherTool(httpClients),
             ReadScreenTool(screenContext),
             ShowUiTool(),
+            ShowChartTool(),
             RunCommandTool(shellAccess),
             RunPythonTool(python, shellAccess.workspace),
             ListFilesTool(deviceFiles),

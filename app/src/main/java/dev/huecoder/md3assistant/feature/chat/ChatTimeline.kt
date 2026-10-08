@@ -9,7 +9,9 @@ import dev.huecoder.md3assistant.data.db.MessageRole
 import dev.huecoder.md3assistant.data.db.MessageStatus
 import dev.huecoder.md3assistant.llm.TokenUsage
 import dev.huecoder.md3assistant.llm.ToolCall
+import dev.huecoder.md3assistant.tools.ChartSpec
 import dev.huecoder.md3assistant.tools.ReplyUi
+import dev.huecoder.md3assistant.tools.ShowChartTool
 import dev.huecoder.md3assistant.tools.ShowUiTool
 import dev.huecoder.md3assistant.tools.web.ReadWebpageTool
 import dev.huecoder.md3assistant.tools.web.SearchResults
@@ -60,6 +62,8 @@ sealed interface ReplyPart {
     data class Tools(val calls: List<ToolCallUi>) : ReplyPart
 
     data class Media(val attachments: List<Attachment>) : ReplyPart
+
+    data class Chart(val spec: ChartSpec) : ReplyPart
 
     data class Error(val text: UiText) : ReplyPart
 }
@@ -131,6 +135,9 @@ object ChatTimeline {
                 add(ReplyPart.Tools(toolCalls))
                 val sharedWithUser = toolCalls.flatMap { call -> call.attachments.filterNot { it.forModel } }
                 if (sharedWithUser.isNotEmpty()) add(ReplyPart.Media(sharedWithUser))
+                toolCalls.filter { it.name == ShowChartTool.NAME && it.status == ToolStatus.DONE }
+                    .mapNotNull { ChartSpec.parse(it.arguments).getOrNull() }
+                    .forEach { add(ReplyPart.Chart(it)) }
             }
             when {
                 isLive -> Unit

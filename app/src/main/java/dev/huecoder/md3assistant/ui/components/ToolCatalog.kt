@@ -3,6 +3,7 @@ package dev.huecoder.md3assistant.ui.components
 import androidx.annotation.StringRes
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.composables.icons.materialsymbols.MaterialSymbols
+import com.composables.icons.materialsymbols.rounded.Bar_chart
 import com.composables.icons.materialsymbols.rounded.Build
 import com.composables.icons.materialsymbols.rounded.Code
 import com.composables.icons.materialsymbols.rounded.Description
@@ -19,6 +20,7 @@ import com.composables.icons.materialsymbols.rounded.Travel_explore
 import dev.huecoder.md3assistant.R
 import dev.huecoder.md3assistant.mcp.McpTool
 import dev.huecoder.md3assistant.tools.ReadScreenTool
+import dev.huecoder.md3assistant.tools.ShowChartTool
 import dev.huecoder.md3assistant.tools.ShowUiTool
 import dev.huecoder.md3assistant.tools.Tool
 import dev.huecoder.md3assistant.tools.files.ListFilesTool
@@ -50,6 +52,7 @@ object ToolCatalog {
         WeatherTool.NAME to known(ToolCategory.WEB, MaterialSymbols.Rounded.Partly_cloudy_day, R.string.tools_weather_title, R.string.tools_weather_summary),
         ReadScreenTool.NAME to known(ToolCategory.SCREEN, MaterialSymbols.Rounded.Screenshot_monitor, R.string.tools_read_screen_title, R.string.tools_read_screen_summary),
         ShowUiTool.NAME to known(ToolCategory.SCREEN, MaterialSymbols.Rounded.Smart_button, R.string.tools_show_ui_title, R.string.tools_show_ui_summary),
+        ShowChartTool.NAME to known(ToolCategory.SCREEN, MaterialSymbols.Rounded.Bar_chart, R.string.tools_show_chart_title, R.string.tools_show_chart_summary),
         RunCommandTool.NAME to known(ToolCategory.SYSTEM, MaterialSymbols.Rounded.Terminal, R.string.tools_run_command_title, R.string.tools_run_command_summary),
         RunPythonTool.NAME to known(ToolCategory.SYSTEM, MaterialSymbols.Rounded.Code, R.string.tools_run_python_title, R.string.tools_run_python_summary),
         ListFilesTool.NAME to known(ToolCategory.FILES, MaterialSymbols.Rounded.Folder_open, R.string.tools_list_files_title, R.string.tools_list_files_summary),
