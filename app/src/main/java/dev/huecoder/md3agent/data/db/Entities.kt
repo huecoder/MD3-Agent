@@ -91,3 +91,12 @@ data class MemoryEntity(
     val embedding: String? = null,
     val embeddingModel: String? = null,
 )
+
+@Entity(tableName = "reminders", indices = [Index("triggerAt")])
+data class ReminderEntity(
+    @PrimaryKey val id: String,
+    val text: String,
+    val triggerAt: Long,
+    val chatId: String?,
+    val createdAt: Long,
+)

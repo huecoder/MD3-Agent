@@ -38,6 +38,14 @@ import dev.huecoder.md3agent.tools.system.RunCommandTool
 import dev.huecoder.md3agent.tools.system.RunPythonTool
 import dev.huecoder.md3agent.system.shell.ShellAccess
 import dev.huecoder.md3agent.tools.ToolRegistry
+import dev.huecoder.md3agent.data.reminders.ReminderRepository
+import dev.huecoder.md3agent.system.reminders.ClockApp
+import dev.huecoder.md3agent.system.reminders.ReminderAlarms
+import dev.huecoder.md3agent.tools.reminders.CancelReminderTool
+import dev.huecoder.md3agent.tools.reminders.ListRemindersTool
+import dev.huecoder.md3agent.tools.reminders.SetAlarmTool
+import dev.huecoder.md3agent.tools.reminders.SetReminderTool
+import dev.huecoder.md3agent.tools.reminders.SetTimerTool
 import dev.huecoder.md3agent.system.files.DeviceFiles
 import dev.huecoder.md3agent.system.python.PythonRuntime
 import dev.huecoder.md3agent.tools.files.ListFilesTool
@@ -75,6 +83,7 @@ class AppContainer(context: Context) {
     private val database = AppDatabase.build(context)
     val attachments = AttachmentStore(context)
     val chats = ChatRepository(database.chatDao(), database.messageDao(), database.folderDao(), attachments)
+    val reminders = ReminderRepository(database.reminderDao(), ReminderAlarms(appContext))
     val memories = MemoryStore(database.memoryDao(), EmbeddingClient(httpClients), settings.settings.map { it.tools.memory })
 
     val completions = ChatCompletionClient(httpClients)
@@ -90,6 +99,7 @@ class AppContainer(context: Context) {
     val python = PythonRuntime(appContext)
 
     val prompts = UserPrompts()
+    private val clockApp = ClockApp(appContext) { visibility.isVisible.value }
     private val mcpOAuth = McpOAuth(httpClients::current)
     val mcpSignIn = McpSignIn(mcpOAuth, settings)
     val mcp = McpToolbox(httpClients, attachments, prompts, mcpOAuth, ::saveMcpSession, applicationScope)
@@ -113,6 +123,11 @@ class AppContainer(context: Context) {
             ReadFileTool(deviceFiles, attachments),
             WriteFileTool(deviceFiles),
             SendFilesTool(deviceFiles, attachments),
+            SetReminderTool(reminders),
+            ListRemindersTool(reminders),
+            CancelReminderTool(reminders),
+            SetAlarmTool(clockApp),
+            SetTimerTool(clockApp),
         ),
         sources = listOf(mcp),
     )

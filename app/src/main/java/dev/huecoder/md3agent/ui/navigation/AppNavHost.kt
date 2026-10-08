@@ -13,6 +13,7 @@ import dev.huecoder.md3agent.feature.chat.ChatScreen
 import dev.huecoder.md3agent.feature.main.MainScreen
 import dev.huecoder.md3agent.feature.settings.AgentSettingsScreen
 import dev.huecoder.md3agent.feature.settings.ChatSettingsScreen
+import dev.huecoder.md3agent.feature.settings.RemindersScreen
 import dev.huecoder.md3agent.feature.settings.DeviceAccessScreen
 import dev.huecoder.md3agent.feature.settings.MemorySettingsScreen
 import dev.huecoder.md3agent.feature.settings.NetworkSettingsScreen
@@ -49,6 +50,7 @@ fun AppNavHost(chatToOpen: String?, onChatOpened: () -> Unit) {
                     memory = { navController.navigate(MemorySettingsRoute) },
                     network = { navController.navigate(NetworkSettingsRoute) },
                     tools = { navController.navigate(ToolSettingsRoute) },
+                    reminders = { navController.navigate(RemindersRoute) },
                     chat = { navController.navigate(ChatSettingsRoute) },
                     voice = { navController.navigate(VoiceSettingsRoute) },
                     access = { navController.navigate(DeviceAccessRoute) },
@@ -66,6 +68,7 @@ fun AppNavHost(chatToOpen: String?, onChatOpened: () -> Unit) {
         screen<MemorySettingsRoute>(navController) { MemorySettingsScreen(onBack = navController::popBackStack) }
         screen<NetworkSettingsRoute>(navController) { NetworkSettingsScreen(onBack = navController::popBackStack) }
         screen<ToolSettingsRoute>(navController) { ToolSettingsScreen(onBack = navController::popBackStack) }
+        screen<RemindersRoute>(navController) { RemindersScreen(onBack = navController::popBackStack) }
         screen<DeviceAccessRoute>(navController) { DeviceAccessScreen(onBack = navController::popBackStack) }
         screen<ChatSettingsRoute>(navController) { ChatSettingsScreen(onBack = navController::popBackStack) }
         screen<VoiceSettingsRoute>(navController) {

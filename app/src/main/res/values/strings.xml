@@ -50,6 +50,28 @@
     <string name="tools_category_web">Web</string>
     <string name="tools_category_screen">Screen and interface</string>
     <string name="tools_category_files">Files</string>
+    <string name="tools_category_time">Reminders and alarms</string>
+    <string name="tools_set_reminder_title">Set reminder</string>
+    <string name="tools_set_reminder_summary">Sends you a notification at the right moment, tapping it opens the chat</string>
+    <string name="tools_list_reminders_title">List reminders</string>
+    <string name="tools_list_reminders_summary">Sees which reminders are still coming up</string>
+    <string name="tools_cancel_reminder_title">Cancel reminder</string>
+    <string name="tools_cancel_reminder_summary">Removes a reminder that is no longer needed</string>
+    <string name="tools_set_alarm_title">Set alarm</string>
+    <string name="tools_set_alarm_summary">Adds an alarm with sound to the clock app, once or on chosen days</string>
+    <string name="tools_set_timer_title">Start timer</string>
+    <string name="tools_set_timer_summary">Starts a countdown in the clock app</string>
+    <string name="reminder_notification_title">Reminder</string>
+    <string name="settings_reminders">Reminders</string>
+    <string name="settings_reminders_none">None scheduled</string>
+    <plurals name="settings_reminders_upcoming">
+        <item quantity="one">%d upcoming</item>
+        <item quantity="other">%d upcoming</item>
+    </plurals>
+    <string name="reminders_hint">The assistant sets these when you ask it to remind you about something. At the right moment you get a notification, tapping it opens the chat it came from.</string>
+    <string name="reminders_notifications_off">Notifications are off for the app, so reminders will not show up. Allow them in Access and permissions.</string>
+    <string name="reminders_empty">No reminders yet. Try asking the assistant to remind you about something in an hour.</string>
+    <string name="reminders_cancel">Cancel reminder</string>
     <string name="tools_category_system">System</string>
     <string name="tools_category_mcp" translatable="false">MCP</string>
     <string name="tools_category_other">Other</string>

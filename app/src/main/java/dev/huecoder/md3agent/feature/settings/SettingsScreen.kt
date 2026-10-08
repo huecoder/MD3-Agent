@@ -29,6 +29,7 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Neurology
+import com.composables.icons.materialsymbols.rounded.Notifications_active
 import com.composables.icons.materialsymbols.rounded.Add
 import com.composables.icons.materialsymbols.rounded.Chat
 import com.composables.icons.materialsymbols.rounded.Chevron_right
@@ -53,6 +54,7 @@ import dev.huecoder.md3agent.ui.components.SettingsScaffold
 import dev.huecoder.md3agent.ui.components.ShapeBadge
 import dev.huecoder.md3agent.ui.components.appViewModel
 import dev.huecoder.md3agent.ui.components.groupedListColors
+import kotlinx.coroutines.flow.map
 
 @Immutable
 data class SettingsDestinations(
@@ -61,6 +63,7 @@ data class SettingsDestinations(
     val memory: () -> Unit,
     val network: () -> Unit,
     val tools: () -> Unit,
+    val reminders: () -> Unit,
     val chat: () -> Unit,
     val voice: () -> Unit,
     val access: () -> Unit,
@@ -70,7 +73,9 @@ data class SettingsDestinations(
 @Composable
 fun SettingsScreen(destinations: SettingsDestinations) {
     val viewModel = appViewModel { SettingsViewModel(it.settings) }
-    val toolRegistry = (LocalContext.current.applicationContext as App).container.tools
+    val container = (LocalContext.current.applicationContext as App).container
+    val toolRegistry = container.tools
+    val reminderCount by remember(container) { container.reminders.observeAll().map { it.size } }.collectAsStateWithLifecycle(initialValue = 0)
     val settings by viewModel.settings.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var isAssistant by remember { mutableStateOf(AssistantRole.isHeld(context)) }
@@ -110,6 +115,12 @@ fun SettingsScreen(destinations: SettingsDestinations) {
                 title = stringResource(R.string.settings_tools),
                 summary = toolsSummary(current, toolRegistry),
                 onClick = destinations.tools,
+            ),
+            SettingsEntry(
+                icon = MaterialSymbols.Rounded.Notifications_active,
+                title = stringResource(R.string.settings_reminders),
+                summary = remindersSummary(reminderCount),
+                onClick = destinations.reminders,
             ),
             SettingsEntry(
                 icon = MaterialSymbols.Rounded.Shield_person,
@@ -235,6 +246,10 @@ private fun voiceSummary(settings: AppSettings): String {
     )
     return stringResource(R.string.settings_voice_summary, provider, speak)
 }
+
+@Composable
+private fun remindersSummary(count: Int): String =
+    if (count == 0) stringResource(R.string.settings_reminders_none) else pluralStringResource(R.plurals.settings_reminders_upcoming, count, count)
 
 @Composable
 private fun networkSummary(settings: AppSettings): String =

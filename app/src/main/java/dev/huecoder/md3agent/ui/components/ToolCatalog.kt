@@ -22,6 +22,11 @@ import com.composables.icons.materialsymbols.rounded.Screenshot_monitor
 import com.composables.icons.materialsymbols.rounded.Smart_button
 import com.composables.icons.materialsymbols.rounded.Terminal
 import com.composables.icons.materialsymbols.rounded.Travel_explore
+import com.composables.icons.materialsymbols.rounded.Alarm_add
+import com.composables.icons.materialsymbols.rounded.Event_upcoming
+import com.composables.icons.materialsymbols.rounded.Notification_add
+import com.composables.icons.materialsymbols.rounded.Notifications_off
+import com.composables.icons.materialsymbols.rounded.Timer
 import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.mcp.McpTool
 import dev.huecoder.md3agent.tools.AskUserTool
@@ -37,6 +42,11 @@ import dev.huecoder.md3agent.tools.memory.MemoryDeleteTool
 import dev.huecoder.md3agent.tools.memory.MemorySaveTool
 import dev.huecoder.md3agent.tools.memory.MemorySearchTool
 import dev.huecoder.md3agent.tools.memory.MemoryUpdateTool
+import dev.huecoder.md3agent.tools.reminders.CancelReminderTool
+import dev.huecoder.md3agent.tools.reminders.ListRemindersTool
+import dev.huecoder.md3agent.tools.reminders.SetAlarmTool
+import dev.huecoder.md3agent.tools.reminders.SetReminderTool
+import dev.huecoder.md3agent.tools.reminders.SetTimerTool
 import dev.huecoder.md3agent.tools.system.RunCommandTool
 import dev.huecoder.md3agent.tools.system.RunPythonTool
 import dev.huecoder.md3agent.tools.weather.WeatherTool
@@ -50,6 +60,7 @@ enum class ToolCategory(@StringRes val title: Int) {
     WEB(R.string.tools_category_web),
     SCREEN(R.string.tools_category_screen),
     FILES(R.string.tools_category_files),
+    TIME(R.string.tools_category_time),
     SYSTEM(R.string.tools_category_system),
     MCP(R.string.tools_category_mcp),
     OTHER(R.string.tools_category_other),
@@ -76,6 +87,11 @@ object ToolCatalog {
         ReadFileTool.NAME to known(ToolCategory.FILES, MaterialSymbols.Rounded.Description, R.string.tools_read_file_title, R.string.tools_read_file_summary),
         WriteFileTool.NAME to known(ToolCategory.FILES, MaterialSymbols.Rounded.Edit_document, R.string.tools_write_file_title, R.string.tools_write_file_summary),
         SendFilesTool.NAME to known(ToolCategory.FILES, MaterialSymbols.Rounded.Perm_media, R.string.tools_send_files_title, R.string.tools_send_files_summary),
+        SetReminderTool.NAME to known(ToolCategory.TIME, MaterialSymbols.Rounded.Notification_add, R.string.tools_set_reminder_title, R.string.tools_set_reminder_summary),
+        ListRemindersTool.NAME to known(ToolCategory.TIME, MaterialSymbols.Rounded.Event_upcoming, R.string.tools_list_reminders_title, R.string.tools_list_reminders_summary),
+        CancelReminderTool.NAME to known(ToolCategory.TIME, MaterialSymbols.Rounded.Notifications_off, R.string.tools_cancel_reminder_title, R.string.tools_cancel_reminder_summary),
+        SetAlarmTool.NAME to known(ToolCategory.TIME, MaterialSymbols.Rounded.Alarm_add, R.string.tools_set_alarm_title, R.string.tools_set_alarm_summary),
+        SetTimerTool.NAME to known(ToolCategory.TIME, MaterialSymbols.Rounded.Timer, R.string.tools_set_timer_title, R.string.tools_set_timer_summary),
     )
 
     fun of(toolName: String): ToolInfo = known[toolName] ?: when {

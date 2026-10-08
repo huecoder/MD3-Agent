@@ -123,3 +123,21 @@ interface MemoryDao {
     @Query("DELETE FROM memories WHERE id = :id")
     suspend fun delete(id: String): Int
 }
+
+@Dao
+interface ReminderDao {
+    @Query("SELECT * FROM reminders ORDER BY triggerAt ASC")
+    fun observeAll(): Flow<List<ReminderEntity>>
+
+    @Query("SELECT * FROM reminders ORDER BY triggerAt ASC")
+    suspend fun listAll(): List<ReminderEntity>
+
+    @Query("SELECT * FROM reminders WHERE id = :id")
+    suspend fun get(id: String): ReminderEntity?
+
+    @Insert
+    suspend fun insert(reminder: ReminderEntity)
+
+    @Query("DELETE FROM reminders WHERE id = :id")
+    suspend fun delete(id: String): Int
+}

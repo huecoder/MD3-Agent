@@ -24,6 +24,9 @@ data object MemorySettingsRoute
 data object ToolSettingsRoute
 
 @Serializable
+data object RemindersRoute
+
+@Serializable
 data object ChatSettingsRoute
 
 @Serializable
