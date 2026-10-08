@@ -21,8 +21,8 @@ android {
         applicationId = "dev.huecoder.md3assistant"
         minSdk = 29
         targetSdk = 36
-        versionCode = 5
-        versionName = "0.5.0"
+        versionCode = 6
+        versionName = "0.6.0"
 
         ndk { abiFilters += "arm64-v8a" }
     }
