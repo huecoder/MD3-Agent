@@ -24,12 +24,14 @@ fun BotAvatar(
     modifier: Modifier = Modifier,
     bodyColor: Color = MaterialTheme.colorScheme.primary,
     eyeColor: Color = MaterialTheme.colorScheme.onPrimary,
+    pokes: Int = 0,
 ) {
     val shapes = remember(restShape) { BotShapes.of(restShape) }
     val motion = remember(shapes) { BotMotion(shapes, startWorking = isWorking) }
 
     LaunchedEffect(motion, isWorking) { if (isWorking) motion.work() else motion.rest() }
     LaunchedEffect(motion) { motion.blinkForever() }
+    LaunchedEffect(motion, pokes) { if (pokes > 0) motion.poke() }
 
     Canvas(modifier.size(size)) {
         val side = this.size.minDimension

@@ -11,9 +11,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
 import androidx.graphics.shapes.Morph
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.math.roundToInt
 import kotlin.random.Random
 
@@ -31,6 +33,7 @@ class BotMotion(private val shapes: BotShapes, startWorking: Boolean) {
     val rotation = Animatable(0f)
     val gaze = Animatable(Offset.Zero, Offset.VectorConverter)
     val blink = Animatable(0f)
+    private val pokes = Channel<Unit>(Channel.CONFLATED)
 
     val wobble: Float
         get() = (gaze.velocity.getDistance() / WOBBLE_SPEED).coerceIn(0f, 1f)
@@ -75,15 +78,35 @@ class BotMotion(private val shapes: BotShapes, startWorking: Boolean) {
         progress.snapTo(0f)
     }
 
+    fun poke() {
+        pokes.trySend(Unit)
+    }
+
     suspend fun blinkForever() {
         while (true) {
-            delay(Random.nextLong(BLINK_MIN_GAP_MS, BLINK_MAX_GAP_MS))
+            val poked = withTimeoutOrNull(Random.nextLong(BLINK_MIN_GAP_MS, BLINK_MAX_GAP_MS)) { pokes.receive() } != null
+            if (poked) {
+                reactToPoke()
+                continue
+            }
             blinkOnce()
             if (Random.nextFloat() < DOUBLE_BLINK_CHANCE) {
                 delay(DOUBLE_BLINK_GAP_MS)
                 blinkOnce()
             }
         }
+    }
+
+    private suspend fun reactToPoke() = coroutineScope {
+        if (phase == Phase.RESTING) launch { glanceAway() }
+        blinkOnce()
+    }
+
+    private suspend fun glanceAway() {
+        val side = if (Random.nextBoolean()) 1f else -1f
+        gaze.animateTo(Offset(side * POKE_GLANCE_X, -POKE_GLANCE_Y), SACCADE_SPEC)
+        delay(POKE_HOLD_MS)
+        gaze.animateTo(Offset.Zero, GAZE_HOME_SPEC)
     }
 
     private suspend fun blinkOnce() {
@@ -125,6 +148,9 @@ class BotMotion(private val shapes: BotShapes, startWorking: Boolean) {
         const val BLINK_OPEN_MS = 120
         const val DOUBLE_BLINK_CHANCE = 0.2f
         const val DOUBLE_BLINK_GAP_MS = 140L
+        const val POKE_GLANCE_X = 0.7f
+        const val POKE_GLANCE_Y = 0.35f
+        const val POKE_HOLD_MS = 650L
         val MORPH_SPEC = spring<Float>(dampingRatio = 0.6f, stiffness = 260f)
         val TURN_SPEC = spring<Float>(dampingRatio = 0.7f, stiffness = 120f)
         val FINISH_SPEC = spring<Float>(stiffness = Spring.StiffnessMedium)

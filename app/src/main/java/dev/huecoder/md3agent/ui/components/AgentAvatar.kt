@@ -1,6 +1,14 @@
 package dev.huecoder.md3agent.ui.components
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.clickable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.graphicsLayer
+import dev.huecoder.md3agent.ui.haptics.rememberHaptics
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -28,11 +36,29 @@ import dev.huecoder.md3agent.ui.avatar.BotAvatar
 import dev.huecoder.md3agent.ui.avatar.LocalAgentLook
 
 @Composable
-fun AgentAvatar(isWorking: Boolean, modifier: Modifier = Modifier, size: Dp = 32.dp) {
+fun AgentAvatar(isWorking: Boolean, modifier: Modifier = Modifier, size: Dp = 32.dp, interactive: Boolean = false) {
     val look = LocalAgentLook.current
+    val haptics = rememberHaptics()
+    var pokes by remember { mutableIntStateOf(0) }
+    val squish = remember { Animatable(1f) }
+    LaunchedEffect(pokes) {
+        if (pokes == 0) return@LaunchedEffect
+        squish.animateTo(SQUISH_SCALE, tween(SQUISH_MS))
+        squish.animateTo(1f, SQUISH_RELEASE)
+    }
+    val touch = if (interactive) {
+        Modifier
+            .graphicsLayer { scaleX = squish.value; scaleY = squish.value }
+            .clickable(interactionSource = null, indication = null) {
+                pokes++
+                haptics.tap()
+            }
+    } else {
+        Modifier
+    }
     when (look.style) {
-        AvatarStyle.BOT -> BotAvatar(isWorking, look.restShape, size, modifier)
-        AvatarStyle.CLASSIC -> ClassicAvatar(isWorking, modifier, size)
+        AvatarStyle.BOT -> BotAvatar(isWorking, look.restShape, size, modifier.then(touch), pokes = pokes)
+        AvatarStyle.CLASSIC -> ClassicAvatar(isWorking, modifier.then(touch), size)
     }
 }
 
@@ -70,6 +96,9 @@ fun ClassicAvatar(isWorking: Boolean, modifier: Modifier = Modifier, size: Dp = 
     }
 }
 
+private const val SQUISH_SCALE = 0.88f
+private const val SQUISH_MS = 70
+private val SQUISH_RELEASE = spring<Float>(dampingRatio = 0.35f, stiffness = 500f)
 private const val BREATH_MS = 900
 private const val SPIN_MS = 6_000
 private const val FULL_TURN = 360f
