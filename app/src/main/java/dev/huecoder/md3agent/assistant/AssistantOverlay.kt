@@ -104,6 +104,7 @@ fun AssistantOverlay(activation: Int, onDismiss: () -> Unit, onOpenInApp: (chatI
                     MessageList(
                         messages = state.messages,
                         showUsage = state.showTokenUsage,
+                        typing = state.typing,
                         speakingId = speakingId,
                         onRegenerate = viewModel::regenerate,
                         onToggleSpeech = viewModel::toggleSpeech,

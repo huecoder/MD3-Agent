@@ -25,6 +25,7 @@ import dev.huecoder.md3agent.data.settings.ModelSelection
 import dev.huecoder.md3agent.llm.models.ModelFamily
 import dev.huecoder.md3agent.data.settings.SettingsRepository
 import dev.huecoder.md3agent.data.settings.SpeakReplies
+import dev.huecoder.md3agent.data.settings.TypingStyle
 import dev.huecoder.md3agent.data.settings.VoiceSettings
 import dev.huecoder.md3agent.ui.text.UiText
 import dev.huecoder.md3agent.voice.ReplySpeaker
@@ -56,6 +57,7 @@ data class ChatUiState(
     val modelName: String? = null,
     val messages: List<ChatItem> = emptyList(),
     val showTokenUsage: Boolean = false,
+    val typing: TypingStyle = TypingStyle(),
     val isStreaming: Boolean = false,
     val pendingAttachments: List<Attachment> = emptyList(),
     val isImporting: Boolean = false,
@@ -102,12 +104,12 @@ class ChatViewModel(
         .flatMapLatest { id ->
             if (id == null) {
                 combine(appSettings, pendingSelection) { current, chosen ->
-                    ChatUiState(agentName = current.agent.name, showTokenUsage = current.chat.showTokenUsage).withSelection(chosen ?: current.activeSelection)
+                    ChatUiState(agentName = current.agent.name, showTokenUsage = current.chat.showTokenUsage, typing = current.chat.typing).withSelection(chosen ?: current.activeSelection)
                 }
             } else {
                 combine(chats.observeChat(id), chats.observeMessages(id), runner.drafts, appSettings) { chat, messages, drafts, current ->
                     buildState(id, chat, messages, drafts[id])
-                        .copy(agentName = current.agent.name, showTokenUsage = current.chat.showTokenUsage)
+                        .copy(agentName = current.agent.name, showTokenUsage = current.chat.showTokenUsage, typing = current.chat.typing)
                         .withSelection(chat?.selection ?: current.activeSelection)
                 }
             }

@@ -32,9 +32,9 @@ import com.composables.icons.materialsymbols.rounded.Refresh
 import com.composables.icons.materialsymbols.rounded.Stop_circle
 import com.composables.icons.materialsymbols.rounded.Volume_up
 import dev.huecoder.md3agent.R
+import dev.huecoder.md3agent.data.settings.TypingStyle
 import dev.huecoder.md3agent.conversation.ApprovalDecision
 import dev.huecoder.md3agent.ui.components.AgentAvatar
-import dev.huecoder.md3agent.ui.components.MarkdownContent
 import dev.huecoder.md3agent.ui.components.ShimmerText
 import dev.huecoder.md3agent.ui.components.copyText
 import dev.huecoder.md3agent.ui.text.asString
@@ -74,6 +74,7 @@ fun UserMessage(message: ChatItem.User, modifier: Modifier = Modifier) {
 fun AssistantReply(
     reply: ChatItem.Reply,
     showUsage: Boolean,
+    typing: TypingStyle,
     isSpeaking: Boolean,
     onRegenerate: () -> Unit,
     onToggleSpeech: () -> Unit,
@@ -87,7 +88,7 @@ fun AssistantReply(
             key(index) {
                 when (part) {
                     is ReplyPart.Reasoning -> ReasoningBlock(part.text, part.isStreaming)
-                    is ReplyPart.Text -> SelectionContainer { MarkdownContent(part.content) }
+                    is ReplyPart.Text -> SelectionContainer { ReplyText(part.content, part.isStreaming, typing) }
                     is ReplyPart.Tools -> {
                         ToolGroup(part.calls)
                         part.calls.firstOrNull { it.status == ToolStatus.AWAITING_APPROVAL }?.let { call ->
@@ -95,7 +96,7 @@ fun AssistantReply(
                         }
                     }
                     is ReplyPart.Media -> MediaGallery(part.attachments)
-            is ReplyPart.Chart -> ChartCard(part.spec)
+                    is ReplyPart.Chart -> ChartCard(part.spec)
                     is ReplyPart.Error -> ErrorNotice(part.text.asString())
                 }
             }

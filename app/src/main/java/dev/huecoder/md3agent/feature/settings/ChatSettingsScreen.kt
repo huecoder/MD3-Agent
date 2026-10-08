@@ -36,6 +36,8 @@ fun ChatSettingsScreen(onBack: () -> Unit) {
                 checked = chat.showTokenUsage,
                 onCheckedChange = { value -> viewModel.updateChat { it.copy(showTokenUsage = value) } },
             )
+            SectionHeader(stringResource(R.string.chat_settings_section_typing))
+            TypingSettingsCard(chat.typing, onChange = { style -> viewModel.updateChat { it.copy(typing = style) } })
         }
     }
 }

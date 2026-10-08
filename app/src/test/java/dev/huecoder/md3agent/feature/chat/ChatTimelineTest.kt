@@ -80,7 +80,7 @@ class ChatTimelineTest {
         val reply = ChatTimeline.build(messages, draft = null)[1] as ChatItem.Reply
 
         assertEquals(listOf("s1", "r1"), (reply.parts[0] as ReplyPart.Tools).calls.map { it.id })
-        assertEquals(ReplyPart.Text("Готово"), reply.parts[1])
+        assertEquals(ReplyPart.Text("Готово", isStreaming = false), reply.parts[1])
     }
 
     @Test

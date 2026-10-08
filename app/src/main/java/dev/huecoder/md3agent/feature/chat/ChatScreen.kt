@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.huecoder.md3agent.R
+import dev.huecoder.md3agent.data.settings.TypingStyle
 import dev.huecoder.md3agent.conversation.ApprovalDecision
 import dev.huecoder.md3agent.feature.chat.lightbox.LightboxHost
 import dev.huecoder.md3agent.ui.components.AgentAvatar
@@ -107,6 +108,7 @@ fun ChatScreen(chatId: String?, onBack: () -> Unit) {
                     MessageList(
                         messages = state.messages,
                         showUsage = state.showTokenUsage,
+                        typing = state.typing,
                         speakingId = speakingId,
                         onRegenerate = viewModel::regenerate,
                         onToggleSpeech = viewModel::toggleSpeech,
@@ -193,6 +195,7 @@ private fun ModelChip(state: ChatUiState, onClick: () -> Unit) {
 fun MessageList(
     messages: List<ChatItem>,
     showUsage: Boolean,
+    typing: TypingStyle,
     speakingId: String?,
     onRegenerate: (ChatItem.Reply) -> Unit,
     onToggleSpeech: (ChatItem.Reply) -> Unit,
@@ -213,6 +216,7 @@ fun MessageList(
                 is ChatItem.Reply -> AssistantReply(
                     item,
                     showUsage = showUsage,
+                    typing = typing,
                     isSpeaking = item.id == speakingId,
                     onRegenerate = { onRegenerate(item) },
                     onToggleSpeech = { onToggleSpeech(item) },
