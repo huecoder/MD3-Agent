@@ -148,6 +148,21 @@ class ChatViewModel(
         }
     }
 
+    fun draft(): String = chats.draft(chatId.value)
+
+    fun saveDraft(text: String) = chats.saveDraft(chatId.value, text)
+
+    fun rename(title: String) {
+        val id = chatId.value ?: return
+        viewModelScope.launch { chats.renameByUser(id, title) }
+    }
+
+    fun delete() {
+        val id = chatId.value ?: return
+        runner.cancel(id)
+        appScope.launch { chats.delete(id) }
+    }
+
     fun selectModel(selection: ModelSelection) {
         val id = chatId.value
         if (id == null) pendingSelection.value = selection

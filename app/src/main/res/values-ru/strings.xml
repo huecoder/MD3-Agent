@@ -384,6 +384,7 @@
     <string name="reasoning_high">Высокая</string>
     <string name="reasoning_xhigh">Макс</string>
     <string name="chat_change_model">Сменить модель</string>
+    <string name="chat_more_options">Ещё</string>
     <plurals name="model_picker_count">
         <item quantity="one">%1$d модель</item>
         <item quantity="few">%1$d модели</item>

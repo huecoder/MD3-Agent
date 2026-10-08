@@ -20,6 +20,7 @@ class ChatRepository(
     private val messageDao: MessageDao,
     private val folderDao: FolderDao,
     private val attachments: AttachmentStore,
+    private val drafts: ChatDrafts,
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
     fun observeSummaries(): Flow<List<ChatSummary>> = chatDao.observeSummaries()
@@ -100,8 +101,13 @@ class ChatRepository(
     suspend fun delete(chatId: String) {
         val attached = messageDao.listForChat(chatId).flatMap { Attachment.decode(it.attachmentsJson) }
         chatDao.delete(chatId)
+        drafts.forget(chatId)
         attachments.delete(attached)
     }
+
+    fun draft(chatId: String?): String = drafts.read(chatId)
+
+    fun saveDraft(chatId: String?, text: String) = drafts.write(chatId, text)
 
     suspend fun recoverInterruptedStreams() = messageDao.markInterruptedStreams()
 

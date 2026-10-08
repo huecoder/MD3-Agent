@@ -11,6 +11,7 @@ import dev.huecoder.md3agent.tools.AskUserTool
 import dev.huecoder.md3agent.data.models.ModelCatalog
 import dev.huecoder.md3agent.conversation.ToolApprovals
 import dev.huecoder.md3agent.data.attachments.AttachmentStore
+import dev.huecoder.md3agent.data.chat.ChatDrafts
 import dev.huecoder.md3agent.data.chat.ChatRepository
 import dev.huecoder.md3agent.data.db.AppDatabase
 import dev.huecoder.md3agent.data.memory.MemoryStore
@@ -82,7 +83,7 @@ class AppContainer(context: Context) {
 
     private val database = AppDatabase.build(context)
     val attachments = AttachmentStore(context)
-    val chats = ChatRepository(database.chatDao(), database.messageDao(), database.folderDao(), attachments)
+    val chats = ChatRepository(database.chatDao(), database.messageDao(), database.folderDao(), attachments, ChatDrafts(appContext))
     val reminders = ReminderRepository(database.reminderDao(), ReminderAlarms(appContext))
     val memories = MemoryStore(database.memoryDao(), EmbeddingClient(httpClients), settings.settings.map { it.tools.memory })
 

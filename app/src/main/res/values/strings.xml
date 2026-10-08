@@ -386,6 +386,7 @@
     <string name="reasoning_high">High</string>
     <string name="reasoning_xhigh">Max</string>
     <string name="chat_change_model">Change model</string>
+    <string name="chat_more_options">More options</string>
     <plurals name="model_picker_count">
         <item quantity="one">%1$d model</item>
         <item quantity="other">%1$d models</item>

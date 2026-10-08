@@ -4,17 +4,8 @@ import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Surface
-import com.composables.icons.materialsymbols.MaterialSymbols
-import com.composables.icons.materialsymbols.rounded.Arrow_drop_down
 import dev.huecoder.md3agent.feature.models.ModelPickerSheet
-import dev.huecoder.md3agent.feature.models.label
-import dev.huecoder.md3agent.ui.components.VendorGlyph
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -29,7 +20,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -42,7 +32,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -51,7 +40,6 @@ import dev.huecoder.md3agent.data.settings.TypingStyle
 import dev.huecoder.md3agent.conversation.ApprovalDecision
 import dev.huecoder.md3agent.feature.chat.lightbox.LightboxHost
 import dev.huecoder.md3agent.ui.components.AgentAvatar
-import dev.huecoder.md3agent.ui.components.BackButton
 import dev.huecoder.md3agent.ui.components.appViewModel
 import dev.huecoder.md3agent.ui.text.UiText
 import dev.huecoder.md3agent.ui.text.asString
@@ -67,7 +55,11 @@ fun ChatScreen(chatId: String?, onBack: () -> Unit) {
     val prompt by viewModel.pendingPrompt.collectAsStateWithLifecycle()
     val snackbarHost = remember { SnackbarHostState() }
     val context = LocalContext.current
-    var input by rememberSaveable { mutableStateOf("") }
+    var input by rememberSaveable { mutableStateOf(viewModel.draft()) }
+    val updateInput = { text: String ->
+        input = text
+        viewModel.saveDraft(text)
+    }
     var pickingModel by rememberSaveable { mutableStateOf(false) }
     val pickFiles = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
         if (uris.isNotEmpty()) viewModel.attach(uris)
@@ -79,7 +71,7 @@ fun ChatScreen(chatId: String?, onBack: () -> Unit) {
     val dictation = rememberDictationControls(
         model = dictationModel,
         onTranscript = {
-            input = appendDictated(input, it)
+            updateInput(appendDictated(input, it))
             viewModel.noteDictation()
         },
         onPermissionMissing = { askMicrophone.launch(Manifest.permission.RECORD_AUDIO) },
@@ -98,12 +90,21 @@ fun ChatScreen(chatId: String?, onBack: () -> Unit) {
 
     LightboxHost {
         Scaffold(
-            topBar = { ChatTopBar(title = state.title.asString(), state = state, onBack = onBack, onPickModel = { pickingModel = true }) },
+            topBar = {
+                ChatTopBar(
+                    title = state.title.asString(),
+                    state = state,
+                    onBack = onBack,
+                    onPickModel = { pickingModel = true },
+                    onRename = viewModel::rename,
+                    onDelete = { viewModel.delete(); onBack() },
+                )
+            },
             snackbarHost = { SnackbarHost(snackbarHost) },
         ) { padding ->
             Box(Modifier.fillMaxSize().padding(top = padding.calculateTopPadding()).imePadding()) {
                 if (state.messages.isEmpty()) {
-                    EmptyConversation(Modifier.align(Alignment.Center))
+                    EmptyConversation(Modifier.align(Alignment.Center), interactive = true)
                 } else {
                     MessageList(
                         messages = state.messages,
@@ -118,20 +119,21 @@ fun ChatScreen(chatId: String?, onBack: () -> Unit) {
                 }
                 val composerModifier = Modifier
                     .align(Alignment.BottomCenter)
+                    .background(MaterialTheme.colorScheme.surface)
                     .navigationBarsPadding()
-                    .padding(horizontal = 12.dp, vertical = 10.dp)
+                    .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 12.dp)
                 val asked = prompt
                 if (asked != null) {
                     PromptPanel(asked, onAnswer = { viewModel.answerPrompt(asked, it) }, modifier = composerModifier)
                 } else {
                     ChatInput(
                         text = input,
-                        onTextChange = { input = it },
+                        onTextChange = updateInput,
                         isStreaming = state.isStreaming,
                         canSend = state.canSend(input),
                         onSend = {
                             viewModel.send(input)
-                            input = ""
+                            updateInput("")
                         },
                         onStop = viewModel::stop,
                         attachments = state.pendingAttachments,
@@ -143,50 +145,6 @@ fun ChatScreen(chatId: String?, onBack: () -> Unit) {
                     )
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun ChatTopBar(title: String, state: ChatUiState, onBack: () -> Unit, onPickModel: () -> Unit) {
-    TopAppBar(
-        title = { Text(title, style = MaterialTheme.typography.titleLargeEmphasized, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-        subtitle = { ModelChip(state, onPickModel) },
-        navigationIcon = { BackButton(onBack) },
-    )
-}
-
-@Composable
-private fun ModelChip(state: ChatUiState, onClick: () -> Unit) {
-    Surface(
-        onClick = onClick,
-        shape = CircleShape,
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        modifier = Modifier.padding(top = 2.dp),
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            modifier = Modifier.padding(start = 8.dp, end = 4.dp, top = 2.dp, bottom = 2.dp),
-        ) {
-            VendorGlyph(state.modelFamily, size = 14.dp, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(
-                listOfNotNull(
-                    state.modelName ?: stringResource(R.string.chat_change_model),
-                    state.selection?.reasoningEffort?.let { stringResource(it.label) },
-                ).joinToString(" · "),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.widthIn(max = MODEL_CHIP_MAX_WIDTH),
-            )
-            Icon(
-                MaterialSymbols.Rounded.Arrow_drop_down,
-                contentDescription = stringResource(R.string.chat_change_model),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(18.dp),
-            )
         }
     }
 }
@@ -230,9 +188,14 @@ fun MessageList(
 }
 
 @Composable
-fun EmptyConversation(modifier: Modifier = Modifier, avatarSize: Dp = 96.dp, style: TextStyle = MaterialTheme.typography.displaySmallEmphasized) {
+fun EmptyConversation(
+    modifier: Modifier = Modifier,
+    avatarSize: Dp = 96.dp,
+    style: TextStyle = MaterialTheme.typography.displaySmallEmphasized,
+    interactive: Boolean = false,
+) {
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(20.dp)) {
-        AgentAvatar(isWorking = false, size = avatarSize)
+        AgentAvatar(isWorking = false, size = avatarSize, interactive = interactive)
         Text(stringResource(R.string.chat_empty_greeting), style = style)
     }
 }
@@ -240,4 +203,3 @@ fun EmptyConversation(modifier: Modifier = Modifier, avatarSize: Dp = 96.dp, sty
 private val PICKABLE_MIME_TYPES = arrayOf("*/*")
 
 private val ComposerClearance = 104.dp
-private val MODEL_CHIP_MAX_WIDTH = 240.dp
