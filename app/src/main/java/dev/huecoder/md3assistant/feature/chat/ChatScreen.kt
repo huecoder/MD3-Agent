@@ -59,11 +59,11 @@ import dev.huecoder.md3assistant.voice.DictationViewModel
 
 @Composable
 fun ChatScreen(chatId: String?, onBack: () -> Unit) {
-    val viewModel = appViewModel(key = "chat-$chatId") { ChatViewModel(chatId, it.chats, it.conversations, it.attachments, it.approvals, it.questions, it.settings, it.modelCatalog, it.applicationScope, it::newSpeechSynthesizer) }
+    val viewModel = appViewModel(key = "chat-$chatId") { ChatViewModel(chatId, it.chats, it.conversations, it.attachments, it.approvals, it.prompts, it.settings, it.modelCatalog, it.applicationScope, it::newSpeechSynthesizer) }
     val state by viewModel.state.collectAsStateWithLifecycle()
     val error by viewModel.errors.collectAsStateWithLifecycle()
     val speakingId by viewModel.speakingId.collectAsStateWithLifecycle()
-    val question by viewModel.pendingQuestion.collectAsStateWithLifecycle()
+    val prompt by viewModel.pendingPrompt.collectAsStateWithLifecycle()
     val snackbarHost = remember { SnackbarHostState() }
     val context = LocalContext.current
     var input by rememberSaveable { mutableStateOf("") }
@@ -118,9 +118,9 @@ fun ChatScreen(chatId: String?, onBack: () -> Unit) {
                     .align(Alignment.BottomCenter)
                     .navigationBarsPadding()
                     .padding(horizontal = 12.dp, vertical = 10.dp)
-                val asked = question
+                val asked = prompt
                 if (asked != null) {
-                    QuestionPanel(asked, onAnswer = { viewModel.answerQuestion(asked, it) }, modifier = composerModifier)
+                    PromptPanel(asked, onAnswer = { viewModel.answerPrompt(asked, it) }, modifier = composerModifier)
                 } else {
                     ChatInput(
                         text = input,

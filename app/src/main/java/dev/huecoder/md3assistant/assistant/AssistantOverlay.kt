@@ -39,7 +39,7 @@ import dev.huecoder.md3assistant.feature.chat.ChatInput
 import dev.huecoder.md3assistant.feature.chat.ChatViewModel
 import dev.huecoder.md3assistant.feature.chat.EmptyConversation
 import dev.huecoder.md3assistant.feature.chat.MessageList
-import dev.huecoder.md3assistant.feature.chat.QuestionPanel
+import dev.huecoder.md3assistant.feature.chat.PromptPanel
 import dev.huecoder.md3assistant.feature.chat.lightbox.LightboxHost
 import dev.huecoder.md3assistant.feature.chat.appendDictated
 import dev.huecoder.md3assistant.feature.chat.rememberDictationControls
@@ -54,12 +54,12 @@ fun AssistantOverlay(activation: Int, onDismiss: () -> Unit, onOpenInApp: (chatI
     val context = LocalContext.current
     val container = (context.applicationContext as App).container
     val viewModel = appViewModel(key = "overlay-$activation") {
-        ChatViewModel(null, it.chats, it.conversations, it.attachments, it.approvals, it.questions, it.settings, it.modelCatalog, it.applicationScope, it::newSpeechSynthesizer)
+        ChatViewModel(null, it.chats, it.conversations, it.attachments, it.approvals, it.prompts, it.settings, it.modelCatalog, it.applicationScope, it::newSpeechSynthesizer)
     }
     val state by viewModel.state.collectAsStateWithLifecycle()
     val error by viewModel.errors.collectAsStateWithLifecycle()
     val speakingId by viewModel.speakingId.collectAsStateWithLifecycle()
-    val question by viewModel.pendingQuestion.collectAsStateWithLifecycle()
+    val prompt by viewModel.pendingPrompt.collectAsStateWithLifecycle()
     var input by remember(activation) { mutableStateOf("") }
     val dictationModel = appViewModel(key = "overlay-dictation-$activation") { DictationViewModel(it.newVoiceRecorder(), it.transcriptions, it.settings) }
     val dictation = rememberDictationControls(
@@ -114,9 +114,9 @@ fun AssistantOverlay(activation: Int, onDismiss: () -> Unit, onOpenInApp: (chatI
                 }
             }
         }
-        val asked = question
+        val asked = prompt
         if (asked != null) {
-            QuestionPanel(asked, onAnswer = { viewModel.answerQuestion(asked, it) }, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+            PromptPanel(asked, onAnswer = { viewModel.answerPrompt(asked, it) }, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
         } else {
             ChatInput(
                 text = input,

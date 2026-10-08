@@ -1,4 +1,4 @@
-package dev.huecoder.md3assistant.feature.settings
+package dev.huecoder.md3assistant.ui.components
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.DropdownMenuItem
@@ -19,7 +19,7 @@ import androidx.compose.ui.Modifier
 data class DropdownOption<T>(val value: T, val label: String)
 
 @Composable
-internal fun <T> OptionDropdown(
+fun <T> OptionDropdown(
     label: String,
     options: List<DropdownOption<T>>,
     selected: T?,

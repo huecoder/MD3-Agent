@@ -6,7 +6,7 @@ import dev.huecoder.md3assistant.conversation.BackgroundWorkService
 import dev.huecoder.md3assistant.conversation.ConversationRunner
 import dev.huecoder.md3assistant.system.lifecycle.AppVisibility
 import dev.huecoder.md3assistant.conversation.GeneratedImages
-import dev.huecoder.md3assistant.conversation.UserQuestions
+import dev.huecoder.md3assistant.conversation.UserPrompts
 import dev.huecoder.md3assistant.tools.AskUserTool
 import dev.huecoder.md3assistant.data.models.ModelCatalog
 import dev.huecoder.md3assistant.conversation.ToolApprovals
@@ -80,7 +80,7 @@ class AppContainer(context: Context) {
     val python = PythonRuntime(appContext)
 
     val mcp = McpToolbox(httpClients, attachments, applicationScope)
-    val questions = UserQuestions()
+    val prompts = UserPrompts()
 
     val tools = ToolRegistry(
         listOf(
@@ -90,7 +90,7 @@ class AppContainer(context: Context) {
             ReadScreenTool(screenContext),
             ShowUiTool(),
             ShowChartTool(),
-            AskUserTool(questions),
+            AskUserTool(prompts),
             RunCommandTool(shellAccess),
             RunPythonTool(python, shellAccess.workspace),
             ListFilesTool(deviceFiles),
@@ -115,7 +115,7 @@ class AppContainer(context: Context) {
     val approvals = ToolApprovals()
 
     val conversations = ConversationRunner(
-        chats, settings, completions, systemPrompt, tools, attachments, approvals, questions,
+        chats, settings, completions, systemPrompt, tools, attachments, approvals, prompts,
         modelCatalog, GeneratedImages(attachments, httpClients), applicationScope,
     )
 

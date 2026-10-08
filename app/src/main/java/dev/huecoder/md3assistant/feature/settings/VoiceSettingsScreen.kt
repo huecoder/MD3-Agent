@@ -1,5 +1,7 @@
 package dev.huecoder.md3assistant.feature.settings
 
+import dev.huecoder.md3assistant.ui.components.DropdownOption
+import dev.huecoder.md3assistant.ui.components.OptionDropdown
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

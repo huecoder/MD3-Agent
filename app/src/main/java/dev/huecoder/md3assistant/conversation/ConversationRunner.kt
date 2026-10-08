@@ -54,7 +54,7 @@ class ConversationRunner(
     private val tools: ToolRegistry,
     private val attachments: AttachmentStore,
     private val approvals: ToolApprovals,
-    private val questions: UserQuestions,
+    private val prompts: UserPrompts,
     private val catalog: ModelCatalog,
     private val generatedImages: GeneratedImages,
     private val scope: CoroutineScope,
@@ -65,7 +65,7 @@ class ConversationRunner(
 
     val drafts: StateFlow<Map<String, StreamingDraft>> = _drafts.asStateFlow()
 
-    val activity: Flow<Map<String, ChatActivity>> = combine(_drafts, questions.pending) { drafts, asked ->
+    val activity: Flow<Map<String, ChatActivity>> = combine(_drafts, prompts.pending) { drafts, asked ->
         drafts.mapValues { (chatId, draft) ->
             if (draft.awaitingCallId != null || chatId in asked) ChatActivity.NEEDS_INPUT else ChatActivity.WORKING
         }

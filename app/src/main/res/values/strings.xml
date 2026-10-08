@@ -372,4 +372,5 @@
     <string name="tools_ask_user_title">Ask questions</string>
     <string name="tools_ask_user_summary">Shows a poll with choices when the assistant needs a decision</string>
     <string name="tools_category_assistant">Conversation</string>
+    <string name="form_header">%1$s needs details</string>
 </resources>

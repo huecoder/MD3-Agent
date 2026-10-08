@@ -1,9 +1,9 @@
 package dev.huecoder.md3assistant.tools
 
-import dev.huecoder.md3assistant.conversation.QuestionAnswer
+import dev.huecoder.md3assistant.conversation.PromptAnswer
 import dev.huecoder.md3assistant.conversation.QuestionOption
 import dev.huecoder.md3assistant.conversation.UserQuestion
-import dev.huecoder.md3assistant.conversation.UserQuestions
+import dev.huecoder.md3assistant.conversation.UserPrompts
 import dev.huecoder.md3assistant.data.settings.ToolSettings
 import dev.huecoder.md3assistant.llm.ToolSpec
 import kotlinx.serialization.json.JsonObject
@@ -12,7 +12,7 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
 
-class AskUserTool(private val questions: UserQuestions) : ContextualTool {
+class AskUserTool(private val prompts: UserPrompts) : ContextualTool {
     override val spec = ToolSpec(
         name = NAME,
         description = "Asks the user a multiple choice question and waits for the answer. Use it when you need a decision or a " +
@@ -41,9 +41,9 @@ class AskUserTool(private val questions: UserQuestions) : ContextualTool {
 
     override suspend fun execute(arguments: JsonObject, settings: ToolSettings, context: ToolContext): ToolOutcome {
         val question = parse(arguments)
-        return when (val answer = questions.ask(context.chatId, question)) {
-            QuestionAnswer.Skipped -> ToolOutcome("The user skipped the question. Continue with your best judgement or ask in plain text.")
-            is QuestionAnswer.Answered -> ToolOutcome(describe(answer))
+        return when (val answer = prompts.ask(context.chatId, question)) {
+            is PromptAnswer.Chosen -> ToolOutcome(describe(answer))
+            PromptAnswer.Skipped, is PromptAnswer.Submitted -> ToolOutcome(SKIPPED)
         }
     }
 
@@ -63,7 +63,7 @@ class AskUserTool(private val questions: UserQuestions) : ContextualTool {
         )
     }
 
-    private fun describe(answer: QuestionAnswer.Answered): String = buildString {
+    private fun describe(answer: PromptAnswer.Chosen): String = buildString {
         if (answer.chosen.isNotEmpty()) append("The user chose: ").append(answer.chosen.joinToString("; "))
         answer.custom?.let {
             if (isNotEmpty()) append(". ")
@@ -73,6 +73,7 @@ class AskUserTool(private val questions: UserQuestions) : ContextualTool {
 
     companion object {
         const val NAME = "ask_user"
+        private const val SKIPPED = "The user skipped the question. Continue with your best judgement or ask in plain text."
         private const val MIN_OPTIONS = 2
         private const val MAX_OPTIONS = 6
         private const val MAX_LABEL_CHARS = 80
