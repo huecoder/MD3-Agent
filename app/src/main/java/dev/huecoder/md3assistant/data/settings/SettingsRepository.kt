@@ -147,7 +147,7 @@ class SettingsRepository(context: Context, private val cipher: SecretCipher) {
             Log.e(TAG, "Tool settings could not be decrypted, using defaults", e)
             return ToolSettings()
         }
-        return decodeOrDefault(plain, ToolSettings.serializer(), ToolSettings())
+        return decodeOrDefault(plain, ToolSettings.serializer(), ToolSettings()).migrated()
     }
 
     private fun <T> decodeOrDefault(raw: String?, serializer: KSerializer<T>, default: T): T {

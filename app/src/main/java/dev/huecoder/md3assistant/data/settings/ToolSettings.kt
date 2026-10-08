@@ -1,14 +1,24 @@
 package dev.huecoder.md3assistant.data.settings
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
+enum class ToolPermission { OFF, ASK, AUTO }
+
+@Serializable
 data class ToolSettings(
-    val disabledTools: Set<String> = emptySet(),
+    @SerialName("disabledTools") private val legacyDisabled: Set<String> = emptySet(),
+    val permissions: Map<String, ToolPermission> = emptyMap(),
     val weather: WeatherSettings = WeatherSettings(),
     val search: SearchSettings = SearchSettings(),
 ) {
-    fun isEnabled(toolName: String): Boolean = toolName !in disabledTools
+    fun permission(toolName: String, default: ToolPermission): ToolPermission = permissions[toolName] ?: default
+
+    fun withPermission(toolName: String, permission: ToolPermission) = copy(permissions = permissions + (toolName to permission))
+
+    fun migrated(): ToolSettings =
+        if (legacyDisabled.isEmpty()) this else copy(legacyDisabled = emptySet(), permissions = legacyDisabled.associateWith { ToolPermission.OFF } + permissions)
 }
 
 @Serializable

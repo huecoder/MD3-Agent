@@ -47,8 +47,8 @@ class ChatRepository(
             .copy(attachmentsJson = Attachment.encode(attached))
             .also { save(it) }
 
-    suspend fun appendToolResult(chatId: String, toolCallId: String, content: String, isError: Boolean): MessageEntity =
-        newMessage(chatId, MessageRole.TOOL, content, if (isError) MessageStatus.ERROR else MessageStatus.COMPLETE, modelId = null)
+    suspend fun appendToolResult(chatId: String, toolCallId: String, content: String, status: MessageStatus): MessageEntity =
+        newMessage(chatId, MessageRole.TOOL, content, status, modelId = null)
             .copy(toolCallId = toolCallId)
             .also { save(it) }
 

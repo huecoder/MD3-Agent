@@ -3,6 +3,7 @@ package dev.huecoder.md3assistant
 import android.content.Context
 import dev.huecoder.md3assistant.assistant.ScreenContextStore
 import dev.huecoder.md3assistant.conversation.ConversationRunner
+import dev.huecoder.md3assistant.conversation.ToolApprovals
 import dev.huecoder.md3assistant.data.attachments.AttachmentStore
 import dev.huecoder.md3assistant.data.chat.ChatRepository
 import dev.huecoder.md3assistant.data.db.AppDatabase
@@ -70,5 +71,7 @@ class AppContainer(context: Context) {
         }
     }
 
-    val conversations = ConversationRunner(chats, settings, completions, systemPrompt, tools, attachments, applicationScope)
+    val approvals = ToolApprovals()
+
+    val conversations = ConversationRunner(chats, settings, completions, systemPrompt, tools, attachments, approvals, applicationScope)
 }

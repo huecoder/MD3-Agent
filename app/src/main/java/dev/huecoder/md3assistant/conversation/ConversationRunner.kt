@@ -11,6 +11,8 @@ import dev.huecoder.md3assistant.data.db.MessageStatus
 import dev.huecoder.md3assistant.data.settings.AppSettings
 import dev.huecoder.md3assistant.data.settings.ProviderProfile
 import dev.huecoder.md3assistant.data.settings.SettingsRepository
+import dev.huecoder.md3assistant.data.settings.ToolPermission
+import dev.huecoder.md3assistant.data.settings.ToolSettings
 import dev.huecoder.md3assistant.llm.ChatCompletionClient
 import dev.huecoder.md3assistant.llm.ChatTurn
 import dev.huecoder.md3assistant.llm.CompletionEvent
@@ -18,6 +20,7 @@ import dev.huecoder.md3assistant.llm.ToolCall
 import dev.huecoder.md3assistant.llm.ToolCallAccumulator
 import dev.huecoder.md3assistant.llm.TokenUsage
 import dev.huecoder.md3assistant.prompt.SystemPromptRenderer
+import dev.huecoder.md3assistant.tools.ToolOutcome
 import dev.huecoder.md3assistant.tools.ToolRegistry
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -40,6 +43,7 @@ class ConversationRunner(
     private val systemPrompt: SystemPromptRenderer,
     private val tools: ToolRegistry,
     private val attachments: AttachmentStore,
+    private val approvals: ToolApprovals,
     private val scope: CoroutineScope,
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
@@ -107,7 +111,7 @@ class ConversationRunner(
         val turns = buildTurns(current, chats.history(chatId))
         val message = chats.startAssistantMessage(chatId, model)
         val accumulator = ToolCallAccumulator()
-        var draft = StreamingDraft(message.id, content = "", reasoning = "", toolCalls = emptyList(), runningCallIds = emptySet(), usage = null)
+        var draft = StreamingDraft(message.id, content = "", reasoning = "", toolCalls = emptyList(), runningCallIds = emptySet(), awaitingCallId = null, usage = null)
         publish(chatId, draft)
         try {
             completions.stream(provider, model, turns, tools.specs(current.tools)).collect { event ->
@@ -133,11 +137,21 @@ class ConversationRunner(
 
     private suspend fun runTools(chatId: String, round: StreamingDraft, current: AppSettings): Boolean {
         for (call in round.toolCalls) {
-            publish(chatId, round.copy(runningCallIds = setOf(call.id)))
-            val outcome = tools.run(call, current.tools)
-            chats.appendToolResult(chatId, call.id, outcome.content, outcome.isError)
+            val outcome = if (isApproved(chatId, round, call, current.tools)) {
+                publish(chatId, round.copy(runningCallIds = setOf(call.id)))
+                tools.run(call, current.tools)
+            } else {
+                ToolOutcome.denied()
+            }
+            chats.appendToolResult(chatId, call.id, outcome.content, outcome.messageStatus)
         }
         return round.toolCalls.all(tools::endsTurn)
+    }
+
+    private suspend fun isApproved(chatId: String, round: StreamingDraft, call: ToolCall, settings: ToolSettings): Boolean {
+        if (tools.permission(call.name, settings) != ToolPermission.ASK || approvals.isAllowedForSession(chatId, call.name)) return true
+        publish(chatId, round.copy(awaitingCallId = call.id))
+        return approvals.request(chatId, call)
     }
 
     private suspend fun buildTurns(current: AppSettings, history: List<MessageEntity>): List<ChatTurn> {
@@ -188,12 +202,20 @@ class ConversationRunner(
     }
 }
 
+private val ToolOutcome.messageStatus: MessageStatus
+    get() = when {
+        isDenied -> MessageStatus.CANCELLED
+        isError -> MessageStatus.ERROR
+        else -> MessageStatus.COMPLETE
+    }
+
 data class StreamingDraft(
     val messageId: String,
     val content: String,
     val reasoning: String,
     val toolCalls: List<ToolCall>,
     val runningCallIds: Set<String>,
+    val awaitingCallId: String?,
     val usage: TokenUsage?,
 )
 

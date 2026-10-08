@@ -35,14 +35,15 @@ import dev.huecoder.md3assistant.App
 import dev.huecoder.md3assistant.R
 import dev.huecoder.md3assistant.data.settings.SearchBackend
 import dev.huecoder.md3assistant.data.settings.SearchSettings
+import dev.huecoder.md3assistant.data.settings.ToolPermission
 import dev.huecoder.md3assistant.data.settings.ToolSettings
 import dev.huecoder.md3assistant.data.settings.WeatherSettings
 import dev.huecoder.md3assistant.ui.components.FormField
-import dev.huecoder.md3assistant.ui.components.LabeledSwitch
 import dev.huecoder.md3assistant.ui.components.SectionHeader
 import dev.huecoder.md3assistant.ui.components.SettingsScaffold
 import dev.huecoder.md3assistant.ui.components.ShapeBadge
 import dev.huecoder.md3assistant.ui.components.ToolCatalog
+import dev.huecoder.md3assistant.ui.components.ToolInfo
 import dev.huecoder.md3assistant.ui.text.asString
 import kotlinx.coroutines.launch
 
@@ -67,18 +68,11 @@ fun ToolSettingsScreen(onBack: () -> Unit) {
             SectionHeader(stringResource(R.string.tools_section_available))
             container.tools.all.forEach { tool ->
                 val name = tool.spec.name
-                val info = ToolCatalog.of(name)
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    ShapeBadge(info.icon, size = BADGE_SIZE)
-                    LabeledSwitch(
-                        title = info.title.asString(),
-                        summary = info.summary.asString(),
-                        checked = current.isEnabled(name),
-                        onCheckedChange = { enabled ->
-                            tools = current.copy(disabledTools = if (enabled) current.disabledTools - name else current.disabledTools + name)
-                        },
-                    )
-                }
+                ToolPermissionRow(
+                    info = ToolCatalog.of(name),
+                    permission = container.tools.permission(tool, current),
+                    onChange = { tools = current.withPermission(name, it) },
+                )
             }
 
             SectionHeader(stringResource(R.string.tools_section_search))
@@ -101,6 +95,26 @@ fun ToolSettingsScreen(onBack: () -> Unit) {
         }
     }
 }
+
+@Composable
+private fun ToolPermissionRow(info: ToolInfo, permission: ToolPermission, onChange: (ToolPermission) -> Unit) {
+    Column(Modifier.padding(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            ShapeBadge(info.icon, size = BADGE_SIZE)
+            Column(Modifier.weight(1f)) {
+                Text(info.title.asString(), style = MaterialTheme.typography.titleMedium)
+                Text(info.summary.asString(), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        SegmentedChoices(PERMISSION_CHOICES, permission, onChange)
+    }
+}
+
+private val PERMISSION_CHOICES = listOf(
+    Choice(ToolPermission.OFF, R.string.tools_permission_off),
+    Choice(ToolPermission.ASK, R.string.tools_permission_ask),
+    Choice(ToolPermission.AUTO, R.string.tools_permission_auto),
+)
 
 @Composable
 private fun SearchSection(search: SearchSettings, onChange: (SearchSettings) -> Unit) {

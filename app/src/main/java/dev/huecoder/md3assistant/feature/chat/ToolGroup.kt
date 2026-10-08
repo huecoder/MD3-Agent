@@ -15,10 +15,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
+import com.composables.icons.materialsymbols.rounded.Block
 import com.composables.icons.materialsymbols.rounded.Cancel
 import com.composables.icons.materialsymbols.rounded.Check
 import com.composables.icons.materialsymbols.rounded.Error
 import com.composables.icons.materialsymbols.rounded.Handyman
+import com.composables.icons.materialsymbols.rounded.Shield_question
 import dev.huecoder.md3assistant.R
 import dev.huecoder.md3assistant.tools.ReadScreenTool
 import dev.huecoder.md3assistant.tools.optionalString
@@ -31,12 +33,13 @@ import dev.huecoder.md3assistant.ui.components.ToolCatalog
 import dev.huecoder.md3assistant.ui.text.UiText
 import dev.huecoder.md3assistant.ui.text.asString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import java.net.URI
 
 @Composable
 fun ToolGroup(calls: List<ToolCallUi>, modifier: Modifier = Modifier) {
-    val current = calls.firstOrNull { it.status == ToolStatus.RUNNING }
+    val current = calls.firstOrNull { it.status == ToolStatus.AWAITING_APPROVAL } ?: calls.firstOrNull { it.status == ToolStatus.RUNNING }
     val single = calls.singleOrNull()
     val title = when {
         current != null -> ToolLook.of(current).titleText()
@@ -48,7 +51,7 @@ fun ToolGroup(calls: List<ToolCallUi>, modifier: Modifier = Modifier) {
         modifier = modifier,
         leading = {
             when {
-                current != null -> StatusMark(ToolStatus.RUNNING)
+                current != null -> StatusMark(current.status)
                 calls.any { it.status == ToolStatus.ERROR } -> StatusMark(ToolStatus.ERROR)
                 else -> StepIcon(single?.let { ToolLook.of(it).icon } ?: MaterialSymbols.Rounded.Handyman)
             }
@@ -71,15 +74,17 @@ private fun ToolStep(call: ToolCallUi) {
 @Composable
 private fun ToolDetails(call: ToolCallUi) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        val arguments = call.arguments.entries.joinToString("\n") { (key, value) ->
-            "$key: ${(value as? JsonPrimitive)?.content ?: value.toString()}"
-        }
+        val arguments = readableArguments(call.arguments)
         if (arguments.isNotEmpty()) Detail(label = stringResource(R.string.chat_tool_arguments), text = arguments)
         when {
             call.result != null -> Detail(label = stringResource(R.string.chat_tool_result), text = ToolLook.readableResult(call))
             call.status == ToolStatus.CANCELLED -> Detail(
                 label = stringResource(R.string.chat_tool_result),
                 text = stringResource(R.string.chat_tool_cancelled_result),
+            )
+            call.status == ToolStatus.DENIED -> Detail(
+                label = stringResource(R.string.chat_tool_result),
+                text = stringResource(R.string.chat_tool_denied_result),
             )
         }
     }
@@ -100,9 +105,11 @@ private fun StepIcon(icon: ImageVector) {
 private fun StatusMark(status: ToolStatus) {
     val scheme = MaterialTheme.colorScheme
     when (status) {
+        ToolStatus.AWAITING_APPROVAL -> Icon(MaterialSymbols.Rounded.Shield_question, contentDescription = stringResource(R.string.chat_tool_status_awaiting), tint = scheme.tertiary, modifier = Modifier.size(StepIconSize))
         ToolStatus.RUNNING -> CircularProgressIndicator(modifier = Modifier.size(StepIconSize), strokeWidth = 2.dp)
         ToolStatus.DONE -> Icon(MaterialSymbols.Rounded.Check, contentDescription = stringResource(R.string.chat_tool_status_done), tint = scheme.primary, modifier = Modifier.size(StepIconSize))
         ToolStatus.ERROR -> Icon(MaterialSymbols.Rounded.Error, contentDescription = stringResource(R.string.chat_tool_status_error), tint = scheme.error, modifier = Modifier.size(StepIconSize))
+        ToolStatus.DENIED -> Icon(MaterialSymbols.Rounded.Block, contentDescription = stringResource(R.string.chat_tool_status_denied), tint = scheme.onSurfaceVariant, modifier = Modifier.size(StepIconSize))
         ToolStatus.CANCELLED -> Icon(MaterialSymbols.Rounded.Cancel, contentDescription = stringResource(R.string.chat_tool_status_cancelled), tint = scheme.onSurfaceVariant, modifier = Modifier.size(StepIconSize))
     }
 }
@@ -121,6 +128,10 @@ private fun Detail(label: String, text: String) {
 
 internal val StepIconSize = 16.dp
 
+internal fun readableArguments(arguments: JsonObject): String = arguments.entries.joinToString("\n") { (key, value) ->
+    "$key: ${(value as? JsonPrimitive)?.content ?: value.toString()}"
+}
+
 @Composable
 private fun ToolLook.titleText(): String = title.asString().trim()
 
@@ -130,7 +141,7 @@ private data class ToolLook(val icon: ImageVector, val title: UiText) {
         private val json = Json { ignoreUnknownKeys = true }
 
         fun of(call: ToolCallUi): ToolLook {
-            val running = call.status == ToolStatus.RUNNING
+            val running = call.status == ToolStatus.RUNNING || call.status == ToolStatus.AWAITING_APPROVAL
             val args = call.arguments
             val title = when (call.name) {
                 WebSearchTool.NAME -> UiText.Resource(

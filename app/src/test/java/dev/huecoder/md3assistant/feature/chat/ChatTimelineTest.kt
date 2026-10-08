@@ -86,7 +86,7 @@ class ChatTimelineTest {
     @Test
     fun `calls of the round being worked on are running, and the reply has no end yet`() {
         val messages = listOf(row(MessageRole.USER, "найди"), row(MessageRole.ASSISTANT, calls = listOf(search)))
-        val draft = StreamingDraft(messages[1].id, "", "", listOf(search), runningCallIds = setOf("s1"), usage = null)
+        val draft = StreamingDraft(messages[1].id, "", "", listOf(search), runningCallIds = setOf("s1"), awaitingCallId = null, usage = null)
 
         val reply = ChatTimeline.build(messages, draft)[1] as ChatItem.Reply
 

@@ -1,5 +1,6 @@
 package dev.huecoder.md3assistant.tools
 
+import dev.huecoder.md3assistant.data.settings.ToolPermission
 import dev.huecoder.md3assistant.data.settings.ToolSettings
 import dev.huecoder.md3assistant.llm.ToolSpec
 import kotlinx.serialization.json.JsonArray
@@ -18,12 +19,20 @@ interface Tool {
 
     val endsTurn: Boolean get() = false
 
+    val defaultPermission: ToolPermission get() = ToolPermission.AUTO
+
+    val timeoutMs: Long get() = DEFAULT_TOOL_TIMEOUT_MS
+
     suspend fun execute(arguments: JsonObject, settings: ToolSettings): ToolOutcome
 }
 
-data class ToolOutcome(val content: String, val isError: Boolean = false) {
+const val DEFAULT_TOOL_TIMEOUT_MS = 45_000L
+
+data class ToolOutcome(val content: String, val isError: Boolean = false, val isDenied: Boolean = false) {
     companion object {
         fun error(message: String) = ToolOutcome(message, isError = true)
+
+        fun denied() = ToolOutcome("The user declined this action. Do not retry it unless they ask.", isError = true, isDenied = true)
     }
 }
 

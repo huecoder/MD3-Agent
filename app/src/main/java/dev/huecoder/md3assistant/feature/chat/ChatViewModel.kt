@@ -4,9 +4,11 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.huecoder.md3assistant.R
+import dev.huecoder.md3assistant.conversation.ApprovalDecision
 import dev.huecoder.md3assistant.conversation.ConversationRunner
 import dev.huecoder.md3assistant.conversation.NoModelConfiguredException
 import dev.huecoder.md3assistant.conversation.StreamingDraft
+import dev.huecoder.md3assistant.conversation.ToolApprovals
 import dev.huecoder.md3assistant.data.attachments.Attachment
 import dev.huecoder.md3assistant.data.attachments.AttachmentStore
 import dev.huecoder.md3assistant.data.attachments.AttachmentTooLargeException
@@ -62,6 +64,7 @@ class ChatViewModel(
     private val chats: ChatRepository,
     private val runner: ConversationRunner,
     private val attachments: AttachmentStore,
+    private val approvals: ToolApprovals,
     settings: SettingsRepository,
     private val appScope: CoroutineScope,
     synthesizers: (VoiceSettings) -> SpeechSynthesizer,
@@ -154,6 +157,10 @@ class ChatViewModel(
     fun stop() {
         chatId.value?.let(runner::cancel)
         stopSpeaking()
+    }
+
+    fun respondToApproval(call: ToolCallUi, decision: ApprovalDecision) {
+        chatId.value?.let { approvals.respond(it, call.id, decision) }
     }
 
     fun regenerate(reply: ChatItem.Reply) {

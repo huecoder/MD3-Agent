@@ -27,16 +27,21 @@ internal fun <T> ChoiceRow(
 ) {
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(title, style = MaterialTheme.typography.bodyLarge)
-        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-            choices.forEachIndexed { index, choice ->
-                SegmentedButton(
-                    selected = choice.value == selected,
-                    onClick = { onSelect(choice.value) },
-                    shape = SegmentedButtonDefaults.itemShape(index, choices.size),
-                    label = { Text(stringResource(choice.label), maxLines = 1) },
-                )
-            }
-        }
+        SegmentedChoices(choices, selected, onSelect)
         hint?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+    }
+}
+
+@Composable
+internal fun <T> SegmentedChoices(choices: List<Choice<T>>, selected: T, onSelect: (T) -> Unit, modifier: Modifier = Modifier) {
+    SingleChoiceSegmentedButtonRow(modifier.fillMaxWidth()) {
+        choices.forEachIndexed { index, choice ->
+            SegmentedButton(
+                selected = choice.value == selected,
+                onClick = { onSelect(choice.value) },
+                shape = SegmentedButtonDefaults.itemShape(index, choices.size),
+                label = { Text(stringResource(choice.label), maxLines = 1) },
+            )
+        }
     }
 }

@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.huecoder.md3assistant.R
+import dev.huecoder.md3assistant.conversation.ApprovalDecision
 import dev.huecoder.md3assistant.ui.components.AgentAvatar
 import dev.huecoder.md3assistant.ui.components.BackButton
 import dev.huecoder.md3assistant.ui.components.appViewModel
@@ -46,7 +47,7 @@ import dev.huecoder.md3assistant.voice.DictationViewModel
 
 @Composable
 fun ChatScreen(chatId: String?, onBack: () -> Unit) {
-    val viewModel = appViewModel(key = "chat-$chatId") { ChatViewModel(chatId, it.chats, it.conversations, it.attachments, it.settings, it.applicationScope, it::newSpeechSynthesizer) }
+    val viewModel = appViewModel(key = "chat-$chatId") { ChatViewModel(chatId, it.chats, it.conversations, it.attachments, it.approvals, it.settings, it.applicationScope, it::newSpeechSynthesizer) }
     val state by viewModel.state.collectAsStateWithLifecycle()
     val error by viewModel.errors.collectAsStateWithLifecycle()
     val speakingId by viewModel.speakingId.collectAsStateWithLifecycle()
@@ -91,6 +92,7 @@ fun ChatScreen(chatId: String?, onBack: () -> Unit) {
                     onRegenerate = viewModel::regenerate,
                     onToggleSpeech = viewModel::toggleSpeech,
                     onSend = viewModel::send,
+                    onApproval = viewModel::respondToApproval,
                 )
             }
             ChatInput(
@@ -150,6 +152,7 @@ fun MessageList(
     onRegenerate: (ChatItem.Reply) -> Unit,
     onToggleSpeech: (ChatItem.Reply) -> Unit,
     onSend: (String) -> Unit,
+    onApproval: (ToolCallUi, ApprovalDecision) -> Unit,
     modifier: Modifier = Modifier.fillMaxSize(),
     bottomPadding: Dp = ComposerClearance,
 ) {
@@ -169,6 +172,7 @@ fun MessageList(
                     onRegenerate = { onRegenerate(item) },
                     onToggleSpeech = { onToggleSpeech(item) },
                     onSend = onSend,
+                    onApproval = onApproval,
                     modifier = Modifier.animateItem(placementSpec = null),
                 )
             }

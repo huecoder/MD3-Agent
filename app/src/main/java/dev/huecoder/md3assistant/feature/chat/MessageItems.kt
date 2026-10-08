@@ -32,6 +32,7 @@ import com.composables.icons.materialsymbols.rounded.Refresh
 import com.composables.icons.materialsymbols.rounded.Stop_circle
 import com.composables.icons.materialsymbols.rounded.Volume_up
 import dev.huecoder.md3assistant.R
+import dev.huecoder.md3assistant.conversation.ApprovalDecision
 import dev.huecoder.md3assistant.ui.components.AgentAvatar
 import dev.huecoder.md3assistant.ui.components.MarkdownContent
 import dev.huecoder.md3assistant.ui.components.ShimmerText
@@ -77,6 +78,7 @@ fun AssistantReply(
     onRegenerate: () -> Unit,
     onToggleSpeech: () -> Unit,
     onSend: (String) -> Unit,
+    onApproval: (ToolCallUi, ApprovalDecision) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -86,7 +88,12 @@ fun AssistantReply(
                 when (part) {
                     is ReplyPart.Reasoning -> ReasoningBlock(part.text, part.isStreaming)
                     is ReplyPart.Text -> SelectionContainer { MarkdownContent(part.content) }
-                    is ReplyPart.Tools -> ToolGroup(part.calls)
+                    is ReplyPart.Tools -> {
+                        ToolGroup(part.calls)
+                        part.calls.firstOrNull { it.status == ToolStatus.AWAITING_APPROVAL }?.let { call ->
+                            key(call.id) { ApprovalCard(call, onDecision = { onApproval(call, it) }) }
+                        }
+                    }
                     is ReplyPart.Error -> ErrorNotice(part.text.asString())
                 }
             }

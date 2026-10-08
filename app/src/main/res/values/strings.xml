@@ -197,4 +197,15 @@
     <string name="chat_speak">Read aloud</string>
     <string name="chat_stop_speaking">Stop reading</string>
     <string name="voice_speak_failed">Could not read the reply: %1$s</string>
+    <string name="chat_tool_denied_result">Not run: you declined it</string>
+    <string name="chat_tool_status_awaiting">Waiting for your approval</string>
+    <string name="chat_tool_status_denied">Declined</string>
+    <string name="approval_title">Allow “%1$s”?</string>
+    <string name="approval_subtitle">The assistant wants to run this</string>
+    <string name="approval_allow">Allow</string>
+    <string name="approval_deny">Deny</string>
+    <string name="approval_allow_session">Always allow in this session</string>
+    <string name="tools_permission_off">Off</string>
+    <string name="tools_permission_ask">Ask</string>
+    <string name="tools_permission_auto">Auto</string>
 </resources>

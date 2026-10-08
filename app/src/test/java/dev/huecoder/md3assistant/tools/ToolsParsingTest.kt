@@ -1,5 +1,6 @@
 package dev.huecoder.md3assistant.tools
 
+import dev.huecoder.md3assistant.data.settings.ToolPermission
 import dev.huecoder.md3assistant.data.settings.ToolSettings
 import dev.huecoder.md3assistant.llm.ToolCall
 import dev.huecoder.md3assistant.llm.ToolSpec
@@ -64,11 +65,11 @@ class ToolsParsingTest {
         val registry = ToolRegistry(listOf(echo))
 
         assertTrue(registry.run(ToolCall("1", "missing", "{}"), ToolSettings()).isError)
-        assertTrue(registry.run(ToolCall("2", "echo", "{}"), ToolSettings(disabledTools = setOf("echo"))).isError)
+        assertTrue(registry.run(ToolCall("2", "echo", "{}"), ToolSettings().withPermission("echo", ToolPermission.OFF)).isError)
         assertTrue(registry.run(ToolCall("3", "echo", "not json"), ToolSettings()).isError)
         val ok = registry.run(ToolCall("4", "echo", """{"a":1}"""), ToolSettings())
         assertFalse(ok.isError)
         assertEquals("""{"a":1}""", ok.content)
-        assertEquals(emptyList<ToolSpec>(), registry.specs(ToolSettings(disabledTools = setOf("echo"))))
+        assertEquals(emptyList<ToolSpec>(), registry.specs(ToolSettings().withPermission("echo", ToolPermission.OFF)))
     }
 }

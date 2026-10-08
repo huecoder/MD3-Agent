@@ -21,7 +21,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
 import java.net.URI
 
-enum class ToolStatus { RUNNING, DONE, ERROR, CANCELLED }
+enum class ToolStatus { AWAITING_APPROVAL, RUNNING, DONE, ERROR, DENIED, CANCELLED }
 
 data class ToolCallUi(val id: String, val name: String, val arguments: JsonObject, val status: ToolStatus, val result: String?)
 
@@ -100,7 +100,7 @@ object ChatTimeline {
         } + listOfNotNull(live?.usage)
         return ChatItem.Reply(
             id = rounds.first().id,
-            parts = views.flatMap { it.parts(results, isLive = it.row.id == live?.messageId) }.mergeAdjacentTools(),
+            parts = views.flatMap { it.parts(results, live?.takeIf { d -> d.messageId == it.row.id }) }.mergeAdjacentTools(),
             isActive = isActive,
             isWaiting = isActive && last.content.isEmpty() && last.reasoning.isEmpty() && last.calls.isEmpty(),
             startedAt = rounds.first().createdAt,
@@ -112,11 +112,12 @@ object ChatTimeline {
     }
 
     private class RoundView(val row: MessageEntity, val content: String, val reasoning: String, val calls: List<ToolCall>) {
-        fun parts(results: Map<String?, MessageEntity>, isLive: Boolean): List<ReplyPart> = buildList {
+        fun parts(results: Map<String?, MessageEntity>, live: StreamingDraft?): List<ReplyPart> = buildList {
+            val isLive = live != null
             if (reasoning.isNotEmpty()) add(ReplyPart.Reasoning(reasoning, isStreaming = isLive && content.isEmpty() && calls.isEmpty()))
             if (content.isNotEmpty()) add(ReplyPart.Text(content))
             val shown = calls.filter { it.name != ShowUiTool.NAME }
-            if (shown.isNotEmpty()) add(ReplyPart.Tools(shown.map { it.toUi(results[it.id], isLive) }))
+            if (shown.isNotEmpty()) add(ReplyPart.Tools(shown.map { it.toUi(results[it.id], live) }))
             when {
                 isLive -> Unit
                 row.status == MessageStatus.ERROR -> add(ReplyPart.Error(row.errorText?.let(UiText::Raw) ?: UiText.Resource(R.string.chat_error_unknown)))
@@ -147,10 +148,15 @@ object ChatTimeline {
         merged
     }
 
-    private fun ToolCall.toUi(result: MessageEntity?, isLive: Boolean): ToolCallUi {
+    private fun ToolCall.toUi(result: MessageEntity?, live: StreamingDraft?): ToolCallUi {
         val status = when {
-            result != null -> if (result.status == MessageStatus.ERROR) ToolStatus.ERROR else ToolStatus.DONE
-            isLive -> ToolStatus.RUNNING
+            result != null -> when (result.status) {
+                MessageStatus.ERROR -> ToolStatus.ERROR
+                MessageStatus.CANCELLED -> ToolStatus.DENIED
+                else -> ToolStatus.DONE
+            }
+            live?.awaitingCallId == id -> ToolStatus.AWAITING_APPROVAL
+            live != null -> ToolStatus.RUNNING
             else -> ToolStatus.CANCELLED
         }
         return ToolCallUi(id, name, parseArguments(arguments), status, result?.content)

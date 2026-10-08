@@ -41,6 +41,8 @@ import dev.huecoder.md3assistant.R
 import dev.huecoder.md3assistant.assistant.AssistantRole
 import dev.huecoder.md3assistant.data.settings.AppSettings
 import dev.huecoder.md3assistant.data.settings.SpeakReplies
+import dev.huecoder.md3assistant.data.settings.ToolPermission
+import dev.huecoder.md3assistant.tools.ToolRegistry
 import dev.huecoder.md3assistant.ui.components.SectionHeader
 import dev.huecoder.md3assistant.ui.components.SettingsScaffold
 import dev.huecoder.md3assistant.ui.components.ShapeBadge
@@ -58,7 +60,7 @@ fun SettingsScreen(
     onOpenVoice: () -> Unit,
 ) {
     val viewModel = appViewModel { SettingsViewModel(it.settings) }
-    val toolNames = (LocalContext.current.applicationContext as App).container.tools.all.map { it.spec.name }
+    val toolRegistry = (LocalContext.current.applicationContext as App).container.tools
     val settings by viewModel.settings.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var isAssistant by remember { mutableStateOf(AssistantRole.isHeld(context)) }
@@ -86,7 +88,7 @@ fun SettingsScreen(
             SettingsEntry(
                 icon = MaterialSymbols.Rounded.Handyman,
                 title = stringResource(R.string.settings_tools),
-                summary = toolsSummary(current, toolNames),
+                summary = toolsSummary(current, toolRegistry),
                 onClick = onOpenTools,
             ),
             SettingsEntry(
@@ -170,8 +172,8 @@ private fun LazyListScope.providerItems(settings: AppSettings, onEditProvider: (
 }
 
 @Composable
-private fun toolsSummary(settings: AppSettings, toolNames: List<String>): String =
-    stringResource(R.string.settings_tools_summary, toolNames.count(settings.tools::isEnabled), toolNames.size)
+private fun toolsSummary(settings: AppSettings, registry: ToolRegistry): String =
+    stringResource(R.string.settings_tools_summary, registry.all.count { registry.permission(it, settings.tools) != ToolPermission.OFF }, registry.all.size)
 
 @Composable
 private fun chatSummary(settings: AppSettings): String =
