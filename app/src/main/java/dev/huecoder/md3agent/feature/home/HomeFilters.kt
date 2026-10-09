@@ -36,6 +36,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Add
+import com.composables.icons.materialsymbols.rounded.Archive
+import com.composables.icons.materialsymbols.rounded.Delete
 import com.composables.icons.materialsymbols.rounded.Close
 import com.composables.icons.materialsymbols.rounded.Folder
 import com.composables.icons.materialsymbols.rounded.Search
@@ -47,14 +49,16 @@ fun HomeFilters(
     query: String,
     onQueryChange: (String) -> Unit,
     folders: List<FolderEntity>,
-    selectedFolder: String?,
-    onSelectFolder: (String?) -> Unit,
+    filter: ChatFilter,
+    showArchive: Boolean,
+    showTrash: Boolean,
+    onFilter: (ChatFilter) -> Unit,
     onFolderMenu: (FolderEntity) -> Unit,
     onNewFolder: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(bottom = 4.dp)) {
         SearchField(query, onQueryChange)
-        FolderChips(folders, selectedFolder, onSelectFolder, onFolderMenu, onNewFolder)
+        FilterChips(folders, filter, showArchive, showTrash, onFilter, onFolderMenu, onNewFolder)
     }
 }
 
@@ -90,23 +94,32 @@ private fun SearchField(query: String, onQueryChange: (String) -> Unit) {
 }
 
 @Composable
-private fun FolderChips(
+private fun FilterChips(
     folders: List<FolderEntity>,
-    selected: String?,
-    onSelect: (String?) -> Unit,
+    selected: ChatFilter,
+    showArchive: Boolean,
+    showTrash: Boolean,
+    onSelect: (ChatFilter) -> Unit,
     onMenu: (FolderEntity) -> Unit,
     onNew: () -> Unit,
 ) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
-        FolderChip(stringResource(R.string.home_folder_all), icon = null, selected = selected == null, onClick = { onSelect(null) })
+        FolderChip(stringResource(R.string.home_folder_all), icon = null, selected = selected == ChatFilter.All, onClick = { onSelect(ChatFilter.All) })
         folders.forEach { folder ->
+            val filter = ChatFilter.Folder(folder.id)
             FolderChip(
                 label = folder.name,
                 icon = MaterialSymbols.Rounded.Folder,
-                selected = selected == folder.id,
-                onClick = { onSelect(if (selected == folder.id) null else folder.id) },
+                selected = selected == filter,
+                onClick = { onSelect(filter) },
                 onLongClick = { onMenu(folder) },
             )
+        }
+        if (showArchive || selected == ChatFilter.Archive) {
+            FolderChip(stringResource(R.string.home_archive), MaterialSymbols.Rounded.Archive, selected == ChatFilter.Archive, onClick = { onSelect(ChatFilter.Archive) })
+        }
+        if (showTrash || selected == ChatFilter.Trash) {
+            FolderChip(stringResource(R.string.home_trash), MaterialSymbols.Rounded.Delete, selected == ChatFilter.Trash, onClick = { onSelect(ChatFilter.Trash) })
         }
         FolderChip(stringResource(R.string.home_folder_new), icon = MaterialSymbols.Rounded.Add, selected = false, onClick = onNew)
     }

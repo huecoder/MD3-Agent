@@ -26,6 +26,8 @@ data class ChatEntity(
     val colorKey: String? = null,
     val shapeKey: String? = null,
     @ColumnInfo(defaultValue = "FIRST_MESSAGE") val titleSource: TitleSource = TitleSource.FIRST_MESSAGE,
+    val archivedAt: Long? = null,
+    val trashedAt: Long? = null,
 )
 
 val ChatEntity.selection: ModelSelection?

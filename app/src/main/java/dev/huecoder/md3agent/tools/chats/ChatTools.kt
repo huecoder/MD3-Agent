@@ -36,7 +36,7 @@ class ListChatsTool(private val chats: ChatRepository) : ContextualTool {
         val query = arguments.optionalString("query")
         val limit = (arguments.optionalInt("limit") ?: DEFAULT_LIMIT).coerceIn(1, MAX_LIMIT)
         val matching = query?.let { chats.searchChatIds(it) }
-        val found = chats.observeSummaries().first().filter { matching == null || it.id in matching }.take(limit)
+        val found = chats.observeSummaries().first().filter { it.trashedAt == null && (matching == null || it.id in matching) }.take(limit)
         if (found.isEmpty()) return ToolOutcome(if (query == null) "There are no chats yet" else "No chats match \"$query\"")
         val dates = SimpleDateFormat(DATE_PATTERN, Locale.ROOT)
         return ToolOutcome(

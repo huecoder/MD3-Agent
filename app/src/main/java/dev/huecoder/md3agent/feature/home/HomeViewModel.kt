@@ -10,10 +10,14 @@ import dev.huecoder.md3agent.data.db.FolderEntity
 import dev.huecoder.md3agent.data.models.ModelCatalog
 import dev.huecoder.md3agent.data.settings.ModelSelection
 import dev.huecoder.md3agent.data.settings.SettingsRepository
+import dev.huecoder.md3agent.data.settings.SwipeAction
 import dev.huecoder.md3agent.llm.models.ModelFamily
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -32,10 +36,28 @@ enum class ChatAge { TODAY, YESTERDAY, THIS_WEEK, EARLIER }
 
 data class ChatGroup(val age: ChatAge, val chats: List<ChatSummary>)
 
+sealed interface ChatFilter {
+    data object All : ChatFilter
+    data class Folder(val id: String) : ChatFilter
+    data object Archive : ChatFilter
+    data object Trash : ChatFilter
+}
+
+sealed interface HomeNotice {
+    val chatIds: Set<String>
+
+    data class Trashed(override val chatIds: Set<String>) : HomeNotice
+    data class Archived(override val chatIds: Set<String>) : HomeNotice
+}
+
 data class HomeUiState(
     val groups: List<ChatGroup> = emptyList(),
     val folders: List<FolderEntity> = emptyList(),
-    val folderFilter: String? = null,
+    val filter: ChatFilter = ChatFilter.All,
+    val hasArchive: Boolean = false,
+    val hasTrash: Boolean = false,
+    val swipeRight: SwipeAction = SwipeAction.TRASH,
+    val swipeLeft: SwipeAction = SwipeAction.ARCHIVE,
     val query: String = "",
     val selection: Set<String> = emptySet(),
     val hasChats: Boolean = false,
@@ -49,7 +71,7 @@ data class HomeUiState(
 
 data class DefaultModel(val selection: ModelSelection, val name: String, val family: ModelFamily?)
 
-private data class Filters(val query: String, val folderId: String?, val selection: Set<String>)
+private data class Filters(val query: String, val filter: ChatFilter, val selection: Set<String>)
 
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 class HomeViewModel(
@@ -60,14 +82,22 @@ class HomeViewModel(
     private val zone: () -> ZoneId = ZoneId::systemDefault,
 ) : ViewModel() {
     private val query = MutableStateFlow("")
-    private val folderFilter = MutableStateFlow<String?>(null)
+    private val filter = MutableStateFlow<ChatFilter>(ChatFilter.All)
+    private val _notices = Channel<HomeNotice>(Channel.BUFFERED)
+    private var rangeBase: Set<String>? = null
+
+    val notices: Flow<HomeNotice> = _notices.receiveAsFlow()
     private val selection = MutableStateFlow<Set<String>>(emptySet())
     private val summaries = chats.observeSummaries()
 
     private val searchMatches = combine(query.debounce(SEARCH_DEBOUNCE_MS), summaries) { text, _ -> text.trim() }
         .mapLatest { text -> if (text.isEmpty()) null else chats.searchChatIds(text) }
 
-    private val filters = combine(query, folderFilter, selection, ::Filters)
+    private val filters = combine(query, filter, selection, ::Filters)
+
+    init {
+        viewModelScope.launch { chats.trashEvents.collect { _notices.send(HomeNotice.Trashed(it)) } }
+    }
 
     val defaultModel: StateFlow<DefaultModel?> = settings.settings
         .map { it.activeSelection }
@@ -90,17 +120,19 @@ class HomeViewModel(
         filters,
         settings.settings,
         runner.activity,
-    ) { (all, matches), folders, filter, current, activity ->
-        val folderId = filter.folderId?.takeIf { id -> folders.any { it.id == id } }
-        val visible = all.filter { chat ->
-            (folderId == null || chat.folderId == folderId) && (matches == null || chat.id in matches)
-        }
+    ) { (all, matches), folders, filters, current, activity ->
+        val shown = filters.filter.takeUnless { it is ChatFilter.Folder && folders.none { folder -> folder.id == it.id } } ?: ChatFilter.All
+        val visible = all.filter { chat -> chat.belongsTo(shown) && (matches == null || chat.id in matches) }
         HomeUiState(
             groups = group(visible),
             folders = folders,
-            folderFilter = folderId,
-            query = filter.query,
-            selection = filter.selection.intersect(all.map { it.id }.toSet()),
+            filter = shown,
+            hasArchive = all.any { it.archivedAt != null && it.trashedAt == null },
+            hasTrash = all.any { it.trashedAt != null },
+            swipeRight = current.ui.swipeRight,
+            swipeLeft = current.ui.swipeLeft,
+            query = filters.query,
+            selection = filters.selection.intersect(visible.map { it.id }.toSet()),
             hasChats = all.isNotEmpty(),
             hasProvider = current.providers.isNotEmpty(),
             isLoaded = true,
@@ -110,7 +142,10 @@ class HomeViewModel(
 
     fun setQuery(text: String) = query.update { text }
 
-    fun setFolderFilter(folderId: String?) = folderFilter.update { folderId }
+    fun setFilter(target: ChatFilter) {
+        selection.update { emptySet() }
+        filter.update { current -> if (current == target) ChatFilter.All else target }
+    }
 
     fun toggleSelection(chatId: String) = selection.update { if (chatId in it) it - chatId else it + chatId }
 
@@ -123,9 +158,44 @@ class HomeViewModel(
         viewModelScope.launch { chats.renameByUser(chatId, title) }
     }
 
-    fun delete(chatIds: Set<String>) {
+    fun selectRange(anchor: String, current: String) {
+        val ids = state.value.visibleIds
+        val from = ids.indexOf(anchor)
+        val to = ids.indexOf(current)
+        if (from < 0 || to < 0) return
+        val base = rangeBase ?: selection.value.also { rangeBase = it }
+        selection.value = base + ids.subList(minOf(from, to), maxOf(from, to) + 1)
+    }
+
+    fun endRange() {
+        rangeBase = null
+    }
+
+    fun trash(chatIds: Set<String>) = update(chatIds) { chats.trash(it) }
+
+    fun restore(chatIds: Set<String>) = update(chatIds) { chats.restore(it) }
+
+    fun archive(chatIds: Set<String>) = update(chatIds) {
+        chats.archive(it)
+        _notices.send(HomeNotice.Archived(it))
+    }
+
+    fun unarchive(chatIds: Set<String>) = update(chatIds) { chats.unarchive(it) }
+
+    fun deleteForever(chatIds: Set<String>) = update(chatIds) { chats.deleteForever(it) }
+
+    fun emptyTrash() {
+        viewModelScope.launch { chats.emptyTrash() }
+    }
+
+    fun undo(notice: HomeNotice) = when (notice) {
+        is HomeNotice.Trashed -> restore(notice.chatIds)
+        is HomeNotice.Archived -> unarchive(notice.chatIds)
+    }
+
+    private fun update(chatIds: Set<String>, change: suspend (Set<String>) -> Unit) {
         selection.update { it - chatIds }
-        viewModelScope.launch { chatIds.forEach { chats.delete(it) } }
+        viewModelScope.launch { change(chatIds) }
     }
 
     fun move(chatIds: Set<String>, folderId: String?) {
@@ -148,8 +218,15 @@ class HomeViewModel(
     }
 
     fun deleteFolder(folderId: String) {
-        folderFilter.update { if (it == folderId) null else it }
+        filter.update { if (it == ChatFilter.Folder(folderId)) ChatFilter.All else it }
         viewModelScope.launch { chats.deleteFolder(folderId) }
+    }
+
+    private fun ChatSummary.belongsTo(filter: ChatFilter): Boolean = when (filter) {
+        ChatFilter.All -> trashedAt == null && archivedAt == null
+        is ChatFilter.Folder -> trashedAt == null && archivedAt == null && folderId == filter.id
+        ChatFilter.Archive -> trashedAt == null && archivedAt != null
+        ChatFilter.Trash -> trashedAt != null
     }
 
     private fun group(summaries: List<ChatSummary>): List<ChatGroup> {

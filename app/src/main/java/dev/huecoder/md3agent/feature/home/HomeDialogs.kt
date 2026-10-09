@@ -37,7 +37,6 @@ import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Check_box
 import com.composables.icons.materialsymbols.rounded.Delete
-import com.composables.icons.materialsymbols.rounded.Drive_file_move
 import com.composables.icons.materialsymbols.rounded.Edit
 import com.composables.icons.materialsymbols.rounded.Folder
 import com.composables.icons.materialsymbols.rounded.Folder_off
@@ -47,12 +46,10 @@ import dev.huecoder.md3agent.data.db.FolderEntity
 import dev.huecoder.md3agent.ui.haptics.clickHaptics
 
 @Composable
-fun ChatActionsSheet(
+fun TrashedChatSheet(
     title: String,
-    onRename: () -> Unit,
-    onMove: () -> Unit,
     onSelect: () -> Unit,
-    onDelete: () -> Unit,
+    onAction: (RowAction) -> Unit,
     onDismiss: () -> Unit,
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss, modifier = Modifier.clickHaptics()) {
@@ -64,10 +61,9 @@ fun ChatActionsSheet(
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
             )
-            SheetAction(MaterialSymbols.Rounded.Edit, stringResource(R.string.home_rename), onRename)
-            SheetAction(MaterialSymbols.Rounded.Drive_file_move, stringResource(R.string.home_move), onMove)
+            RowSheetAction(RowAction.RESTORE, onAction)
             SheetAction(MaterialSymbols.Rounded.Check_box, stringResource(R.string.home_select), onSelect)
-            SheetAction(MaterialSymbols.Rounded.Delete, stringResource(R.string.home_delete_chat), onDelete, MaterialTheme.colorScheme.error)
+            RowSheetAction(RowAction.DELETE_FOREVER, onAction)
         }
     }
 }
@@ -87,6 +83,12 @@ fun FolderActionsSheet(folder: FolderEntity, onRename: () -> Unit, onDelete: () 
             )
         }
     }
+}
+
+@Composable
+private fun RowSheetAction(action: RowAction, onAction: (RowAction) -> Unit) {
+    val tint = if (action.tone == RowAction.Tone.DANGER) MaterialTheme.colorScheme.error else Color.Unspecified
+    SheetAction(action.icon, stringResource(action.label), { onAction(action) }, tint)
 }
 
 @Composable

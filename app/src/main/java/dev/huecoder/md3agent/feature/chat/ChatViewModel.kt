@@ -167,7 +167,7 @@ class ChatViewModel(
     fun delete() {
         val id = chatId.value ?: return
         runner.cancel(id)
-        appScope.launch { chats.delete(id) }
+        appScope.launch { chats.trash(setOf(id)) }
     }
 
     fun selectModel(selection: ModelSelection) {

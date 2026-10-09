@@ -565,4 +565,35 @@
     <string name="chat_tool_looked_phone">Посмотрел на экран</string>
     <string name="chat_tool_phone_action">Телефон: %1$s</string>
     <string name="permission_phone_control_restricted">Переключатель серый? Откройте «О приложении», нажмите три точки и выберите «Разрешить ограниченные настройки», потом вернитесь.</string>
+    <string name="home_archive">Архив</string>
+    <string name="home_trash">Корзина</string>
+    <string name="home_action_trash">В корзину</string>
+    <string name="home_action_archive">В архив</string>
+    <string name="home_action_unarchive">Из архива</string>
+    <string name="home_action_restore">Восстановить</string>
+    <string name="home_action_delete_forever">Удалить навсегда</string>
+    <string name="home_empty_trash">Очистить</string>
+    <string name="home_archive_empty">В архиве пусто</string>
+    <string name="home_trash_empty">Корзина пуста. Чаты хранятся здесь 30 дней</string>
+    <string name="home_group_empty">Тут пока нет чатов</string>
+    <string name="home_undo">Отменить</string>
+    <plurals name="home_notice_trashed">
+        <item quantity="one">%1$d чат в корзине</item>
+        <item quantity="few">%1$d чата в корзине</item>
+        <item quantity="many">%1$d чатов в корзине</item>
+        <item quantity="other">%1$d чата в корзине</item>
+    </plurals>
+    <plurals name="home_notice_archived">
+        <item quantity="one">%1$d чат в архиве</item>
+        <item quantity="few">%1$d чата в архиве</item>
+        <item quantity="many">%1$d чатов в архиве</item>
+        <item quantity="other">%1$d чата в архиве</item>
+    </plurals>
+    <string name="appearance_section_chat_list">Список чатов</string>
+    <string name="appearance_swipe_right">Свайп вправо</string>
+    <string name="appearance_swipe_left">Свайп влево</string>
+    <string name="swipe_action_none">Ничего</string>
+    <string name="swipe_action_trash">В корзину</string>
+    <string name="swipe_action_archive">В архив</string>
+    <string name="swipe_action_move">Переместить в группу</string>
 </resources>

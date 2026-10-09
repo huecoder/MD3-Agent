@@ -17,13 +17,24 @@ data class ChatSummary(
     val iconKey: String? = null,
     val colorKey: String? = null,
     val shapeKey: String? = null,
+    val archivedAt: Long? = null,
+    val trashedAt: Long? = null,
+)
+
+data class MessageHit(
+    val messageId: String,
+    val chatId: String,
+    val chatTitle: String,
+    val role: MessageRole,
+    val createdAt: Long,
+    val content: String,
 )
 
 @Dao
 interface ChatDao {
     @Query(
         """
-        SELECT c.id, c.title, c.updatedAt, c.modelId, c.folderId, c.iconKey, c.colorKey, c.shapeKey,
+        SELECT c.id, c.title, c.updatedAt, c.modelId, c.folderId, c.iconKey, c.colorKey, c.shapeKey, c.archivedAt, c.trashedAt,
             (SELECT m.content FROM messages m
              WHERE m.chatId = c.id AND m.role IN ('USER', 'ASSISTANT') AND m.content != ''
              ORDER BY m.createdAt DESC LIMIT 1) AS lastMessage
@@ -87,6 +98,29 @@ interface ChatDao {
 
     @Query("DELETE FROM chats WHERE id = :id")
     suspend fun delete(id: String)
+
+    @Query("UPDATE chats SET trashedAt = :trashedAt WHERE id IN (:ids)")
+    suspend fun setTrashed(ids: List<String>, trashedAt: Long?)
+
+    @Query("UPDATE chats SET archivedAt = :archivedAt WHERE id IN (:ids)")
+    suspend fun setArchived(ids: List<String>, archivedAt: Long?)
+
+    @Query("SELECT id FROM chats WHERE trashedAt IS NOT NULL AND trashedAt < :before")
+    suspend fun trashedBefore(before: Long): List<String>
+
+    @Query("SELECT id FROM chats WHERE trashedAt IS NOT NULL")
+    suspend fun trashed(): List<String>
+
+    @Query(
+        """
+        SELECT m.id AS messageId, m.chatId, c.title AS chatTitle, m.role, m.createdAt, m.content
+        FROM messages m JOIN chats c ON c.id = m.chatId
+        WHERE c.trashedAt IS NULL AND m.role IN ('USER', 'ASSISTANT') AND m.content LIKE '%' || :query || '%' ESCAPE '\'
+        ORDER BY m.createdAt DESC
+        LIMIT :limit
+        """,
+    )
+    suspend fun searchMessages(query: String, limit: Int): List<MessageHit>
 }
 
 @Dao

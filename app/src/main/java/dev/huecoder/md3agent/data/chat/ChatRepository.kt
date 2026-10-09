@@ -9,10 +9,13 @@ import dev.huecoder.md3agent.data.db.FolderDao
 import dev.huecoder.md3agent.data.db.FolderEntity
 import dev.huecoder.md3agent.data.db.MessageDao
 import dev.huecoder.md3agent.data.db.MessageEntity
+import dev.huecoder.md3agent.data.db.MessageHit
 import dev.huecoder.md3agent.data.db.MessageRole
 import dev.huecoder.md3agent.data.db.MessageStatus
 import dev.huecoder.md3agent.data.settings.ModelSelection
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 import java.util.UUID
 
 class ChatRepository(
@@ -27,8 +30,13 @@ class ChatRepository(
 
     fun observeFolders(): Flow<List<FolderEntity>> = folderDao.observeAll()
 
-    suspend fun searchChatIds(query: String): Set<String> =
-        chatDao.search(query.trim().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")).toSet()
+    suspend fun searchChatIds(query: String): Set<String> = chatDao.search(likePattern(query)).toSet()
+
+    suspend fun searchMessages(query: String, limit: Int): List<MessageHit> = chatDao.searchMessages(likePattern(query), limit)
+
+    val trashEvents: SharedFlow<Set<String>> get() = _trashEvents
+
+    private val _trashEvents = MutableSharedFlow<Set<String>>(extraBufferCapacity = 1)
 
     fun observeChat(chatId: String): Flow<ChatEntity?> = chatDao.observe(chatId)
 
@@ -103,7 +111,24 @@ class ChatRepository(
     suspend fun setModel(chatId: String, selection: ModelSelection) =
         chatDao.setModel(chatId, selection.providerId, selection.modelId, selection.reasoningEffort?.wireName)
 
-    suspend fun delete(chatId: String) {
+    suspend fun trash(chatIds: Collection<String>) {
+        chatDao.setTrashed(chatIds.toList(), clock())
+        _trashEvents.tryEmit(chatIds.toSet())
+    }
+
+    suspend fun restore(chatIds: Collection<String>) = chatDao.setTrashed(chatIds.toList(), null)
+
+    suspend fun archive(chatIds: Collection<String>) = chatDao.setArchived(chatIds.toList(), clock())
+
+    suspend fun unarchive(chatIds: Collection<String>) = chatDao.setArchived(chatIds.toList(), null)
+
+    suspend fun deleteForever(chatIds: Collection<String>) = chatIds.forEach { delete(it) }
+
+    suspend fun emptyTrash() = deleteForever(chatDao.trashed())
+
+    suspend fun purgeExpiredTrash() = deleteForever(chatDao.trashedBefore(clock() - TRASH_RETENTION_MS))
+
+    private suspend fun delete(chatId: String) {
         val attached = messageDao.listForChat(chatId).flatMap { Attachment.decode(it.attachmentsJson) }
         chatDao.delete(chatId)
         drafts.forget(chatId)
@@ -137,6 +162,12 @@ class ChatRepository(
     )
 
     private var lastTimestamp = 0L
+
+    private fun likePattern(query: String) = query.trim().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+    companion object {
+        const val TRASH_RETENTION_MS = 30L * 24 * 60 * 60 * 1000
+    }
 
     @Synchronized
     private fun monotonicNow(): Long {

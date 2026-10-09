@@ -1,6 +1,17 @@
 package dev.huecoder.md3agent.feature.home
 
 import androidx.annotation.StringRes
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.ListItemShapes
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -32,21 +43,37 @@ import dev.huecoder.md3agent.ui.components.SectionHeader
 import dev.huecoder.md3agent.ui.components.ShapeBadge
 import dev.huecoder.md3agent.ui.components.groupedListColors
 
+private const val PRESSED_SCALE = 0.97f
+private val PRESS_SPEC = spring<Float>(dampingRatio = 0.6f, stiffness = 900f)
 private val FirstSectionGap = 8.dp
 private val SectionGap = 24.dp
+
+data class RowSwipes(val right: RowAction?, val left: RowAction?)
 
 @Composable
 fun ChatList(
     groups: List<ChatGroup>,
     activity: Map<String, ChatActivity>,
     selection: Set<String>,
+    swipes: RowSwipes,
+    @StringRes emptyText: Int,
     contentPadding: PaddingValues,
     onClick: (String) -> Unit,
     onLongClick: (String) -> Unit,
+    onAction: (RowAction, String) -> Unit,
+    onSelectRange: (anchor: String, current: String) -> Unit,
+    onRangeEnd: () -> Unit,
     header: @Composable () -> Unit,
 ) {
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+    val chatIds = groups.flatMap { group -> group.chats.map { it.id } }.toSet()
+    val isChat by rememberUpdatedState<(Any) -> Boolean> { key -> key in chatIds }
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        state = listState,
+        modifier = Modifier
+            .fillMaxSize()
+            .dragToSelect(listState, scope, isSelectable = { isChat(it) }, onRange = onSelectRange, onEnd = onRangeEnd),
         contentPadding = PaddingValues(
             start = 16.dp,
             end = 16.dp,
@@ -59,7 +86,7 @@ fun ChatList(
         if (groups.isEmpty()) {
             item(key = "empty") {
                 Text(
-                    stringResource(R.string.home_search_empty),
+                    stringResource(emptyText),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = 32.dp).fillMaxWidth(),
@@ -72,16 +99,24 @@ fun ChatList(
                 SectionHeader(stringResource(group.age.label), topPadding = if (groupIndex == 0) FirstSectionGap else SectionGap)
             }
             itemsIndexed(group.chats, key = { _, chat -> chat.id }) { index, chat ->
-                ChatRow(
-                    chat = chat,
-                    activity = activity[chat.id],
-                    selected = chat.id in selection,
-                    index = index,
-                    count = group.chats.size,
-                    onClick = { onClick(chat.id) },
-                    onLongClick = { onLongClick(chat.id) },
+                val shapes = ListItemDefaults.segmentedShapes(index = index, count = group.chats.size)
+                val selecting = selection.isNotEmpty()
+                SwipeableRow(
+                    right = swipes.right.takeUnless { selecting },
+                    left = swipes.left.takeUnless { selecting },
+                    shape = shapes.shape,
+                    onAction = { onAction(it, chat.id) },
                     modifier = Modifier.animateItem(),
-                )
+                ) {
+                    ChatRow(
+                        chat = chat,
+                        activity = activity[chat.id],
+                        selected = chat.id in selection,
+                        shapes = shapes,
+                        onClick = { onClick(chat.id) },
+                        onLongClick = { onLongClick(chat.id) },
+                    )
+                }
             }
         }
     }
@@ -92,19 +127,21 @@ private fun ChatRow(
     chat: ChatSummary,
     activity: ChatActivity?,
     selected: Boolean,
-    index: Int,
-    count: Int,
+    shapes: ListItemShapes,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
-    modifier: Modifier = Modifier,
 ) {
+    val interactions = remember { MutableInteractionSource() }
+    val pressed by interactions.collectIsPressedAsState()
+    val scale by animateFloatAsState(if (pressed) PRESSED_SCALE else 1f, PRESS_SPEC, label = "rowPress")
     SegmentedListItem(
         onClick = onClick,
         onLongClick = onLongClick,
         onLongClickLabel = stringResource(R.string.home_select),
-        shapes = ListItemDefaults.segmentedShapes(index = index, count = count),
+        shapes = shapes,
         colors = if (selected) ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.secondaryContainer) else groupedListColors(),
-        modifier = modifier,
+        interactionSource = interactions,
+        modifier = Modifier.graphicsLayer { scaleX = scale; scaleY = scale },
         leadingContent = {
             when {
                 selected -> ShapeBadge(icon = MaterialSymbols.Rounded.Check)

@@ -5,13 +5,14 @@ import androidx.compose.ui.res.stringResource
 import dev.huecoder.md3agent.R
 
 sealed interface HomeDialog {
-    data class Actions(val chatId: String) : HomeDialog
+    data class Trashed(val chatId: String) : HomeDialog
     data class RenameChat(val chatId: String) : HomeDialog
     data class Move(val chatIds: Set<String>) : HomeDialog
     data class NewFolder(val moving: Set<String> = emptySet()) : HomeDialog
     data class FolderMenu(val folderId: String) : HomeDialog
     data class RenameFolder(val folderId: String) : HomeDialog
-    data class Delete(val chatIds: Set<String>) : HomeDialog
+    data class DeleteForever(val chatIds: Set<String>) : HomeDialog
+    data object EmptyTrash : HomeDialog
 }
 
 @Composable
@@ -21,12 +22,10 @@ fun HomeDialogHost(dialog: HomeDialog?, state: HomeUiState, viewModel: HomeViewM
     val folder = { id: String -> state.folders.firstOrNull { it.id == id } }
     when (dialog) {
         null -> Unit
-        is HomeDialog.Actions -> ChatActionsSheet(
+        is HomeDialog.Trashed -> TrashedChatSheet(
             title = chatTitle(dialog.chatId).orEmpty(),
-            onRename = { onChange(HomeDialog.RenameChat(dialog.chatId)) },
-            onMove = { onChange(HomeDialog.Move(setOf(dialog.chatId))) },
             onSelect = { viewModel.toggleSelection(dialog.chatId); dismiss() },
-            onDelete = { onChange(HomeDialog.Delete(setOf(dialog.chatId))) },
+            onAction = { action -> onChange(viewModel.perform(action, setOf(dialog.chatId))) },
             onDismiss = dismiss,
         )
         is HomeDialog.RenameChat -> NameDialog(
@@ -69,10 +68,27 @@ fun HomeDialogHost(dialog: HomeDialog?, state: HomeUiState, viewModel: HomeViewM
                 onDismiss = dismiss,
             )
         }
-        is HomeDialog.Delete -> DeleteChatsDialog(
+        is HomeDialog.DeleteForever -> DeleteChatsDialog(
             count = dialog.chatIds.size,
-            onConfirm = { viewModel.delete(dialog.chatIds); dismiss() },
+            onConfirm = { viewModel.deleteForever(dialog.chatIds); dismiss() },
+            onDismiss = dismiss,
+        )
+        HomeDialog.EmptyTrash -> DeleteChatsDialog(
+            count = state.visibleIds.size,
+            onConfirm = { viewModel.emptyTrash(); dismiss() },
             onDismiss = dismiss,
         )
     }
+}
+
+fun HomeViewModel.perform(action: RowAction, chatIds: Set<String>): HomeDialog? {
+    when (action) {
+        RowAction.MOVE -> return HomeDialog.Move(chatIds)
+        RowAction.DELETE_FOREVER -> return HomeDialog.DeleteForever(chatIds)
+        RowAction.TRASH -> trash(chatIds)
+        RowAction.ARCHIVE -> archive(chatIds)
+        RowAction.UNARCHIVE -> unarchive(chatIds)
+        RowAction.RESTORE -> restore(chatIds)
+    }
+    return null
 }
