@@ -46,7 +46,10 @@ import dev.huecoder.md3agent.ui.text.asString
 import dev.huecoder.md3agent.ui.text.resolve
 import dev.huecoder.md3agent.voice.DictationState
 import dev.huecoder.md3agent.voice.DictationViewModel
+import dev.huecoder.md3agent.ui.avatar.KnockoutStage
 import dev.huecoder.md3agent.ui.avatar.TypingAttention
+import dev.huecoder.md3agent.ui.avatar.knockoutArea
+import dev.huecoder.md3agent.ui.avatar.knockoutObstacle
 
 @Composable
 fun ChatScreen(chatId: String?, onBack: () -> Unit) {
@@ -64,6 +67,7 @@ fun ChatScreen(chatId: String?, onBack: () -> Unit) {
     }
     var pickingModel by rememberSaveable { mutableStateOf(false) }
     val typingAttention = remember { TypingAttention() }
+    val knockout = remember { KnockoutStage() }
     val pickFiles = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
         if (uris.isNotEmpty()) viewModel.attach(uris)
     }
@@ -106,13 +110,14 @@ fun ChatScreen(chatId: String?, onBack: () -> Unit) {
             },
             snackbarHost = { SnackbarHost(snackbarHost) },
         ) { padding ->
-            Box(Modifier.fillMaxSize().padding(top = padding.calculateTopPadding()).imePadding()) {
+            Box(Modifier.fillMaxSize().padding(top = padding.calculateTopPadding()).imePadding().knockoutArea(knockout)) {
                 if (state.messages.isEmpty()) {
                     EmptyConversation(
                         Modifier.align(Alignment.Center),
                         interactive = true,
                         typing = typingAttention,
                         listeningLevel = dictation.listeningLevel(),
+                        knockout = knockout,
                     )
                 } else {
                     MessageList(
@@ -128,6 +133,7 @@ fun ChatScreen(chatId: String?, onBack: () -> Unit) {
                 }
                 val composerModifier = Modifier
                     .align(Alignment.BottomCenter)
+                    .knockoutObstacle(knockout, COMPOSER_OBSTACLE)
                     .background(MaterialTheme.colorScheme.surface)
                     .navigationBarsPadding()
                     .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 12.dp)
@@ -205,15 +211,26 @@ fun EmptyConversation(
     interactive: Boolean = false,
     typing: TypingAttention? = null,
     listeningLevel: Float? = null,
+    knockout: KnockoutStage? = null,
 ) {
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(20.dp)) {
-        AgentAvatar(isWorking = false, size = avatarSize, interactive = interactive, typing = typing, listeningLevel = listeningLevel)
-        Text(stringResource(R.string.chat_empty_greeting), style = style)
+        AgentAvatar(
+            isWorking = false,
+            size = avatarSize,
+            interactive = interactive,
+            typing = typing,
+            listeningLevel = listeningLevel,
+            knockout = knockout,
+        )
+        Text(stringResource(R.string.chat_empty_greeting), style = style, modifier = Modifier.knockoutObstacle(knockout, GREETING_OBSTACLE))
     }
 }
 
 private fun DictationControls.listeningLevel(): Float? =
     (state as? DictationState.Recording)?.let { it.levels.lastOrNull() ?: 0f }
+
+private const val GREETING_OBSTACLE = "greeting"
+private const val COMPOSER_OBSTACLE = "composer"
 
 private val PICKABLE_MIME_TYPES = arrayOf("*/*")
 

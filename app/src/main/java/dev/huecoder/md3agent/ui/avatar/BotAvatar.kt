@@ -21,6 +21,7 @@ import androidx.compose.ui.geometry.isSpecified
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Matrix
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.drawscope.rotate
@@ -36,6 +37,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.huecoder.md3agent.data.settings.AvatarRestShape
 import dev.huecoder.md3agent.ui.haptics.rememberHaptics
+import kotlinx.coroutines.launch
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
@@ -51,6 +53,7 @@ fun BotAvatar(
     punchable: Boolean = false,
     typing: TypingAttention? = null,
     listeningLevel: Float? = null,
+    knockout: KnockoutStage? = null,
     onPunch: (Punch) -> Unit = {},
 ) {
     val shapes = remember(restShape) { BotShapes.of(restShape) }
@@ -60,7 +63,9 @@ fun BotAvatar(
     val haptics = rememberHaptics()
     val scope = rememberCoroutineScope()
     var centerInRoot by remember { mutableStateOf(Offset.Unspecified) }
-    val reach = with(LocalDensity.current) { Offset(GAZE_REACH_X.toPx(), GAZE_REACH_Y.toPx()) }
+    val density = LocalDensity.current
+    val reach = with(density) { Offset(GAZE_REACH_X.toPx(), GAZE_REACH_Y.toPx()) }
+    val pixelsPerMeter = with(density) { PHYSICS_METER.toPx() }
     val level by rememberUpdatedState(listeningLevel ?: 0f)
     val currentOnPunch by rememberUpdatedState(onPunch)
 
@@ -89,13 +94,21 @@ fun BotAvatar(
             awaitEachGesture {
                 val down = awaitFirstDown()
                 down.consume()
+                if (knockout?.isPlaying == true) return@awaitEachGesture
                 val half = this.size.width / 2f
                 val direction = (down.position - Offset(half, half)) / half
                 val landed = punch.hit(direction, SystemClock.uptimeMillis(), scope)
-                haptics.impact(landed.power)
                 val distance = direction.getDistance()
-                motion.flinch(if (distance > 0f) direction / distance else Offset.Zero, landed.power)
+                val unit = if (distance > 0f) direction / distance else Offset.Zero
+                motion.flinch(unit, landed.power)
                 currentOnPunch(landed)
+                if (landed.isKnockout && knockout != null && centerInRoot.isSpecified) {
+                    punch.resetCombo()
+                    haptics.thud()
+                    scope.launch { knockout.play(centerInRoot, half, away = -unit, pixelsPerMeter, onImpact = haptics::impact) }
+                } else {
+                    haptics.impact(landed.power)
+                }
             }
         }
     } else {
@@ -110,7 +123,11 @@ fun BotAvatar(
                 centerInRoot = coordinates.positionInRoot() + Offset(bounds.width / 2f, bounds.height / 2f)
             }
             .graphicsLayer {
-                rotationZ = listening.headTilt.value
+                knockout?.let { stage ->
+                    translationX = stage.offset.x
+                    translationY = stage.offset.y
+                }
+                rotationZ = listening.headTilt.value + (knockout?.spin ?: 0f)
                 val swell = 1f + listening.swell.value
                 scaleX = swell
                 scaleY = swell
@@ -128,8 +145,13 @@ fun BotAvatar(
                     val head = punch.tilt.value * EYE_TURN
                     val turnedGaze = Gaze(gaze.yaw - head.x, gaze.pitch + head.y)
                     val (left, right) = BotGeometry.eyes(turnedGaze, motion.blink.value, motion.wobble, shapes.safeRadius)
-                    drawEye(left, side, eyeColor)
-                    drawEye(right, side, eyeColor)
+                    if (knockout?.isDazed == true) {
+                        drawDazedEye(left, side, eyeColor)
+                        drawDazedEye(right, side, eyeColor)
+                    } else {
+                        drawEye(left, side, eyeColor)
+                        drawEye(right, side, eyeColor)
+                    }
                 }
             }
         }
@@ -200,7 +222,19 @@ private fun DrawScope.drawEye(eye: Eye, side: Float, color: Color) {
     drawPath(outline, color)
 }
 
+private fun DrawScope.drawDazedEye(eye: Eye, side: Float, color: Color) {
+    val center = Offset(center.x + eye.centerX * side, center.y + eye.centerY * side)
+    val arm = eye.width.coerceAtLeast(eye.height * DAZED_ASPECT) * side * DAZED_ARM
+    val stroke = eye.width * side * DAZED_STROKE
+    drawLine(color, center + Offset(-arm, -arm), center + Offset(arm, arm), stroke, StrokeCap.Round)
+    drawLine(color, center + Offset(-arm, arm), center + Offset(arm, -arm), stroke, StrokeCap.Round)
+}
+
 private const val CORNERS = 4
+private const val DAZED_ASPECT = 0.5f
+private const val DAZED_ARM = 0.42f
+private const val DAZED_STROKE = 0.42f
+private val PHYSICS_METER = 64.dp
 private const val CAMERA_DISTANCE = 2.2f
 private const val BULGE = 0.45f
 private const val EYE_TURN = 0.55f

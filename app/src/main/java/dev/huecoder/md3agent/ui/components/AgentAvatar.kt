@@ -33,6 +33,7 @@ import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.roundedfilled.Auto_awesome
 import dev.huecoder.md3agent.data.settings.AvatarStyle
 import dev.huecoder.md3agent.ui.avatar.BotAvatar
+import dev.huecoder.md3agent.ui.avatar.KnockoutStage
 import dev.huecoder.md3agent.ui.avatar.LocalAgentLook
 import dev.huecoder.md3agent.ui.avatar.Punch
 import dev.huecoder.md3agent.ui.avatar.TypingAttention
@@ -45,6 +46,7 @@ fun AgentAvatar(
     interactive: Boolean = false,
     typing: TypingAttention? = null,
     listeningLevel: Float? = null,
+    knockout: KnockoutStage? = null,
     onPunch: (Punch) -> Unit = {},
 ) {
     val look = LocalAgentLook.current
@@ -57,6 +59,7 @@ fun AgentAvatar(
             punchable = interactive,
             typing = typing,
             listeningLevel = listeningLevel,
+            knockout = knockout,
             onPunch = onPunch,
         )
         AvatarStyle.CLASSIC -> PokableClassicAvatar(isWorking, modifier, size, interactive)

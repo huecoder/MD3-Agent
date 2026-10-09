@@ -115,6 +115,7 @@ dependencies {
     implementation(libs.coil.network.okhttp)
     implementation(libs.shizuku.api)
     implementation(libs.shizuku.provider)
+    implementation(libs.dyn4j)
 
     testImplementation(libs.junit)
     testImplementation(libs.okhttp.mockwebserver)
