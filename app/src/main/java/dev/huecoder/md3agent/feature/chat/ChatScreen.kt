@@ -44,7 +44,9 @@ import dev.huecoder.md3agent.ui.components.appViewModel
 import dev.huecoder.md3agent.ui.text.UiText
 import dev.huecoder.md3agent.ui.text.asString
 import dev.huecoder.md3agent.ui.text.resolve
+import dev.huecoder.md3agent.voice.DictationState
 import dev.huecoder.md3agent.voice.DictationViewModel
+import dev.huecoder.md3agent.ui.avatar.TypingAttention
 
 @Composable
 fun ChatScreen(chatId: String?, onBack: () -> Unit) {
@@ -61,6 +63,7 @@ fun ChatScreen(chatId: String?, onBack: () -> Unit) {
         viewModel.saveDraft(text)
     }
     var pickingModel by rememberSaveable { mutableStateOf(false) }
+    val typingAttention = remember { TypingAttention() }
     val pickFiles = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
         if (uris.isNotEmpty()) viewModel.attach(uris)
     }
@@ -105,7 +108,12 @@ fun ChatScreen(chatId: String?, onBack: () -> Unit) {
         ) { padding ->
             Box(Modifier.fillMaxSize().padding(top = padding.calculateTopPadding()).imePadding()) {
                 if (state.messages.isEmpty()) {
-                    EmptyConversation(Modifier.align(Alignment.Center), interactive = true)
+                    EmptyConversation(
+                        Modifier.align(Alignment.Center),
+                        interactive = true,
+                        typing = typingAttention,
+                        listeningLevel = dictation.listeningLevel(),
+                    )
                 } else {
                     MessageList(
                         messages = state.messages,
@@ -143,6 +151,7 @@ fun ChatScreen(chatId: String?, onBack: () -> Unit) {
                         onRemoveAttachment = viewModel::removeAttachment,
                         dictation = dictation,
                         modifier = composerModifier,
+                        onLetterTyped = typingAttention::onLetter,
                     )
                 }
             }
@@ -194,12 +203,17 @@ fun EmptyConversation(
     avatarSize: Dp = 96.dp,
     style: TextStyle = MaterialTheme.typography.displaySmallEmphasized,
     interactive: Boolean = false,
+    typing: TypingAttention? = null,
+    listeningLevel: Float? = null,
 ) {
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(20.dp)) {
-        AgentAvatar(isWorking = false, size = avatarSize, interactive = interactive)
+        AgentAvatar(isWorking = false, size = avatarSize, interactive = interactive, typing = typing, listeningLevel = listeningLevel)
         Text(stringResource(R.string.chat_empty_greeting), style = style)
     }
 }
+
+private fun DictationControls.listeningLevel(): Float? =
+    (state as? DictationState.Recording)?.let { it.levels.lastOrNull() ?: 0f }
 
 private val PICKABLE_MIME_TYPES = arrayOf("*/*")
 

@@ -34,10 +34,37 @@ import com.composables.icons.materialsymbols.roundedfilled.Auto_awesome
 import dev.huecoder.md3agent.data.settings.AvatarStyle
 import dev.huecoder.md3agent.ui.avatar.BotAvatar
 import dev.huecoder.md3agent.ui.avatar.LocalAgentLook
+import dev.huecoder.md3agent.ui.avatar.Punch
+import dev.huecoder.md3agent.ui.avatar.TypingAttention
 
 @Composable
-fun AgentAvatar(isWorking: Boolean, modifier: Modifier = Modifier, size: Dp = 32.dp, interactive: Boolean = false) {
+fun AgentAvatar(
+    isWorking: Boolean,
+    modifier: Modifier = Modifier,
+    size: Dp = 32.dp,
+    interactive: Boolean = false,
+    typing: TypingAttention? = null,
+    listeningLevel: Float? = null,
+    onPunch: (Punch) -> Unit = {},
+) {
     val look = LocalAgentLook.current
+    when (look.style) {
+        AvatarStyle.BOT -> BotAvatar(
+            isWorking = isWorking,
+            restShape = look.restShape,
+            size = size,
+            modifier = modifier,
+            punchable = interactive,
+            typing = typing,
+            listeningLevel = listeningLevel,
+            onPunch = onPunch,
+        )
+        AvatarStyle.CLASSIC -> PokableClassicAvatar(isWorking, modifier, size, interactive)
+    }
+}
+
+@Composable
+private fun PokableClassicAvatar(isWorking: Boolean, modifier: Modifier, size: Dp, interactive: Boolean) {
     val haptics = rememberHaptics()
     var pokes by remember { mutableIntStateOf(0) }
     val squish = remember { Animatable(1f) }
@@ -56,10 +83,7 @@ fun AgentAvatar(isWorking: Boolean, modifier: Modifier = Modifier, size: Dp = 32
     } else {
         Modifier
     }
-    when (look.style) {
-        AvatarStyle.BOT -> BotAvatar(isWorking, look.restShape, size, modifier.then(touch), pokes = pokes)
-        AvatarStyle.CLASSIC -> ClassicAvatar(isWorking, modifier.then(touch), size)
-    }
+    ClassicAvatar(isWorking, modifier.then(touch), size)
 }
 
 @Composable

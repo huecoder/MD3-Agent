@@ -1,6 +1,7 @@
 package dev.huecoder.md3agent.ui.avatar
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.spring
@@ -11,13 +12,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
 import androidx.graphics.shapes.Morph
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.math.roundToInt
 import kotlin.random.Random
+
+private data class Flinch(val direction: Offset, val power: Float)
 
 @Stable
 class BotMotion(private val shapes: BotShapes, startWorking: Boolean) {
@@ -33,7 +39,7 @@ class BotMotion(private val shapes: BotShapes, startWorking: Boolean) {
     val rotation = Animatable(0f)
     val gaze = Animatable(Offset.Zero, Offset.VectorConverter)
     val blink = Animatable(0f)
-    private val pokes = Channel<Unit>(Channel.CONFLATED)
+    private val flinches = Channel<Flinch>(Channel.CONFLATED)
 
     val wobble: Float
         get() = (gaze.velocity.getDistance() / WOBBLE_SPEED).coerceIn(0f, 1f)
@@ -63,7 +69,7 @@ class BotMotion(private val shapes: BotShapes, startWorking: Boolean) {
     }
 
     suspend fun rest() = coroutineScope {
-        launch { gaze.animateTo(Offset.Zero, GAZE_HOME_SPEC) }
+        launch { lookTo(Offset.Zero, GazeSprings.Home) }
         if (phase == Phase.RESTING) return@coroutineScope
         finishCurrent()
         if (phase == Phase.STEPPING || phase == Phase.WAKING) {
@@ -78,15 +84,23 @@ class BotMotion(private val shapes: BotShapes, startWorking: Boolean) {
         progress.snapTo(0f)
     }
 
-    fun poke() {
-        pokes.trySend(Unit)
+    fun flinch(direction: Offset, power: Float) {
+        flinches.trySend(Flinch(direction, power))
+    }
+
+    suspend fun lookTo(target: Offset, spec: AnimationSpec<Offset>) {
+        try {
+            gaze.animateTo(target, spec)
+        } catch (interrupted: CancellationException) {
+            currentCoroutineContext().ensureActive()
+        }
     }
 
     suspend fun blinkForever() {
         while (true) {
-            val poked = withTimeoutOrNull(Random.nextLong(BLINK_MIN_GAP_MS, BLINK_MAX_GAP_MS)) { pokes.receive() } != null
-            if (poked) {
-                reactToPoke()
+            val flinch = withTimeoutOrNull(Random.nextLong(BLINK_MIN_GAP_MS, BLINK_MAX_GAP_MS)) { flinches.receive() }
+            if (flinch != null) {
+                reactTo(flinch)
                 continue
             }
             blinkOnce()
@@ -97,16 +111,15 @@ class BotMotion(private val shapes: BotShapes, startWorking: Boolean) {
         }
     }
 
-    private suspend fun reactToPoke() = coroutineScope {
-        if (phase == Phase.RESTING) launch { glanceAway() }
-        blinkOnce()
-    }
-
-    private suspend fun glanceAway() {
-        val side = if (Random.nextBoolean()) 1f else -1f
-        gaze.animateTo(Offset(side * POKE_GLANCE_X, -POKE_GLANCE_Y), SACCADE_SPEC)
-        delay(POKE_HOLD_MS)
-        gaze.animateTo(Offset.Zero, GAZE_HOME_SPEC)
+    private suspend fun reactTo(flinch: Flinch) = coroutineScope {
+        launch {
+            val away = -flinch.direction * (FLINCH_MIN_REACH + (1f - FLINCH_MIN_REACH) * flinch.power)
+            lookTo(Offset(away.x.coerceIn(-1f, 1f), away.y.coerceIn(-1f, 1f)), GazeSprings.Saccade)
+            delay(FLINCH_HOLD_MS)
+            lookTo(Offset.Zero, GazeSprings.Home)
+        }
+        blink.animateTo(FLINCH_SQUEEZE * (FLINCH_MIN_SQUEEZE + (1f - FLINCH_MIN_SQUEEZE) * flinch.power), tween(BLINK_CLOSE_MS))
+        blink.animateTo(0f, FLINCH_OPEN_SPEC)
     }
 
     private suspend fun blinkOnce() {
@@ -118,7 +131,7 @@ class BotMotion(private val shapes: BotShapes, startWorking: Boolean) {
         while (true) {
             val quick = Random.nextFloat() < SACCADE_CHANCE
             val target = Offset(Random.nextFloat() * 2f - 1f, (Random.nextFloat() * 2f - 1f) * VERTICAL_RANGE)
-            gaze.animateTo(target, if (quick) SACCADE_SPEC else GLANCE_SPEC)
+            lookTo(target, if (quick) GazeSprings.Saccade else GazeSprings.Glance)
             delay(Random.nextLong(GAZE_HOLD_MIN_MS, GAZE_HOLD_MAX_MS))
         }
     }
@@ -148,15 +161,14 @@ class BotMotion(private val shapes: BotShapes, startWorking: Boolean) {
         const val BLINK_OPEN_MS = 120
         const val DOUBLE_BLINK_CHANCE = 0.2f
         const val DOUBLE_BLINK_GAP_MS = 140L
-        const val POKE_GLANCE_X = 0.7f
-        const val POKE_GLANCE_Y = 0.35f
-        const val POKE_HOLD_MS = 650L
+        const val FLINCH_MIN_REACH = 0.45f
+        const val FLINCH_HOLD_MS = 260L
+        const val FLINCH_SQUEEZE = 0.85f
+        const val FLINCH_MIN_SQUEEZE = 0.4f
         val MORPH_SPEC = spring<Float>(dampingRatio = 0.6f, stiffness = 260f)
         val TURN_SPEC = spring<Float>(dampingRatio = 0.7f, stiffness = 120f)
         val FINISH_SPEC = spring<Float>(stiffness = Spring.StiffnessMedium)
         val SETTLE_SPEC = spring<Float>(dampingRatio = 0.75f, stiffness = 180f)
-        val GLANCE_SPEC = spring<Offset>(dampingRatio = 0.8f, stiffness = 50f)
-        val SACCADE_SPEC = spring<Offset>(dampingRatio = 0.85f, stiffness = 420f)
-        val GAZE_HOME_SPEC = spring<Offset>(dampingRatio = 0.8f, stiffness = 70f)
+        val FLINCH_OPEN_SPEC = spring<Float>(dampingRatio = 0.6f, stiffness = 260f)
     }
 }

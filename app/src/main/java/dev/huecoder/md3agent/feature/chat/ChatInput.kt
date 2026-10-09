@@ -33,6 +33,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
@@ -72,6 +76,7 @@ fun ChatInput(
     onRemoveAttachment: (Attachment) -> Unit = {},
     dictation: DictationControls? = null,
     focusRequester: FocusRequester = remember { FocusRequester() },
+    onLetterTyped: (Offset) -> Unit = {},
 ) {
     val haptics = rememberHaptics()
     val dictationState = dictation?.state ?: DictationState.Idle
@@ -113,6 +118,7 @@ fun ChatInput(
                 onTextChange = onTextChange,
                 focusRequester = focusRequester,
                 onLineCount = { lines -> if (lines > 1 && stackedAt == null) stackedAt = text.length },
+                onLetterTyped = onLetterTyped,
                 modifier = fieldModifier,
             )
         }
@@ -163,26 +169,53 @@ private fun MessageField(
     onTextChange: (String) -> Unit,
     focusRequester: FocusRequester,
     onLineCount: (Int) -> Unit,
+    onLetterTyped: (Offset) -> Unit,
     modifier: Modifier,
 ) {
     val colors = MaterialTheme.colorScheme
     val style = MaterialTheme.typography.bodyLarge.copy(color = colors.onSurface)
+    val caret = remember { CaretTracker() }
     BasicTextField(
         value = text,
-        onValueChange = onTextChange,
+        onValueChange = { edited ->
+            caret.onEdit(text, edited)
+            onTextChange(edited)
+        },
         textStyle = style,
         maxLines = MAX_VISIBLE_LINES,
         cursorBrush = SolidColor(colors.primary),
         keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-        onTextLayout = { onLineCount(it.lineCount) },
+        onTextLayout = { layout ->
+            onLineCount(layout.lineCount)
+            caret.onLayout(layout)?.let(onLetterTyped)
+        },
         modifier = modifier.heightIn(min = FIELD_MIN_HEIGHT).focusRequester(focusRequester),
         decorationBox = { inner ->
             Box(contentAlignment = Alignment.CenterStart, modifier = Modifier.padding(vertical = FIELD_VERTICAL_INSET)) {
                 if (text.isEmpty()) Text(stringResource(R.string.chat_input_placeholder), style = style, color = colors.onSurfaceVariant)
-                inner()
+                Box(Modifier.onGloballyPositioned { caret.textCoordinates = it }) { inner() }
             }
         },
     )
+}
+
+private class CaretTracker {
+    var textCoordinates: LayoutCoordinates? = null
+    private var pendingIndex: Int? = null
+
+    fun onEdit(before: String, after: String) {
+        val prefix = before.commonPrefixWith(after).length
+        val suffix = before.substring(prefix).commonSuffixWith(after.substring(prefix)).length
+        pendingIndex = after.length - suffix
+    }
+
+    fun onLayout(layout: TextLayoutResult): Offset? {
+        val index = pendingIndex ?: return null
+        pendingIndex = null
+        val coordinates = textCoordinates?.takeIf { it.isAttached } ?: return null
+        val cursor = layout.getCursorRect(index.coerceIn(0, layout.layoutInput.text.length))
+        return coordinates.localToRoot(cursor.center)
+    }
 }
 
 private val COMPOSER_INSET = 6.dp
