@@ -18,6 +18,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.pluralStringResource
@@ -29,6 +30,9 @@ import com.composables.icons.materialsymbols.rounded.Delete
 import com.composables.icons.materialsymbols.rounded.Drive_file_move
 import com.composables.icons.materialsymbols.rounded.Select_all
 import dev.huecoder.md3agent.R
+import dev.huecoder.md3agent.feature.models.ModelPickerSheet
+import dev.huecoder.md3agent.ui.components.ModelChip
+import dev.huecoder.md3agent.ui.components.ModelChipSize
 import dev.huecoder.md3agent.ui.components.appViewModel
 
 @Composable
@@ -36,8 +40,10 @@ fun HomeScreen(
     onOpenChat: (chatId: String?) -> Unit,
     onOpenSettings: () -> Unit,
 ) {
-    val viewModel = appViewModel { HomeViewModel(it.chats, it.settings, it.conversations) }
+    val viewModel = appViewModel { HomeViewModel(it.chats, it.settings, it.modelCatalog, it.conversations) }
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val defaultModel by viewModel.defaultModel.collectAsStateWithLifecycle()
+    var pickingModel by remember { mutableStateOf(false) }
     val topBarScroll = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     var dialog by remember { mutableStateOf<HomeDialog?>(null) }
 
@@ -65,6 +71,14 @@ fun HomeScreen(
                         BarAction(MaterialSymbols.Rounded.Select_all, R.string.home_select_all, viewModel::selectAll)
                         BarAction(MaterialSymbols.Rounded.Drive_file_move, R.string.home_move) { dialog = HomeDialog.Move(state.selection) }
                         BarAction(MaterialSymbols.Rounded.Delete, R.string.home_delete_chat) { dialog = HomeDialog.Delete(state.selection) }
+                    } else if (state.hasProvider) {
+                        ModelChip(
+                            family = defaultModel?.family,
+                            label = defaultModel?.name,
+                            onClick = { pickingModel = true },
+                            size = ModelChipSize.Regular,
+                            modifier = Modifier.padding(end = 12.dp),
+                        )
                     }
                 },
                 scrollBehavior = topBarScroll,
@@ -102,6 +116,9 @@ fun HomeScreen(
     }
 
     HomeDialogHost(dialog, state, viewModel, onChange = { dialog = it })
+    if (pickingModel) {
+        ModelPickerSheet(current = defaultModel?.selection, onSelect = viewModel::selectDefaultModel, onDismiss = { pickingModel = false })
+    }
 }
 
 @Composable

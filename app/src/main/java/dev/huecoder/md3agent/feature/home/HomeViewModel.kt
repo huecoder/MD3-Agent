@@ -7,7 +7,10 @@ import dev.huecoder.md3agent.conversation.ConversationRunner
 import dev.huecoder.md3agent.data.chat.ChatRepository
 import dev.huecoder.md3agent.data.db.ChatSummary
 import dev.huecoder.md3agent.data.db.FolderEntity
+import dev.huecoder.md3agent.data.models.ModelCatalog
+import dev.huecoder.md3agent.data.settings.ModelSelection
 import dev.huecoder.md3agent.data.settings.SettingsRepository
+import dev.huecoder.md3agent.llm.models.ModelFamily
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,6 +18,8 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -42,12 +47,15 @@ data class HomeUiState(
     val visibleIds: List<String> get() = groups.flatMap { group -> group.chats.map { it.id } }
 }
 
+data class DefaultModel(val selection: ModelSelection, val name: String, val family: ModelFamily?)
+
 private data class Filters(val query: String, val folderId: String?, val selection: Set<String>)
 
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 class HomeViewModel(
     private val chats: ChatRepository,
-    settings: SettingsRepository,
+    private val settings: SettingsRepository,
+    catalog: ModelCatalog,
     runner: ConversationRunner,
     private val zone: () -> ZoneId = ZoneId::systemDefault,
 ) : ViewModel() {
@@ -60,6 +68,21 @@ class HomeViewModel(
         .mapLatest { text -> if (text.isEmpty()) null else chats.searchChatIds(text) }
 
     private val filters = combine(query, folderFilter, selection, ::Filters)
+
+    val defaultModel: StateFlow<DefaultModel?> = settings.settings
+        .map { it.activeSelection }
+        .distinctUntilChanged()
+        .mapLatest { selection ->
+            selection?.let {
+                val info = catalog.infoLoaded(it.providerId, it.modelId)
+                DefaultModel(it, info.displayName, info.family)
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), null)
+
+    fun selectDefaultModel(selection: ModelSelection) {
+        viewModelScope.launch { settings.setActiveSelection(selection) }
+    }
 
     val state: StateFlow<HomeUiState> = combine(
         combine(summaries, searchMatches, ::Pair),
