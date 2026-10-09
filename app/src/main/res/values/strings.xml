@@ -510,6 +510,8 @@
     <string name="appearance_section_feedback">Feedback</string>
     <string name="appearance_haptics">Vibration on touch</string>
     <string name="appearance_haptics_summary">Taps on buttons, switches and tab changes, stronger for main actions</string>
+    <string name="playground_hint">Grab the shapes, throw them up and away</string>
+    <string name="about_logo_taps_left">%1$d more</string>
     <string name="appearance_haptic_strength">Vibration strength</string>
     <string name="appearance_haptic_strength_value">%1$d%%</string>
     <string name="about_version">Version %1$s (%2$d)</string>

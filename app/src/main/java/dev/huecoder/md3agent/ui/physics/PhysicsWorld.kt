@@ -28,6 +28,18 @@ data class Impact(val first: Body, val second: Body, val point: Offset, val spee
 class PhysicsWorld(private val pixelsPerMeter: Float, gravity: Double = CARTOON_GRAVITY) {
     val gravityPixels: Float = (gravity * pixelsPerMeter).toFloat()
 
+    fun pointGravity(direction: Offset) {
+        val length = direction.getDistance().takeIf { it > 0f } ?: return
+        val strength = gravityPixels / pixelsPerMeter / length
+        world.setGravity((direction.x * strength).toDouble(), (direction.y * strength).toDouble())
+        world.bodies.forEach { it.setAtRest(false) }
+    }
+
+    fun bodyAt(point: Offset): Body? {
+        val probe = Vector2(point.x.meters, point.y.meters)
+        return world.bodies.lastOrNull { !it.mass.isInfinite && it.contains(probe) }
+    }
+
     private val world = World<Body>().apply {
         setGravity(0.0, gravity)
         settings.maximumTranslation = MAX_TRANSLATION_METERS
@@ -74,6 +86,8 @@ class PhysicsWorld(private val pixelsPerMeter: Float, gravity: Double = CARTOON_
     }
 
     fun position(body: Body): Offset = body.worldCenter.toPixels()
+
+    fun origin(body: Body): Offset = Offset(body.transform.translationX.toFloat(), body.transform.translationY.toFloat()) * pixelsPerMeter
 
     fun angle(body: Body): Float = body.transform.rotationAngle.toFloat()
 

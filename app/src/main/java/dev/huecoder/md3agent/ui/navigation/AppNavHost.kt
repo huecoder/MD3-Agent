@@ -12,6 +12,7 @@ import androidx.navigation.toRoute
 import dev.huecoder.md3agent.feature.chat.ChatScreen
 import dev.huecoder.md3agent.feature.main.MainScreen
 import dev.huecoder.md3agent.feature.settings.AgentSettingsScreen
+import dev.huecoder.md3agent.feature.playground.PlaygroundScreen
 import dev.huecoder.md3agent.feature.settings.AboutScreen
 import dev.huecoder.md3agent.feature.settings.AppearanceScreen
 import dev.huecoder.md3agent.feature.settings.ModelsScreen
@@ -77,7 +78,10 @@ fun AppNavHost(chatToOpen: String?, onChatOpened: () -> Unit) {
         screen<RemindersRoute>(navController) { RemindersScreen(onBack = navController::popBackStack) }
         screen<DeviceAccessRoute>(navController) { DeviceAccessScreen(onBack = navController::popBackStack) }
         screen<AppearanceRoute>(navController) { AppearanceScreen(onBack = navController::popBackStack) }
-        screen<AboutRoute>(navController) { AboutScreen(onBack = navController::popBackStack) }
+        screen<AboutRoute>(navController) {
+            AboutScreen(onBack = navController::popBackStack, onSecret = { navController.navigate(PlaygroundRoute) })
+        }
+        screen<PlaygroundRoute>(navController) { PlaygroundScreen() }
         screen<ModelsRoute>(navController) {
             ModelsScreen(
                 onBack = navController::popBackStack,

@@ -36,6 +36,9 @@ data object ModelsRoute
 data object AboutRoute
 
 @Serializable
+data object PlaygroundRoute
+
+@Serializable
 data object VoiceSettingsRoute
 
 @Serializable

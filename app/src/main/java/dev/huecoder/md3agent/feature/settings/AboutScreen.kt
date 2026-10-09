@@ -26,6 +26,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.clickable
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -51,7 +53,7 @@ import dev.huecoder.md3agent.ui.components.appViewModel
 import dev.huecoder.md3agent.ui.components.groupedListColors
 
 @Composable
-fun AboutScreen(onBack: () -> Unit) {
+fun AboutScreen(onBack: () -> Unit, onSecret: () -> Unit) {
     val viewModel = appViewModel { AboutViewModel(it.updates) }
     val check by viewModel.check.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -68,7 +70,7 @@ fun AboutScreen(onBack: () -> Unit) {
             modifier = Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
         ) {
-            AppIdentity(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 24.dp))
+            AppIdentity(onSecret, Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 24.dp))
             SegmentedListItem(
                 onClick = { if (updateUrl != null) context.openUrl(updateUrl) else viewModel.checkForUpdates() },
                 shapes = ListItemDefaults.segmentedShapes(0, total),
@@ -107,11 +109,17 @@ fun AboutScreen(onBack: () -> Unit) {
 }
 
 @Composable
-private fun AppIdentity(modifier: Modifier = Modifier) {
+private fun AppIdentity(onSecret: () -> Unit, modifier: Modifier = Modifier) {
+    val taps = rememberSecretTaps(onSecret)
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
+                .graphicsLayer {
+                    scaleX = taps.squish.value
+                    scaleY = taps.squish.value
+                }
+                .clickable(interactionSource = null, indication = null, onClick = taps::tap)
                 .size(LOGO_SIZE)
                 .clip(RoundedCornerShape(LOGO_CORNER_PERCENT))
                 .background(colorResource(R.color.ic_launcher_background)),
@@ -120,7 +128,8 @@ private fun AppIdentity(modifier: Modifier = Modifier) {
         }
         Text(stringResource(R.string.app_name), style = MaterialTheme.typography.headlineMediumEmphasized)
         Text(
-            stringResource(R.string.about_version, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE),
+            taps.remaining?.let { stringResource(R.string.about_logo_taps_left, it) }
+                ?: stringResource(R.string.about_version, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
