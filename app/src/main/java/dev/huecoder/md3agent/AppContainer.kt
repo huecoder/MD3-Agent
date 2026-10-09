@@ -1,6 +1,8 @@
 package dev.huecoder.md3agent
 
 import android.content.Context
+import dev.huecoder.md3agent.data.files.ChatSentFiles
+import dev.huecoder.md3agent.data.files.FileLibrary
 import dev.huecoder.md3agent.data.chat.SearchHistory
 import dev.huecoder.md3agent.ui.haptics.HapticEngine
 import dev.huecoder.md3agent.assistant.ScreenContextStore
@@ -17,6 +19,7 @@ import dev.huecoder.md3agent.data.chat.ChatDrafts
 import dev.huecoder.md3agent.tools.chats.ExportChatTool
 import dev.huecoder.md3agent.tools.chats.ListChatsTool
 import dev.huecoder.md3agent.tools.chats.ReadChatTool
+import dev.huecoder.md3agent.tools.chats.SearchMessagesTool
 import dev.huecoder.md3agent.data.updates.UpdateChecker
 import dev.huecoder.md3agent.data.chat.ChatRepository
 import dev.huecoder.md3agent.data.db.AppDatabase
@@ -107,7 +110,9 @@ class AppContainer(context: Context) {
 
     val screenContext = ScreenContextStore()
     val shellAccess = ShellAccess(appContext)
-    val deviceFiles = DeviceFiles(shellAccess.workspace, attachments.directory, File(appContext.cacheDir, FILE_STAGING_DIR))
+    private val uploads = File(appContext.filesDir, UPLOADS_DIR)
+    val deviceFiles = DeviceFiles(shellAccess.workspace, attachments.directory, File(appContext.cacheDir, FILE_STAGING_DIR), uploads)
+    val library = FileLibrary(appContext.contentResolver, uploads, shellAccess.workspace, ChatSentFiles(database.messageDao(), attachments))
 
     val python = PythonRuntime(appContext)
     val phoneControl = PhoneControl(appContext)
@@ -147,6 +152,7 @@ class AppContainer(context: Context) {
             SetTimerTool(clockApp),
             ListChatsTool(chats),
             ReadChatTool(chats),
+            SearchMessagesTool(chats),
             ExportChatTool(chats, deviceFiles),
         ),
         sources = listOf(mcp),
@@ -189,6 +195,7 @@ class AppContainer(context: Context) {
 
     private companion object {
         const val FILE_STAGING_DIR = "file-staging"
+        const val UPLOADS_DIR = "uploads"
         const val MODEL_CATALOG_DIR = "model-catalog"
     }
 }

@@ -2,6 +2,8 @@ package dev.huecoder.md3agent.tools.chats
 
 import dev.huecoder.md3agent.data.chat.ChatRepository
 import dev.huecoder.md3agent.data.chat.ChatTranscript
+import dev.huecoder.md3agent.data.chat.SearchSnippet
+import dev.huecoder.md3agent.data.db.MessageRole
 import dev.huecoder.md3agent.data.settings.ToolPermission
 import dev.huecoder.md3agent.data.settings.ToolSettings
 import dev.huecoder.md3agent.llm.ToolSpec
@@ -59,20 +61,26 @@ class ListChatsTool(private val chats: ChatRepository) : ContextualTool {
 class ReadChatTool(private val chats: ChatRepository) : ContextualTool {
     override val spec = ToolSpec(
         name = NAME,
-        description = "Reads messages from another chat by its id from ${ListChatsTool.NAME}. Returns the latest messages, oldest first. " +
-            "Use offset to page further back.",
+        description = "Reads messages from another chat by its id from ${ListChatsTool.NAME} or ${SearchMessagesTool.NAME}. " +
+            "Returns the latest messages, oldest first. Use offset to page further back, or around_message_id to read the conversation around a search hit.",
         parameters = objectSchema(required = listOf("chat_id")) {
-            stringProperty("chat_id", "Chat id from ${ListChatsTool.NAME}")
+            stringProperty("chat_id", "Chat id from ${ListChatsTool.NAME} or ${SearchMessagesTool.NAME}")
             integerProperty("limit", "How many messages to read, default $DEFAULT_LIMIT", minimum = 1, maximum = MAX_LIMIT)
             integerProperty("offset", "How many of the newest messages to skip, default 0", minimum = 0, maximum = MAX_OFFSET)
+            stringProperty("around_message_id", "Message id from ${SearchMessagesTool.NAME}; centers the window on it and ignores offset")
         },
     )
 
     override suspend fun execute(arguments: JsonObject, settings: ToolSettings, context: ToolContext): ToolOutcome {
         val chat = chats.chat(requireChatId(arguments)) ?: return ToolOutcome.error("No chat with this id, call ${ListChatsTool.NAME} first")
         val limit = (arguments.optionalInt("limit") ?: DEFAULT_LIMIT).coerceIn(1, MAX_LIMIT)
-        val offset = (arguments.optionalInt("offset") ?: 0).coerceIn(0, MAX_OFFSET)
         val spoken = ChatTranscript.spoken(chats.history(chat.id))
+        val around = arguments.optionalString("around_message_id")?.let { id -> spoken.indexOfFirst { it.id == id }.takeIf { it >= 0 } }
+        val offset = if (around != null) {
+            (spoken.size - 1 - around - limit / 2).coerceIn(0, (spoken.size - limit).coerceAtLeast(0))
+        } else {
+            (arguments.optionalInt("offset") ?: 0).coerceIn(0, MAX_OFFSET)
+        }
         val window = spoken.dropLast(offset).takeLast(limit)
         if (window.isEmpty()) return ToolOutcome("\"${chat.title}\" has no messages in this range (${spoken.size} in total)")
         val first = spoken.size - offset - window.size + 1
@@ -125,3 +133,39 @@ private fun requireChatId(arguments: JsonObject): String =
 
 private const val DATE_PATTERN = "yyyy-MM-dd HH:mm"
 private val WHITESPACE = Regex("""\s+""")
+
+class SearchMessagesTool(private val chats: ChatRepository) : ContextualTool {
+    override val spec = ToolSpec(
+        name = NAME,
+        description = "Searches the text of every message in the user's chats, newest first. Each hit gives the chat id, the message id, " +
+            "who wrote it, when, and a short excerpt around the match. Use it to find where something was discussed, then " +
+            "${ReadChatTool.NAME} with around_message_id to read that part of the conversation.",
+        parameters = objectSchema(required = listOf("query")) {
+            stringProperty("query", "Words to look for; matching ignores letter case")
+            integerProperty("limit", "How many hits to return, default $DEFAULT_LIMIT", minimum = 1, maximum = MAX_LIMIT)
+        },
+    )
+
+    override suspend fun execute(arguments: JsonObject, settings: ToolSettings, context: ToolContext): ToolOutcome {
+        val query = arguments.optionalString("query")?.trim()?.takeIf { it.isNotEmpty() } ?: throw ToolArgumentException("query is required")
+        val limit = (arguments.optionalInt("limit") ?: DEFAULT_LIMIT).coerceIn(1, MAX_LIMIT)
+        val hits = chats.searchMessages(query, limit)
+        if (hits.isEmpty()) return ToolOutcome("No messages contain \"$query\"")
+        val dates = SimpleDateFormat(DATE_PATTERN, Locale.ROOT)
+        return ToolOutcome(
+            hits.joinToString("\n") { hit ->
+                val marker = if (hit.chatId == context.chatId) " (this chat)" else ""
+                val author = if (hit.role == MessageRole.USER) "user" else "assistant"
+                val excerpt = SearchSnippet.around(hit.content, query, EXCERPT_CHARS).text
+                "${hit.chatId} | ${hit.chatTitle}$marker | ${hit.messageId} | $author | ${dates.format(Date(hit.createdAt))} | $excerpt"
+            },
+        )
+    }
+
+    companion object {
+        const val NAME = "search_messages"
+        private const val DEFAULT_LIMIT = 15
+        private const val MAX_LIMIT = 50
+        private const val EXCERPT_CHARS = 160
+    }
+}

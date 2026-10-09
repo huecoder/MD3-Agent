@@ -18,6 +18,7 @@ class DeviceFilesTest {
             workspace = temp.newFolder("workspace"),
             attachments = temp.newFolder("attachments"),
             staging = temp.newFolder("staging"),
+            uploads = temp.newFolder("uploads"),
             sharedStorage = temp.newFolder("sdcard"),
         )
     }

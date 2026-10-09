@@ -26,6 +26,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.huecoder.md3agent.data.files.LibraryRoot
+import dev.huecoder.md3agent.feature.files.FilesScreen
 import dev.huecoder.md3agent.App
 import dev.huecoder.md3agent.feature.home.HomeScreen
 import dev.huecoder.md3agent.feature.settings.SettingsDestinations
@@ -41,6 +43,8 @@ import kotlin.math.sign
 fun MainScreen(
     onOpenChat: (chatId: String?) -> Unit,
     onOpenMessage: (chatId: String, messageId: String) -> Unit,
+    onOpenFolder: (LibraryRoot) -> Unit,
+    onOpenMedia: () -> Unit,
     settingsDestinations: SettingsDestinations,
 ) {
     val container = (LocalContext.current.applicationContext as App).container
@@ -68,6 +72,7 @@ fun MainScreen(
         HorizontalPager(state = pager, key = { MainTab.entries[it] }, modifier = Modifier.fillMaxSize()) { page ->
             when (MainTab.entries[page]) {
                 MainTab.CHATS -> HomeScreen(onOpenChat = onOpenChat, onOpenMessage = onOpenMessage, onOpenSettings = { open(MainTab.SETTINGS) })
+                MainTab.FILES -> FilesScreen(onOpenFolder = onOpenFolder, onOpenMedia = onOpenMedia)
                 MainTab.SETTINGS -> SettingsScreen(destinations = settingsDestinations)
             }
         }

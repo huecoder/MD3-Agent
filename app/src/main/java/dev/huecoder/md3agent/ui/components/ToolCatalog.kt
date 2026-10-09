@@ -44,6 +44,7 @@ import dev.huecoder.md3agent.tools.Tool
 import dev.huecoder.md3agent.tools.chats.ExportChatTool
 import dev.huecoder.md3agent.tools.chats.ListChatsTool
 import dev.huecoder.md3agent.tools.chats.ReadChatTool
+import dev.huecoder.md3agent.tools.chats.SearchMessagesTool
 import dev.huecoder.md3agent.tools.files.ListFilesTool
 import dev.huecoder.md3agent.tools.files.ReadFileTool
 import dev.huecoder.md3agent.tools.files.SendFilesTool
@@ -91,6 +92,7 @@ object ToolCatalog {
         MemorySearchTool.NAME to known(ToolCategory.MEMORY, MaterialSymbols.Rounded.Manage_search, R.string.tools_memory_search_title, R.string.tools_memory_search_summary),
         ListChatsTool.NAME to known(ToolCategory.CHATS, MaterialSymbols.Rounded.Forum, R.string.tools_list_chats_title, R.string.tools_list_chats_summary),
         ReadChatTool.NAME to known(ToolCategory.CHATS, MaterialSymbols.Rounded.Article, R.string.tools_read_chat_title, R.string.tools_read_chat_summary),
+        SearchMessagesTool.NAME to known(ToolCategory.CHATS, MaterialSymbols.Rounded.Manage_search, R.string.tools_search_messages_title, R.string.tools_search_messages_summary),
         ExportChatTool.NAME to known(ToolCategory.CHATS, MaterialSymbols.Rounded.File_save, R.string.tools_export_chat_title, R.string.tools_export_chat_summary),
         WebSearchTool.NAME to known(ToolCategory.WEB, MaterialSymbols.Rounded.Travel_explore, R.string.tools_web_search_title, R.string.tools_web_search_summary),
         ReadWebpageTool.NAME to known(ToolCategory.WEB, MaterialSymbols.Rounded.Language, R.string.tools_read_webpage_title, R.string.tools_read_webpage_summary),

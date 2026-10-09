@@ -21,6 +21,8 @@ data class ChatSummary(
     val trashedAt: Long? = null,
 )
 
+data class AttachedFiles(val role: MessageRole, val attachmentsJson: String, val createdAt: Long)
+
 data class MessageHit(
     val messageId: String,
     val chatId: String,
@@ -151,6 +153,15 @@ interface MessageDao {
 
     @Query("DELETE FROM messages WHERE chatId = :chatId AND createdAt >= :fromCreatedAt")
     suspend fun deleteFrom(chatId: String, fromCreatedAt: Long)
+
+    @Query(
+        """
+        SELECT m.role, m.attachmentsJson, m.createdAt FROM messages m JOIN chats c ON c.id = m.chatId
+        WHERE m.attachmentsJson IS NOT NULL AND c.trashedAt IS NULL
+        ORDER BY m.createdAt DESC
+        """,
+    )
+    suspend fun attachedFiles(): List<AttachedFiles>
 
     @Query("UPDATE messages SET status = 'CANCELLED' WHERE status = 'STREAMING'")
     suspend fun markInterruptedStreams()

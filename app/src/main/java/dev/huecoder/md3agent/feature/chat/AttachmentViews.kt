@@ -29,13 +29,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.core.content.FileProvider
 import coil3.compose.AsyncImage
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Close
 import com.composables.icons.materialsymbols.rounded.Description
 import dev.huecoder.md3agent.App
 import dev.huecoder.md3agent.R
+import dev.huecoder.md3agent.ui.files.openFile
 import dev.huecoder.md3agent.data.attachments.Attachment
 import dev.huecoder.md3agent.feature.chat.lightbox.LocalLightbox
 
@@ -84,23 +84,12 @@ fun AttachmentImage(
         contentDescription = attachment.name,
         contentScale = contentScale,
         modifier = modifier.clickable {
-            if (lightbox != null) lightbox.show(gallery, gallery.indexOf(attachment)) else context.openAttachment(attachment)
+            if (lightbox != null) lightbox.show(gallery.map(store::viewable), gallery.indexOf(attachment)) else context.openAttachment(attachment)
         },
     )
 }
 
-fun Context.openAttachment(attachment: Attachment) {
-    val file = (applicationContext as App).container.attachments.file(attachment)
-    val uri = FileProvider.getUriForFile(this, "$packageName$FILE_PROVIDER_SUFFIX", file, attachment.name)
-    val intent = Intent(Intent.ACTION_VIEW)
-        .setDataAndType(uri, attachment.mimeType)
-        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
-    try {
-        startActivity(intent)
-    } catch (e: ActivityNotFoundException) {
-        Toast.makeText(this, getString(R.string.chat_attachment_no_viewer, attachment.name), Toast.LENGTH_SHORT).show()
-    }
-}
+fun Context.openAttachment(attachment: Attachment) = openFile((applicationContext as App).container.attachments.viewable(attachment))
 
 @Composable
 fun FilePill(attachment: Attachment, onClick: () -> Unit) {
@@ -122,7 +111,6 @@ fun FilePill(attachment: Attachment, onClick: () -> Unit) {
     }
 }
 
-private const val FILE_PROVIDER_SUFFIX = ".files"
 private val THUMB_SIZE = 72.dp
 private val REMOVE_BUTTON_SIZE = 22.dp
 private val MAX_FILE_NAME_WIDTH = 180.dp

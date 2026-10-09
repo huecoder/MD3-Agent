@@ -24,6 +24,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Edit_square
+import com.composables.icons.materialsymbols.rounded.Folder_open
 import com.composables.icons.materialsymbols.rounded.Forum
 import com.composables.icons.materialsymbols.rounded.Settings
 import dev.huecoder.md3agent.R
@@ -31,6 +32,7 @@ import dev.huecoder.md3agent.ui.theme.LayoutMotion
 
 enum class MainTab(@StringRes val label: Int, val icon: ImageVector) {
     CHATS(R.string.home_title, MaterialSymbols.Rounded.Forum),
+    FILES(R.string.files_title, MaterialSymbols.Rounded.Folder_open),
     SETTINGS(R.string.settings_title, MaterialSymbols.Rounded.Settings),
 }
 

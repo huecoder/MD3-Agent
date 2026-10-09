@@ -543,6 +543,8 @@
     <string name="chat_settings_auto_title_summary">После первого ответа модель придумывает короткое название, иконку и цвет. Переименованные тобой чаты не трогает.</string>
     <string name="tools_category_chats">Чаты</string>
     <string name="tools_list_chats_title">Список чатов</string>
+    <string name="tools_search_messages_title">Поиск по сообщениям</string>
+    <string name="tools_search_messages_summary">Находит, где что-то обсуждалось, во всех чатах</string>
     <string name="tools_list_chats_summary">Находит другие твои чаты по названию или тексту</string>
     <string name="tools_read_chat_title">Читать чат</string>
     <string name="tools_read_chat_summary">Читает сообщения из другого чата чтобы подхватить контекст</string>
@@ -600,4 +602,28 @@
     <string name="home_search_section_messages">Сообщения</string>
     <string name="home_search_from_you">Вы в «%1$s»</string>
     <string name="home_search_from_agent">Агент в «%1$s»</string>
+    <string name="files_title">Файлы</string>
+    <string name="files_media">Медиа</string>
+    <string name="files_media_all">Все</string>
+    <string name="files_media_empty">Здесь появятся фото из чатов и обеих папок</string>
+    <string name="files_folders">Папки</string>
+    <string name="files_root_mine">Мои файлы</string>
+    <string name="files_root_mine_summary">Ваши загрузки и то, что вы отправляли в чатах</string>
+    <string name="files_root_agent">Файлы агента</string>
+    <string name="files_root_agent_summary">Рабочая папка агента и то, что он вам присылал</string>
+    <string name="files_from_chats">Из чатов</string>
+    <string name="files_folder_empty">Тут пока пусто</string>
+    <string name="files_add">Добавить</string>
+    <string name="files_upload">Загрузить файлы</string>
+    <string name="files_new_folder">Новая папка</string>
+    <string name="files_name">Название</string>
+    <string name="files_rename">Переименовать</string>
+    <string name="files_delete">Удалить</string>
+    <string name="files_delete_title">Удалить объекты: %1$d?</string>
+    <string name="files_delete_body">Папки удаляются вместе со всем содержимым. Это нельзя отменить.</string>
+    <string name="files_error_upload">Не удалось загрузить файл</string>
+    <string name="files_error_folder">Не удалось создать папку</string>
+    <string name="files_error_rename">Не удалось переименовать</string>
+    <string name="files_error_delete">Не удалось удалить</string>
+    <string name="files_error_name">Такое название не подходит</string>
 </resources>

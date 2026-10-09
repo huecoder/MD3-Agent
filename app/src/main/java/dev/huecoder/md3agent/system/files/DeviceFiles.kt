@@ -17,11 +17,13 @@ class DeviceFiles(
     workspace: File,
     attachments: File,
     private val staging: File,
+    uploads: File,
     private val sharedStorage: File = Environment.getExternalStorageDirectory(),
     private val root: RootFileStreams = RootFileStreams(),
 ) {
     val workspace: File by lazy { workspace.apply { mkdirs() }.canonicalFile }
     val attachments: File by lazy { attachments.canonicalFile }
+    val uploads: File by lazy { uploads.apply { mkdirs() }.canonicalFile }
     val sharedStoragePath: String get() = sharedStorage.path
 
     fun hasSharedStorageAccess(): Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && Environment.isExternalStorageManager()
@@ -97,7 +99,7 @@ class DeviceFiles(
     }
 
     private fun requireAllowed(file: File, scope: FileScope, write: Boolean) {
-        if (scope == FileScope.ROOT || file.isWithin(workspace) || (!write && file.isWithin(attachments))) return
+        if (scope == FileScope.ROOT || file.isWithin(workspace) || (!write && (file.isWithin(attachments) || file.isWithin(uploads)))) return
         if (scope == FileScope.SHARED_STORAGE && file.isWithin(sharedStorage)) {
             if (!hasSharedStorageAccess()) throw FileAccessException("All files access is not granted. The user can turn it on in Device access settings")
             return

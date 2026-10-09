@@ -52,3 +52,9 @@ data object McpServersRoute
 
 @Serializable
 data class McpServerEditorRoute(val serverId: String? = null)
+
+@Serializable
+data class FolderRoute(val root: String, val path: String = "", val fromChats: Boolean = false)
+
+@Serializable
+data object MediaRoute

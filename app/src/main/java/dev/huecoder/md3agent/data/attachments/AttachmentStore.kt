@@ -1,6 +1,7 @@
 package dev.huecoder.md3agent.data.attachments
 
 import android.content.ContentResolver
+import dev.huecoder.md3agent.data.files.ViewableFile
 import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap
@@ -90,6 +91,8 @@ class AttachmentStore(private val context: Context) {
 
     fun file(attachment: Attachment): File = File(directory, attachment.id)
 
+    fun viewable(attachment: Attachment) = ViewableFile(file(attachment), attachment.name, attachment.mimeType)
+
     suspend fun contentFor(attachment: Attachment): AttachmentContent? = withContext(Dispatchers.IO) {
         val file = file(attachment)
         when {
@@ -104,21 +107,21 @@ class AttachmentStore(private val context: Context) {
         attachments.forEach { file(it).delete() }
     }
 
-    suspend fun exportToDownloads(attachment: Attachment) = withContext(Dispatchers.IO) {
+    suspend fun exportToDownloads(target: ViewableFile) = withContext(Dispatchers.IO) {
         val resolver = context.contentResolver
         val details = ContentValues().apply {
-            put(MediaStore.Downloads.DISPLAY_NAME, attachment.name)
-            put(MediaStore.Downloads.MIME_TYPE, attachment.mimeType)
+            put(MediaStore.Downloads.DISPLAY_NAME, target.name)
+            put(MediaStore.Downloads.MIME_TYPE, target.mimeType)
             put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/" + DOWNLOADS_FOLDER)
             put(MediaStore.Downloads.IS_PENDING, 1)
         }
-        val target = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, details) ?: throw IOException("Could not create the file in Downloads")
+        val destination = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, details) ?: throw IOException("Could not create the file in Downloads")
         try {
-            resolver.openOutputStream(target)?.use { output -> file(attachment).inputStream().use { it.copyTo(output) } }
+            resolver.openOutputStream(destination)?.use { output -> target.file.inputStream().use { it.copyTo(output) } }
                 ?: throw IOException("Could not write to Downloads")
-            resolver.update(target, ContentValues().apply { put(MediaStore.Downloads.IS_PENDING, 0) }, null, null)
+            resolver.update(destination, ContentValues().apply { put(MediaStore.Downloads.IS_PENDING, 0) }, null, null)
         } catch (e: IOException) {
-            resolver.delete(target, null, null)
+            resolver.delete(destination, null, null)
             throw e
         }
     }

@@ -44,18 +44,18 @@ import com.composables.icons.materialsymbols.rounded.Download
 import com.composables.icons.materialsymbols.rounded.Open_in_new
 import dev.huecoder.md3agent.App
 import dev.huecoder.md3agent.R
-import dev.huecoder.md3agent.data.attachments.Attachment
-import dev.huecoder.md3agent.feature.chat.openAttachment
+import dev.huecoder.md3agent.data.files.ViewableFile
+import dev.huecoder.md3agent.ui.files.openFile
 import kotlinx.coroutines.launch
 import java.io.IOException
 
 fun interface Lightbox {
-    fun show(images: List<Attachment>, startIndex: Int)
+    fun show(images: List<ViewableFile>, startIndex: Int)
 }
 
 val LocalLightbox = staticCompositionLocalOf<Lightbox?> { null }
 
-private data class LightboxRequest(val images: List<Attachment>, val startIndex: Int)
+private data class LightboxRequest(val images: List<ViewableFile>, val startIndex: Int)
 
 @Composable
 fun LightboxHost(content: @Composable () -> Unit) {
@@ -66,7 +66,7 @@ fun LightboxHost(content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun ImageLightbox(images: List<Attachment>, startIndex: Int, onDismiss: () -> Unit) {
+private fun ImageLightbox(images: List<ViewableFile>, startIndex: Int, onDismiss: () -> Unit) {
     val context = LocalContext.current
     val store = (context.applicationContext as App).container.attachments
     val scope = rememberCoroutineScope()
@@ -79,7 +79,7 @@ private fun ImageLightbox(images: List<Attachment>, startIndex: Int, onDismiss: 
             HorizontalPager(state = pager, beyondViewportPageCount = 1, pageSpacing = PAGE_SPACING, modifier = Modifier.fillMaxSize()) { page ->
                 val zoom = rememberZoomState()
                 AsyncImage(
-                    model = store.file(images[page]),
+                    model = images[page].file,
                     contentDescription = images[page].name,
                     contentScale = ContentScale.Fit,
                     modifier = Modifier.fillMaxSize().zoomable(zoom, onTap = { chromeVisible = !chromeVisible }),
@@ -103,7 +103,7 @@ private fun ImageLightbox(images: List<Attachment>, startIndex: Int, onDismiss: 
                         maxLines = 1,
                         modifier = Modifier.weight(1f),
                     )
-                    ChromeButton(MaterialSymbols.Rounded.Open_in_new, stringResource(R.string.lightbox_open)) { context.openAttachment(current) }
+                    ChromeButton(MaterialSymbols.Rounded.Open_in_new, stringResource(R.string.lightbox_open)) { context.openFile(current) }
                     ChromeButton(MaterialSymbols.Rounded.Download, stringResource(R.string.lightbox_download)) {
                         scope.launch {
                             val message = try {

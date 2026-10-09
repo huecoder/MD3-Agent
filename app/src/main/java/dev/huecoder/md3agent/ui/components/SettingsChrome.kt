@@ -37,6 +37,7 @@ fun SettingsScaffold(
     onBack: (() -> Unit)?,
     actions: @Composable RowScope.() -> Unit = {},
     save: SaveAction? = null,
+    floatingActionButton: @Composable () -> Unit = {},
     content: @Composable (PaddingValues) -> Unit,
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -55,6 +56,7 @@ fun SettingsScaffold(
             )
         },
         bottomBar = { save?.let { StickySaveBar(it) } },
+        floatingActionButton = floatingActionButton,
         content = content,
     )
     if (confirmingLeave && save != null) {

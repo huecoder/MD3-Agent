@@ -12,6 +12,10 @@ import androidx.navigation.toRoute
 import dev.huecoder.md3agent.feature.chat.ChatScreen
 import dev.huecoder.md3agent.feature.main.MainScreen
 import dev.huecoder.md3agent.feature.settings.AgentSettingsScreen
+import dev.huecoder.md3agent.data.files.LibraryLocation
+import dev.huecoder.md3agent.data.files.LibraryRoot
+import dev.huecoder.md3agent.feature.files.FolderScreen
+import dev.huecoder.md3agent.feature.files.MediaScreen
 import dev.huecoder.md3agent.feature.playground.PlaygroundScreen
 import dev.huecoder.md3agent.feature.settings.AboutScreen
 import dev.huecoder.md3agent.feature.settings.AppearanceScreen
@@ -51,6 +55,8 @@ fun AppNavHost(chatToOpen: String?, onChatOpened: () -> Unit) {
             MainScreen(
                 onOpenChat = { navController.navigate(ChatRoute(it)) },
                 onOpenMessage = { chatId, messageId -> navController.navigate(ChatRoute(chatId, focusMessageId = messageId)) },
+                onOpenFolder = { root -> navController.navigate(FolderRoute(root.name)) },
+                onOpenMedia = { navController.navigate(MediaRoute) },
                 settingsDestinations = SettingsDestinations(
                     models = { navController.navigate(ModelsRoute) },
                     appearance = { navController.navigate(AppearanceRoute) },
@@ -84,6 +90,15 @@ fun AppNavHost(chatToOpen: String?, onChatOpened: () -> Unit) {
             AboutScreen(onBack = navController::popBackStack, onSecret = { navController.navigate(PlaygroundRoute) })
         }
         screen<PlaygroundRoute>(navController) { PlaygroundScreen() }
+        screen<MediaRoute>(navController) { MediaScreen(onBack = navController::popBackStack) }
+        screen<FolderRoute>(navController) { entry ->
+            val route = entry.toRoute<FolderRoute>()
+            FolderScreen(
+                location = route.toLocation(),
+                onOpen = { navController.navigate(it.toRoute()) },
+                onBack = navController::popBackStack,
+            )
+        }
         screen<ModelsRoute>(navController) {
             ModelsScreen(
                 onBack = navController::popBackStack,
@@ -110,6 +125,16 @@ fun AppNavHost(chatToOpen: String?, onChatOpened: () -> Unit) {
         }
     }
 }
+
+private fun FolderRoute.toLocation() = LibraryLocation(
+    root = LibraryRoot.valueOf(root),
+    segments = path.split(PATH_SEPARATOR).filter { it.isNotEmpty() },
+    fromChats = fromChats,
+)
+
+private fun LibraryLocation.toRoute() = FolderRoute(root.name, segments.joinToString(PATH_SEPARATOR), fromChats)
+
+private const val PATH_SEPARATOR = "/"
 
 private inline fun <reified T : Any> NavGraphBuilder.screen(
     navController: NavController,

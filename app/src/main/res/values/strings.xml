@@ -539,6 +539,8 @@
     <string name="chat_settings_auto_title_summary">After the first reply the model picks a short title, icon and color. Chats you renamed stay as they are.</string>
     <string name="tools_category_chats">Chats</string>
     <string name="tools_list_chats_title">List chats</string>
+    <string name="tools_search_messages_title">Search messages</string>
+    <string name="tools_search_messages_summary">Finds where something was said across all chats</string>
     <string name="tools_list_chats_summary">Finds your other chats by title or text</string>
     <string name="tools_read_chat_title">Read a chat</string>
     <string name="tools_read_chat_summary">Reads messages from another chat to pick up its context</string>
@@ -592,4 +594,28 @@
     <string name="home_search_section_messages">Messages</string>
     <string name="home_search_from_you">You in %1$s</string>
     <string name="home_search_from_agent">Agent in %1$s</string>
+    <string name="files_title">Files</string>
+    <string name="files_media">Media</string>
+    <string name="files_media_all">See all</string>
+    <string name="files_media_empty">Photos from chats and both folders will show up here</string>
+    <string name="files_folders">Folders</string>
+    <string name="files_root_mine">My files</string>
+    <string name="files_root_mine_summary">Your uploads and what you sent in chats</string>
+    <string name="files_root_agent">Agent files</string>
+    <string name="files_root_agent_summary">The agent\'s working folder and what it sent you</string>
+    <string name="files_from_chats">From chats</string>
+    <string name="files_folder_empty">Nothing here yet</string>
+    <string name="files_add">Add</string>
+    <string name="files_upload">Upload files</string>
+    <string name="files_new_folder">New folder</string>
+    <string name="files_name">Name</string>
+    <string name="files_rename">Rename</string>
+    <string name="files_delete">Delete</string>
+    <string name="files_delete_title">Delete %1$d items?</string>
+    <string name="files_delete_body">Folders are deleted with everything inside. This can\'t be undone.</string>
+    <string name="files_error_upload">Could not upload the file</string>
+    <string name="files_error_folder">Could not create the folder</string>
+    <string name="files_error_rename">Could not rename</string>
+    <string name="files_error_delete">Could not delete</string>
+    <string name="files_error_name">That name can\'t be used</string>
 </resources>

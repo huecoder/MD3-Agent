@@ -30,9 +30,10 @@ import java.util.Locale
 
 internal fun fileScopeNote(files: DeviceFiles, settings: ToolSettings): String {
     val base = "File tools (${ListFilesTool.NAME}, ${ReadFileTool.NAME}, ${WriteFileTool.NAME}, ${SendFilesTool.NAME}) take absolute paths; " +
-        "relative paths resolve inside the app workspace ${files.workspace.path}. Files the user attached to the chat live in ${files.attachments.path} and are readable."
+        "relative paths resolve inside the app workspace ${files.workspace.path}. Files the user attached to the chat live in ${files.attachments.path} and are readable. " +
+        "The user's own folder from the Files tab is ${files.uploads.path}, readable as well."
     val reach = when (settings.access.files) {
-        FileScope.APP -> "Only the workspace and attachments are reachable, the rest of the device is not."
+        FileScope.APP -> "Only the workspace, attachments and the user's folder are reachable, the rest of the device is not."
         FileScope.SHARED_STORAGE -> "The phone's shared storage ${files.sharedStoragePath} (Download, DCIM, Pictures, Documents and so on) is reachable too, without root."
         FileScope.ROOT -> "Any path on the device is reachable through root."
     }
