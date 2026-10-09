@@ -588,4 +588,8 @@
     <string name="swipe_action_trash">Move to trash</string>
     <string name="swipe_action_archive">Archive</string>
     <string name="swipe_action_move">Move to group</string>
+    <string name="home_search_section_chats">Chats</string>
+    <string name="home_search_section_messages">Messages</string>
+    <string name="home_search_from_you">You in %1$s</string>
+    <string name="home_search_from_agent">Agent in %1$s</string>
 </resources>

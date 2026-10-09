@@ -63,6 +63,7 @@ data class ChatUiState(
     val pendingAttachments: List<Attachment> = emptyList(),
     val isImporting: Boolean = false,
     val look: ChatLook = ChatLook.Default,
+    val focusItemId: String? = null,
 ) {
     fun canSend(text: String): Boolean = (text.isNotBlank() || pendingAttachments.isNotEmpty()) && !isImporting
 
@@ -74,6 +75,7 @@ data class ChatUiState(
 @OptIn(ExperimentalCoroutinesApi::class)
 class ChatViewModel(
     initialChatId: String?,
+    focusMessageId: String?,
     private val chats: ChatRepository,
     private val runner: ConversationRunner,
     private val attachments: AttachmentStore,
@@ -85,6 +87,7 @@ class ChatViewModel(
     synthesizers: (VoiceSettings) -> SpeechSynthesizer,
 ) : ViewModel() {
     private val chatId = MutableStateFlow(initialChatId)
+    private val pendingFocus = MutableStateFlow(focusMessageId)
     private val _errors = MutableStateFlow<UiText?>(null)
     private val pending = MutableStateFlow(PendingAttachments())
     private val pendingSelection = MutableStateFlow<ModelSelection?>(null)
@@ -109,8 +112,8 @@ class ChatViewModel(
                     ChatUiState(agentName = current.agent.name, showTokenUsage = current.chat.showTokenUsage, typing = current.chat.typing).withSelection(chosen ?: current.activeSelection)
                 }
             } else {
-                combine(chats.observeChat(id), chats.observeMessages(id), runner.drafts, appSettings) { chat, messages, drafts, current ->
-                    buildState(id, chat, messages, drafts[id])
+                combine(chats.observeChat(id), chats.observeMessages(id), runner.drafts, appSettings, pendingFocus) { chat, messages, drafts, current, focus ->
+                    buildState(id, chat, messages, drafts[id], focus)
                         .copy(agentName = current.agent.name, showTokenUsage = current.chat.showTokenUsage, typing = current.chat.typing)
                         .withSelection(chat?.selection ?: current.activeSelection)
                 }
@@ -249,14 +252,22 @@ class ChatViewModel(
         _errors.value = null
     }
 
-    private fun buildState(id: String, chat: ChatEntity?, messages: List<MessageEntity>, draft: StreamingDraft?) = ChatUiState(
-        chatId = id,
-        title = chat?.title?.let(UiText::Raw) ?: ChatUiState.NEW_CHAT_TITLE,
-        modelId = chat?.modelId,
-        look = chat?.let { ChatLook.of(it.iconKey, it.colorKey, it.shapeKey) } ?: ChatLook.Default,
-        messages = ChatTimeline.build(messages, draft),
-        isStreaming = draft != null,
-    )
+    private fun buildState(id: String, chat: ChatEntity?, messages: List<MessageEntity>, draft: StreamingDraft?, focus: String?): ChatUiState {
+        val items = ChatTimeline.build(messages, draft)
+        return ChatUiState(
+            chatId = id,
+            title = chat?.title?.let(UiText::Raw) ?: ChatUiState.NEW_CHAT_TITLE,
+            modelId = chat?.modelId,
+            look = chat?.let { ChatLook.of(it.iconKey, it.colorKey, it.shapeKey) } ?: ChatLook.Default,
+            messages = items,
+            isStreaming = draft != null,
+            focusItemId = focus?.let { ChatTimeline.itemFor(it, messages, items) },
+        )
+    }
+
+    fun focusShown() {
+        pendingFocus.value = null
+    }
 
     override fun onCleared() {
         speaker.stop()

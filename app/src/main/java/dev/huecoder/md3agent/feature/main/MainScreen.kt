@@ -40,6 +40,7 @@ import kotlin.math.sign
 @Composable
 fun MainScreen(
     onOpenChat: (chatId: String?) -> Unit,
+    onOpenMessage: (chatId: String, messageId: String) -> Unit,
     settingsDestinations: SettingsDestinations,
 ) {
     val container = (LocalContext.current.applicationContext as App).container
@@ -66,7 +67,7 @@ fun MainScreen(
     Box(Modifier.fillMaxSize().nestedScroll(collapseOnScroll)) {
         HorizontalPager(state = pager, key = { MainTab.entries[it] }, modifier = Modifier.fillMaxSize()) { page ->
             when (MainTab.entries[page]) {
-                MainTab.CHATS -> HomeScreen(onOpenChat = onOpenChat, onOpenSettings = { open(MainTab.SETTINGS) })
+                MainTab.CHATS -> HomeScreen(onOpenChat = onOpenChat, onOpenMessage = onOpenMessage, onOpenSettings = { open(MainTab.SETTINGS) })
                 MainTab.SETTINGS -> SettingsScreen(destinations = settingsDestinations)
             }
         }

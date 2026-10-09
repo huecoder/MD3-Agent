@@ -1,6 +1,7 @@
 package dev.huecoder.md3agent
 
 import android.content.Context
+import dev.huecoder.md3agent.data.chat.SearchHistory
 import dev.huecoder.md3agent.ui.haptics.HapticEngine
 import dev.huecoder.md3agent.assistant.ScreenContextStore
 import dev.huecoder.md3agent.conversation.BackgroundWorkService
@@ -94,6 +95,7 @@ class AppContainer(context: Context) {
     private val database = AppDatabase.build(context)
     val attachments = AttachmentStore(context)
     val chats = ChatRepository(database.chatDao(), database.messageDao(), database.folderDao(), attachments, ChatDrafts(appContext))
+    val searchHistory = SearchHistory(appContext)
     val reminders = ReminderRepository(database.reminderDao(), ReminderAlarms(appContext))
     val memories = MemoryStore(database.memoryDao(), EmbeddingClient(httpClients), settings.settings.map { it.tools.memory })
 

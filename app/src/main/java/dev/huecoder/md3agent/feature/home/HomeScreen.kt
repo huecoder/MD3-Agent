@@ -45,6 +45,7 @@ import dev.huecoder.md3agent.ui.components.appViewModel
 @Composable
 fun HomeScreen(
     onOpenChat: (chatId: String?) -> Unit,
+    onOpenMessage: (chatId: String, messageId: String) -> Unit,
     onOpenSettings: () -> Unit,
 ) {
     val viewModel = appViewModel { HomeViewModel(it.chats, it.settings, it.modelCatalog, it.conversations) }
@@ -127,7 +128,7 @@ fun HomeScreen(
                         right = RowAction.resolve(state.swipeRight, state.filter, isRight = true),
                         left = RowAction.resolve(state.swipeLeft, state.filter, isRight = false),
                     ),
-                    emptyText = state.filter.emptyText(state.query),
+                    emptyText = state.filter.emptyText,
                     contentPadding = padding,
                     onClick = { id ->
                         when {
@@ -142,8 +143,8 @@ fun HomeScreen(
                     onRangeEnd = viewModel::endRange,
                     header = {
                         HomeFilters(
-                            query = state.query,
-                            onQueryChange = viewModel::setQuery,
+                            onOpenChat = onOpenChat,
+                            onOpenMessage = onOpenMessage,
                             folders = state.folders,
                             filter = state.filter,
                             showArchive = state.hasArchive,
@@ -170,13 +171,13 @@ private fun selectionActions(filter: ChatFilter): List<RowAction> = when (filter
     else -> listOf(RowAction.MOVE, RowAction.ARCHIVE, RowAction.TRASH)
 }
 
-@StringRes
-private fun ChatFilter.emptyText(query: String): Int = when {
-    query.isNotBlank() -> R.string.home_search_empty
-    this == ChatFilter.Archive -> R.string.home_archive_empty
-    this == ChatFilter.Trash -> R.string.home_trash_empty
-    else -> R.string.home_group_empty
-}
+@get:StringRes
+private val ChatFilter.emptyText: Int
+    get() = when (this) {
+        ChatFilter.Archive -> R.string.home_archive_empty
+        ChatFilter.Trash -> R.string.home_trash_empty
+        else -> R.string.home_group_empty
+    }
 
 private val SNACKBAR_LIFT = 88.dp
 

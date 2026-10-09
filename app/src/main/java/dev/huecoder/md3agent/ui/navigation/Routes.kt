@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 data object HomeRoute
 
 @Serializable
-data class ChatRoute(val chatId: String? = null)
+data class ChatRoute(val chatId: String? = null, val focusMessageId: String? = null)
 
 @Serializable
 data class ProviderEditorRoute(val providerId: String? = null)

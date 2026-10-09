@@ -596,4 +596,8 @@
     <string name="swipe_action_trash">В корзину</string>
     <string name="swipe_action_archive">В архив</string>
     <string name="swipe_action_move">Переместить в группу</string>
+    <string name="home_search_section_chats">Чаты</string>
+    <string name="home_search_section_messages">Сообщения</string>
+    <string name="home_search_from_you">Вы в «%1$s»</string>
+    <string name="home_search_from_agent">Агент в «%1$s»</string>
 </resources>

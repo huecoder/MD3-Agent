@@ -12,7 +12,6 @@ import dev.huecoder.md3agent.data.settings.ModelSelection
 import dev.huecoder.md3agent.data.settings.SettingsRepository
 import dev.huecoder.md3agent.data.settings.SwipeAction
 import dev.huecoder.md3agent.llm.models.ModelFamily
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -21,7 +20,6 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
@@ -58,7 +56,6 @@ data class HomeUiState(
     val hasTrash: Boolean = false,
     val swipeRight: SwipeAction = SwipeAction.TRASH,
     val swipeLeft: SwipeAction = SwipeAction.ARCHIVE,
-    val query: String = "",
     val selection: Set<String> = emptySet(),
     val hasChats: Boolean = false,
     val hasProvider: Boolean = true,
@@ -71,9 +68,9 @@ data class HomeUiState(
 
 data class DefaultModel(val selection: ModelSelection, val name: String, val family: ModelFamily?)
 
-private data class Filters(val query: String, val filter: ChatFilter, val selection: Set<String>)
+private data class Filters(val filter: ChatFilter, val selection: Set<String>)
 
-@OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
+@OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModel(
     private val chats: ChatRepository,
     private val settings: SettingsRepository,
@@ -81,7 +78,6 @@ class HomeViewModel(
     runner: ConversationRunner,
     private val zone: () -> ZoneId = ZoneId::systemDefault,
 ) : ViewModel() {
-    private val query = MutableStateFlow("")
     private val filter = MutableStateFlow<ChatFilter>(ChatFilter.All)
     private val _notices = Channel<HomeNotice>(Channel.BUFFERED)
     private var rangeBase: Set<String>? = null
@@ -90,10 +86,7 @@ class HomeViewModel(
     private val selection = MutableStateFlow<Set<String>>(emptySet())
     private val summaries = chats.observeSummaries()
 
-    private val searchMatches = combine(query.debounce(SEARCH_DEBOUNCE_MS), summaries) { text, _ -> text.trim() }
-        .mapLatest { text -> if (text.isEmpty()) null else chats.searchChatIds(text) }
-
-    private val filters = combine(query, filter, selection, ::Filters)
+    private val filters = combine(filter, selection, ::Filters)
 
     init {
         viewModelScope.launch { chats.trashEvents.collect { _notices.send(HomeNotice.Trashed(it)) } }
@@ -115,14 +108,14 @@ class HomeViewModel(
     }
 
     val state: StateFlow<HomeUiState> = combine(
-        combine(summaries, searchMatches, ::Pair),
+        summaries,
         chats.observeFolders(),
         filters,
         settings.settings,
         runner.activity,
-    ) { (all, matches), folders, filters, current, activity ->
+    ) { all, folders, filters, current, activity ->
         val shown = filters.filter.takeUnless { it is ChatFilter.Folder && folders.none { folder -> folder.id == it.id } } ?: ChatFilter.All
-        val visible = all.filter { chat -> chat.belongsTo(shown) && (matches == null || chat.id in matches) }
+        val visible = all.filter { chat -> chat.belongsTo(shown) }
         HomeUiState(
             groups = group(visible),
             folders = folders,
@@ -131,7 +124,6 @@ class HomeViewModel(
             hasTrash = all.any { it.trashedAt != null },
             swipeRight = current.ui.swipeRight,
             swipeLeft = current.ui.swipeLeft,
-            query = filters.query,
             selection = filters.selection.intersect(visible.map { it.id }.toSet()),
             hasChats = all.isNotEmpty(),
             hasProvider = current.providers.isNotEmpty(),
@@ -139,8 +131,6 @@ class HomeViewModel(
             activity = activity,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), HomeUiState())
-
-    fun setQuery(text: String) = query.update { text }
 
     fun setFilter(target: ChatFilter) {
         selection.update { emptySet() }
@@ -250,6 +240,5 @@ class HomeViewModel(
     private companion object {
         const val STOP_TIMEOUT_MS = 5_000L
         const val DAYS_IN_WEEK = 7L
-        const val SEARCH_DEBOUNCE_MS = 250L
     }
 }

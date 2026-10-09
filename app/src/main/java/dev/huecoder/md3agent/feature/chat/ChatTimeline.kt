@@ -83,6 +83,12 @@ object ChatTimeline {
     private const val MAX_SOURCES = 8
     private val json = Json { ignoreUnknownKeys = true }
 
+    fun itemFor(messageId: String, messages: List<MessageEntity>, items: List<ChatItem>): String? {
+        val createdAt = messages.associate { it.id to it.createdAt }
+        val target = createdAt[messageId] ?: return null
+        return items.lastOrNull { item -> createdAt[item.id]?.let { it <= target } == true }?.id
+    }
+
     fun build(messages: List<MessageEntity>, draft: StreamingDraft?): List<ChatItem> {
         val results = messages.filter { it.role == MessageRole.TOOL }.associateBy { it.toolCallId }
         val visible = messages.filter { it.role == MessageRole.USER || it.role == MessageRole.ASSISTANT }

@@ -1,6 +1,11 @@
 package dev.huecoder.md3agent.feature.chat
 
 import android.Manifest
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -52,8 +57,8 @@ import dev.huecoder.md3agent.ui.avatar.knockoutArea
 import dev.huecoder.md3agent.ui.avatar.knockoutObstacle
 
 @Composable
-fun ChatScreen(chatId: String?, onBack: () -> Unit) {
-    val viewModel = appViewModel(key = "chat-$chatId") { ChatViewModel(chatId, it.chats, it.conversations, it.attachments, it.approvals, it.prompts, it.settings, it.modelCatalog, it.applicationScope, it::newSpeechSynthesizer) }
+fun ChatScreen(chatId: String?, onBack: () -> Unit, focusMessageId: String? = null) {
+    val viewModel = appViewModel(key = "chat-$chatId") { ChatViewModel(chatId, focusMessageId, it.chats, it.conversations, it.attachments, it.approvals, it.prompts, it.settings, it.modelCatalog, it.applicationScope, it::newSpeechSynthesizer) }
     val state by viewModel.state.collectAsStateWithLifecycle()
     val error by viewModel.errors.collectAsStateWithLifecycle()
     val speakingId by viewModel.speakingId.collectAsStateWithLifecycle()
@@ -129,6 +134,8 @@ fun ChatScreen(chatId: String?, onBack: () -> Unit) {
                         onToggleSpeech = viewModel::toggleSpeech,
                         onSend = viewModel::send,
                         onApproval = viewModel::respondToApproval,
+                        focusItemId = state.focusItemId,
+                        onFocusShown = viewModel::focusShown,
                     )
                 }
                 val composerModifier = Modifier
@@ -177,16 +184,44 @@ fun MessageList(
     onApproval: (ToolCallUi, ApprovalDecision) -> Unit,
     modifier: Modifier = Modifier.fillMaxSize(),
     bottomPadding: Dp = ComposerClearance,
+    focusItemId: String? = null,
+    onFocusShown: () -> Unit = {},
 ) {
+    val listState = rememberLazyListState()
+    val flash = remember { Animatable(0f) }
+    var flashing by remember { mutableStateOf<String?>(null) }
+    val flashColor = MaterialTheme.colorScheme.primaryContainer
+    LaunchedEffect(focusItemId) {
+        val target = focusItemId ?: return@LaunchedEffect
+        val index = messages.asReversed().indexOfFirst { it.id == target }
+        if (index >= 0) {
+            listState.animateScrollToItem(index)
+            flashing = target
+            flash.snapTo(1f)
+            flash.animateTo(0f, tween(FOCUS_FLASH_MS))
+            flashing = null
+        }
+        onFocusShown()
+    }
     LazyColumn(
+        state = listState,
         reverseLayout = true,
         modifier = modifier,
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = bottomPadding),
         verticalArrangement = Arrangement.spacedBy(20.dp, Alignment.Bottom),
     ) {
         items(messages.asReversed(), key = { it.id }) { item ->
+            val placed = Modifier.animateItem(placementSpec = null).then(
+                if (item.id == flashing) {
+                    Modifier.drawBehind {
+                        drawRoundRect(flashColor.copy(alpha = flash.value), cornerRadius = CornerRadius(FOCUS_CORNER.toPx()))
+                    }
+                } else {
+                    Modifier
+                },
+            )
             when (item) {
-                is ChatItem.User -> UserMessage(item, Modifier.animateItem(placementSpec = null))
+                is ChatItem.User -> UserMessage(item, placed)
                 is ChatItem.Reply -> AssistantReply(
                     item,
                     showUsage = showUsage,
@@ -196,7 +231,7 @@ fun MessageList(
                     onToggleSpeech = { onToggleSpeech(item) },
                     onSend = onSend,
                     onApproval = onApproval,
-                    modifier = Modifier.animateItem(placementSpec = null),
+                    modifier = placed,
                 )
             }
         }
@@ -229,6 +264,8 @@ fun EmptyConversation(
 private fun DictationControls.listeningLevel(): Float? =
     (state as? DictationState.Recording)?.let { it.levels.lastOrNull() ?: 0f }
 
+private const val FOCUS_FLASH_MS = 1_600
+private val FOCUS_CORNER = 20.dp
 private const val GREETING_OBSTACLE = "greeting"
 private const val COMPOSER_OBSTACLE = "composer"
 

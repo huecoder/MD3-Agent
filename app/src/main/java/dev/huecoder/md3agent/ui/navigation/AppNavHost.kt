@@ -50,6 +50,7 @@ fun AppNavHost(chatToOpen: String?, onChatOpened: () -> Unit) {
         screen<HomeRoute>(navController) {
             MainScreen(
                 onOpenChat = { navController.navigate(ChatRoute(it)) },
+                onOpenMessage = { chatId, messageId -> navController.navigate(ChatRoute(chatId, focusMessageId = messageId)) },
                 settingsDestinations = SettingsDestinations(
                     models = { navController.navigate(ModelsRoute) },
                     appearance = { navController.navigate(AppearanceRoute) },
@@ -66,7 +67,8 @@ fun AppNavHost(chatToOpen: String?, onChatOpened: () -> Unit) {
             )
         }
         screen<ChatRoute>(navController) { entry ->
-            ChatScreen(chatId = entry.toRoute<ChatRoute>().chatId, onBack = navController::popBackStack)
+            val route = entry.toRoute<ChatRoute>()
+            ChatScreen(chatId = route.chatId, focusMessageId = route.focusMessageId, onBack = navController::popBackStack)
         }
         screen<ProviderEditorRoute>(navController) { entry ->
             ProviderEditorScreen(providerId = entry.toRoute<ProviderEditorRoute>().providerId, onDone = navController::popBackStack)
