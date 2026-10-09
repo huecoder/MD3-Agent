@@ -1,6 +1,7 @@
 package dev.huecoder.md3agent
 
 import android.content.Context
+import dev.huecoder.md3agent.ui.haptics.HapticEngine
 import dev.huecoder.md3agent.assistant.ScreenContextStore
 import dev.huecoder.md3agent.conversation.BackgroundWorkService
 import dev.huecoder.md3agent.conversation.ConversationRunner
@@ -87,6 +88,7 @@ class AppContainer(context: Context) {
     val visibility = AppVisibility()
 
     val settings = SettingsRepository(context, SecretCipher())
+    val hapticEngine = HapticEngine(appContext)
     val httpClients = HttpClientProvider(settings.networkSettings, applicationScope)
 
     private val database = AppDatabase.build(context)

@@ -35,6 +35,7 @@ import dev.huecoder.md3agent.ui.components.FormField
 import dev.huecoder.md3agent.ui.components.SectionHeader
 import dev.huecoder.md3agent.ui.components.ShapeBadge
 import dev.huecoder.md3agent.ui.components.groupedListColors
+import dev.huecoder.md3agent.ui.haptics.clickHaptics
 
 internal fun LazyListScope.memorySection(
     tier: MemoryTier,
@@ -91,6 +92,7 @@ internal fun MemoryEditorDialog(
     val contentLimit = if (draft.tier == MemoryTier.INSTANT) MemoryStore.MAX_INSTANT_CONTENT else MemoryStore.MAX_CONTENT
 
     AlertDialog(
+        modifier = Modifier.clickHaptics(),
         onDismissRequest = onDismiss,
         title = { Text(stringResource(if (initial.id == null) R.string.memory_add else R.string.memory_edit)) },
         text = {

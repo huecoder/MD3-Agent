@@ -37,6 +37,7 @@ import dev.huecoder.md3agent.ui.components.colors
 import dev.huecoder.md3agent.ui.components.icon
 import dev.huecoder.md3agent.ui.components.polygon
 import dev.huecoder.md3agent.ui.haptics.rememberHaptics
+import dev.huecoder.md3agent.ui.haptics.clickHaptics
 
 @Composable
 fun ChatLookSheet(look: ChatLook, onChange: (ChatLook) -> Unit, onDismiss: () -> Unit) {
@@ -45,7 +46,7 @@ fun ChatLookSheet(look: ChatLook, onChange: (ChatLook) -> Unit, onDismiss: () ->
         haptics.tick()
         onChange(updated)
     }
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    ModalBottomSheet(onDismissRequest = onDismiss, modifier = Modifier.clickHaptics()) {
         Column(
             modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).navigationBarsPadding(),
         ) {

@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Check
 import dev.huecoder.md3agent.R
+import dev.huecoder.md3agent.ui.haptics.clickHaptics
 
 @Immutable
 data class SaveAction(
@@ -79,6 +80,7 @@ fun UnsavedChangesDialog(
     onDismiss: () -> Unit,
 ) {
     AlertDialog(
+        modifier = Modifier.clickHaptics(),
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.unsaved_title)) },
         text = {

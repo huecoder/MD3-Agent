@@ -8,8 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.LargeFlexibleTopAppBar
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MediumFlexibleTopAppBar
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
@@ -23,7 +22,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Close
@@ -32,7 +30,6 @@ import com.composables.icons.materialsymbols.rounded.Drive_file_move
 import com.composables.icons.materialsymbols.rounded.Select_all
 import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.ui.components.appViewModel
-import dev.huecoder.md3agent.ui.theme.heroTitle
 
 @Composable
 fun HomeScreen(
@@ -49,17 +46,14 @@ fun HomeScreen(
     Scaffold(
         modifier = Modifier.nestedScroll(topBarScroll.nestedScrollConnection),
         topBar = {
-            LargeFlexibleTopAppBar(
+            MediumFlexibleTopAppBar(
                 title = {
                     val title = if (state.isSelecting) {
                         pluralStringResource(R.plurals.home_selected, state.selection.size, state.selection.size)
                     } else {
                         stringResource(R.string.home_title)
                     }
-                    Text(title, style = MaterialTheme.typography.heroTitle)
-                },
-                subtitle = state.activeModel?.takeUnless { state.isSelecting }?.let { model ->
-                    { Text(model, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                    Text(title)
                 },
                 navigationIcon = {
                     if (state.isSelecting) {

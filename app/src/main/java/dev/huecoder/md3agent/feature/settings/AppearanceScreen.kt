@@ -58,6 +58,11 @@ fun AppearanceScreen(onBack: () -> Unit) {
                 checked = current.ui.haptics,
                 onCheckedChange = { value -> viewModel.updateInterface { it.copy(haptics = value) } },
             )
+            HapticStrengthSlider(
+                strength = current.ui.hapticStrength,
+                enabled = current.ui.haptics,
+                onChange = { value -> viewModel.updateInterface { it.copy(hapticStrength = value) } },
+            )
         }
     }
 }

@@ -26,6 +26,8 @@ import dev.huecoder.md3agent.feature.settings.McpServerEditorScreen
 import dev.huecoder.md3agent.feature.settings.McpServersScreen
 import dev.huecoder.md3agent.feature.settings.VoiceProviderEditorScreen
 import dev.huecoder.md3agent.feature.settings.VoiceSettingsScreen
+import dev.huecoder.md3agent.ui.haptics.clickHaptics
+import androidx.compose.ui.Modifier
 
 @Composable
 fun AppNavHost(chatToOpen: String?, onChatOpened: () -> Unit) {
@@ -38,6 +40,7 @@ fun AppNavHost(chatToOpen: String?, onChatOpened: () -> Unit) {
     NavHost(
         navController = navController,
         startDestination = HomeRoute,
+        modifier = Modifier.clickHaptics(),
         enterTransition = NavTransitions.enter,
         exitTransition = NavTransitions.exit,
         popEnterTransition = NavTransitions.popEnter,

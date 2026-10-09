@@ -48,6 +48,7 @@ import dev.huecoder.md3agent.ui.components.appViewModel
 import dev.huecoder.md3agent.ui.text.asString
 import dev.huecoder.md3agent.ui.components.iconRes
 import androidx.compose.ui.res.painterResource
+import dev.huecoder.md3agent.ui.haptics.clickHaptics
 
 @Composable
 fun ModelPickerSheet(current: ModelSelection?, onSelect: (ModelSelection) -> Unit, onDismiss: () -> Unit) {
@@ -59,7 +60,7 @@ fun ModelPickerSheet(current: ModelSelection?, onSelect: (ModelSelection) -> Uni
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val currentHere = current?.takeIf { it.providerId == state.providerId }
 
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState, containerColor = MaterialTheme.colorScheme.surfaceContainerLow) {
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState, containerColor = MaterialTheme.colorScheme.surfaceContainerLow, modifier = Modifier.clickHaptics()) {
         Column(Modifier.fillMaxWidth().fillMaxHeight(SHEET_HEIGHT_FRACTION)) {
             PickerHeader(state.totalCount, state.isRefreshing, viewModel::refresh)
             if (state.providers.size > 1) {

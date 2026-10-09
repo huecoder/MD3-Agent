@@ -44,6 +44,7 @@ import com.composables.icons.materialsymbols.rounded.Folder_off
 import com.composables.icons.materialsymbols.rounded.Create_new_folder
 import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.data.db.FolderEntity
+import dev.huecoder.md3agent.ui.haptics.clickHaptics
 
 @Composable
 fun ChatActionsSheet(
@@ -54,7 +55,7 @@ fun ChatActionsSheet(
     onDelete: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    ModalBottomSheet(onDismissRequest = onDismiss, modifier = Modifier.clickHaptics()) {
         Column(Modifier.navigationBarsPadding().padding(bottom = 16.dp)) {
             Text(
                 title,
@@ -73,7 +74,7 @@ fun ChatActionsSheet(
 
 @Composable
 fun FolderActionsSheet(folder: FolderEntity, onRename: () -> Unit, onDelete: () -> Unit, onDismiss: () -> Unit) {
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    ModalBottomSheet(onDismissRequest = onDismiss, modifier = Modifier.clickHaptics()) {
         Column(Modifier.navigationBarsPadding().padding(bottom = 16.dp)) {
             Text(folder.name, style = MaterialTheme.typography.titleMediumEmphasized, modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp))
             SheetAction(MaterialSymbols.Rounded.Edit, stringResource(R.string.home_folder_rename), onRename)
@@ -105,7 +106,7 @@ fun MoveToFolderSheet(
     onNewFolder: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    ModalBottomSheet(onDismissRequest = onDismiss, modifier = Modifier.clickHaptics()) {
         Column(Modifier.navigationBarsPadding().padding(bottom = 16.dp)) {
             Text(stringResource(R.string.home_move), style = MaterialTheme.typography.titleMediumEmphasized, modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp))
             SheetAction(MaterialSymbols.Rounded.Folder_off, stringResource(R.string.home_move_none), { onMove(null) })
@@ -129,6 +130,7 @@ fun NameDialog(
     val submit = { if (value.text.isNotBlank()) onConfirm(value.text.trim()) }
     LaunchedEffect(Unit) { focus.requestFocus() }
     AlertDialog(
+        modifier = Modifier.clickHaptics(),
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = {
@@ -151,6 +153,7 @@ fun NameDialog(
 @Composable
 fun DeleteChatsDialog(count: Int, onConfirm: () -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
+        modifier = Modifier.clickHaptics(),
         onDismissRequest = onDismiss,
         title = { Text(pluralStringResource(R.plurals.home_delete_chats_title, count, count)) },
         text = { Text(stringResource(R.string.home_delete_chat_body)) },

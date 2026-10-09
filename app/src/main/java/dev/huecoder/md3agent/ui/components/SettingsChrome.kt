@@ -7,7 +7,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.LargeFlexibleTopAppBar
+import androidx.compose.material3.MediumFlexibleTopAppBar
 import androidx.compose.material3.ListItemColors
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
@@ -25,11 +25,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Arrow_back
 import dev.huecoder.md3agent.R
-import dev.huecoder.md3agent.ui.theme.heroTitle
 
 @Composable
 fun SettingsScaffold(
@@ -47,8 +47,8 @@ fun SettingsScaffold(
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            LargeFlexibleTopAppBar(
-                title = { Text(title, style = MaterialTheme.typography.heroTitle) },
+            MediumFlexibleTopAppBar(
+                title = { Text(title) },
                 navigationIcon = { if (onBack != null) BackButton(requestBack) },
                 actions = actions,
                 scrollBehavior = scrollBehavior,
@@ -79,12 +79,12 @@ fun groupedListColors(): ListItemColors =
     ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
 
 @Composable
-fun SectionHeader(text: String, modifier: Modifier = Modifier) {
+fun SectionHeader(text: String, modifier: Modifier = Modifier, topPadding: Dp = 24.dp) {
     Text(
         text = text,
         style = MaterialTheme.typography.titleSmallEmphasized,
         color = MaterialTheme.colorScheme.primary,
-        modifier = modifier.padding(start = 12.dp, top = 24.dp, bottom = 8.dp),
+        modifier = modifier.padding(start = 12.dp, top = topPadding, bottom = 8.dp),
     )
 }
 

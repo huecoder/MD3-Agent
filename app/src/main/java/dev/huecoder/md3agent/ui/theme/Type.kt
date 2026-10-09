@@ -54,6 +54,3 @@ val AssistantTypography: Typography = Typography().run {
         labelSmallEmphasized = labelSmallEmphasized.inGoogleSans(),
     )
 }
-
-val Typography.heroTitle: TextStyle
-    get() = displaySmallEmphasized.copy(fontWeight = FontWeight.Bold)

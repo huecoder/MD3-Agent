@@ -15,6 +15,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import dev.huecoder.md3agent.ui.haptics.clickHaptics
+import androidx.compose.foundation.layout.Box
 
 data class DropdownOption<T>(val value: T, val label: String)
 
@@ -38,7 +40,7 @@ fun <T> OptionDropdown(
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
             modifier = Modifier.fillMaxWidth().menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
         )
-        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }, modifier = Modifier.clickHaptics()) {
             options.forEach { option ->
                 DropdownMenuItem(
                     text = { Text(option.label) },

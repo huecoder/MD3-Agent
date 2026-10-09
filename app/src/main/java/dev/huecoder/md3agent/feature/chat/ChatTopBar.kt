@@ -44,6 +44,7 @@ import dev.huecoder.md3agent.feature.models.label
 import dev.huecoder.md3agent.ui.components.BackButton
 import dev.huecoder.md3agent.ui.components.ChatBadge
 import dev.huecoder.md3agent.ui.components.VendorGlyph
+import dev.huecoder.md3agent.ui.haptics.clickHaptics
 
 private enum class ChatDialog { RENAME, DELETE, LOOK }
 
@@ -104,7 +105,7 @@ private fun ChatMenu(onRename: () -> Unit, onLook: () -> Unit, onDelete: () -> U
         IconButton(onClick = { open = true }, shapes = IconButtonDefaults.shapes()) {
             Icon(MaterialSymbols.Rounded.More_vert, contentDescription = stringResource(R.string.chat_more_options))
         }
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }, modifier = Modifier.clickHaptics()) {
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.home_rename)) },
                 leadingIcon = { Icon(MaterialSymbols.Rounded.Edit, contentDescription = null) },

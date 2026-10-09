@@ -32,6 +32,8 @@ import dev.huecoder.md3agent.ui.components.SectionHeader
 import dev.huecoder.md3agent.ui.components.ShapeBadge
 import dev.huecoder.md3agent.ui.components.groupedListColors
 
+private val FirstSectionGap = 8.dp
+private val SectionGap = 24.dp
 
 @Composable
 fun ChatList(
@@ -65,8 +67,10 @@ fun ChatList(
                 )
             }
         }
-        groups.forEach { group ->
-            item(key = "header-${group.age}") { SectionHeader(stringResource(group.age.label)) }
+        groups.forEachIndexed { groupIndex, group ->
+            item(key = "header-${group.age}") {
+                SectionHeader(stringResource(group.age.label), topPadding = if (groupIndex == 0) FirstSectionGap else SectionGap)
+            }
             itemsIndexed(group.chats, key = { _, chat -> chat.id }) { index, chat ->
                 ChatRow(
                     chat = chat,

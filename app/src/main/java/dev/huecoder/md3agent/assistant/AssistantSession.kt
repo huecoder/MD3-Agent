@@ -30,6 +30,9 @@ import dev.huecoder.md3agent.MainActivity
 import dev.huecoder.md3agent.ui.avatar.ProvideAgentLook
 import dev.huecoder.md3agent.ui.haptics.ProvideHaptics
 import dev.huecoder.md3agent.ui.theme.AssistantTheme
+import dev.huecoder.md3agent.ui.haptics.clickHaptics
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.Modifier
 
 class AssistantSession(context: Context) :
     VoiceInteractionSession(context),
@@ -72,11 +75,13 @@ class AssistantSession(context: Context) :
                 AssistantTheme {
                     ProvideAgentLook {
                         ProvideHaptics {
-                            AssistantOverlay(
-                                activation = activation.intValue,
-                                onDismiss = ::hide,
-                                onOpenInApp = ::openInApp,
-                            )
+                            Box(Modifier.clickHaptics()) {
+                                AssistantOverlay(
+                                    activation = activation.intValue,
+                                    onDismiss = ::hide,
+                                    onOpenInApp = ::openInApp,
+                                )
+                            }
                         }
                     }
                 }

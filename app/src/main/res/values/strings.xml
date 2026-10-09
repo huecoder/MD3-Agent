@@ -509,7 +509,9 @@
     <string name="settings_about_summary">Version %1$s, updates, source code</string>
     <string name="appearance_section_feedback">Feedback</string>
     <string name="appearance_haptics">Vibration on touch</string>
-    <string name="appearance_haptics_summary">Light taps on buttons, switches and tab changes</string>
+    <string name="appearance_haptics_summary">Taps on buttons, switches and tab changes, stronger for main actions</string>
+    <string name="appearance_haptic_strength">Vibration strength</string>
+    <string name="appearance_haptic_strength_value">%1$d%%</string>
     <string name="about_version">Version %1$s (%2$d)</string>
     <string name="about_check_updates">Check for updates</string>
     <string name="about_update_download">Download update</string>

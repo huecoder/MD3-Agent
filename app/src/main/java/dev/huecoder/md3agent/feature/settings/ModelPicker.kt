@@ -17,6 +17,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import dev.huecoder.md3agent.R
+import dev.huecoder.md3agent.ui.haptics.clickHaptics
+import androidx.compose.foundation.layout.Box
 
 private const val MAX_SUGGESTIONS = 50
 
@@ -48,7 +50,7 @@ fun ModelPicker(
             trailingIcon = { if (models.isNotEmpty()) ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
             modifier = Modifier.fillMaxWidth().menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable),
         )
-        ExposedDropdownMenu(expanded = expanded && suggestions.isNotEmpty(), onDismissRequest = { expanded = false }) {
+        ExposedDropdownMenu(expanded = expanded && suggestions.isNotEmpty(), onDismissRequest = { expanded = false }, modifier = Modifier.clickHaptics()) {
             suggestions.forEach { model ->
                 DropdownMenuItem(
                     text = { Text(model) },
