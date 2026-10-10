@@ -1,5 +1,5 @@
 <h1 align="center">
-  <img src="docs/avatar.svg" alt="" width="56" height="56" align="middle">&nbsp;MD3 Agent
+  <img src="docs/header.svg" alt="MD3 Agent" width="563">
 </h1>
 
 <p align="center">
