@@ -39,8 +39,10 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
+import dev.huecoder.md3agent.BuildConfig
 import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.ui.avatar.BotGeometry
 import dev.huecoder.md3agent.ui.avatar.toPath
@@ -80,7 +82,16 @@ fun PlaygroundScreen() {
     }
     TiltGravity(playground)
 
+    val versionLine = with(density) { MaterialTheme.typography.displayLarge.lineHeight.toDp() }
+
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
+        Text(
+            BuildConfig.VERSION_NAME,
+            style = MaterialTheme.typography.displayLarge,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = VERSION_ALPHA),
+            modifier = Modifier.align(Alignment.TopCenter).systemBarsPadding().padding(top = VERSION_TOP_PADDING),
+        )
         Canvas(
             Modifier
                 .fillMaxSize()
@@ -106,7 +117,7 @@ fun PlaygroundScreen() {
         AnimatedVisibility(
             visible = showHint,
             exit = fadeOut(),
-            modifier = Modifier.align(Alignment.TopCenter).systemBarsPadding().padding(top = 24.dp),
+            modifier = Modifier.align(Alignment.TopCenter).systemBarsPadding().padding(top = VERSION_TOP_PADDING + versionLine + HINT_GAP),
         ) {
             Text(
                 stringResource(R.string.playground_hint),
@@ -171,6 +182,9 @@ private fun displayRotation(context: Context): Int =
 private val PHYSICS_METER = 64.dp
 private val MIN_PIECE = 22.dp
 private val MAX_PIECE = 140.dp
+private val VERSION_TOP_PADDING = 16.dp
+private val HINT_GAP = 8.dp
+private const val VERSION_ALPHA = 0.08f
 private const val NANOS_PER_SECOND = 1_000_000_000f
 private const val HINT_MS = 3_500L
 private const val FLAT_THRESHOLD = 3f
