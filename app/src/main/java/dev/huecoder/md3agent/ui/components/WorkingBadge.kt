@@ -27,13 +27,15 @@ import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Pan_tool
 import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.conversation.ChatActivity
+import dev.huecoder.md3agent.ui.avatar.AgentLook
+import dev.huecoder.md3agent.ui.avatar.LocalAgentLook
 
 @Composable
-fun WorkingBadge(activity: ChatActivity, modifier: Modifier = Modifier, size: Dp = 44.dp) {
+fun WorkingBadge(activity: ChatActivity, modifier: Modifier = Modifier, size: Dp = 44.dp, look: AgentLook = LocalAgentLook.current) {
     when (activity) {
         ChatActivity.WORKING -> {
             val label = stringResource(R.string.home_chat_working)
-            AgentAvatar(isWorking = true, size = size, modifier = modifier.semantics { contentDescription = label })
+            AgentAvatar(isWorking = true, size = size, look = look, modifier = modifier.semantics { contentDescription = label })
         }
         ChatActivity.NEEDS_INPUT -> NeedsInputBadge(modifier, size)
     }

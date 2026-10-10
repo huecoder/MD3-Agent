@@ -3,6 +3,7 @@ package dev.huecoder.md3agent.feature.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.huecoder.md3agent.R
+import dev.huecoder.md3agent.data.settings.ApiFormat
 import dev.huecoder.md3agent.data.settings.HeaderEntry
 import dev.huecoder.md3agent.data.settings.ProviderProfile
 import dev.huecoder.md3agent.data.settings.SettingsRepository
@@ -27,14 +28,26 @@ data class VoiceProviderForm(
     val speechModel: String = VoiceProvider.DEFAULT_SPEECH_MODEL,
     val speechVoice: String = VoiceProvider.DEFAULT_SPEECH_VOICE,
     val models: List<String> = emptyList(),
+    val format: ApiFormat = ApiFormat.OPENAI,
 ) {
+    fun withFormat(next: ApiFormat) = copy(
+        format = next,
+        baseUrl = next.adoptBaseUrl(baseUrl),
+        transcriptionModel = transcriptionModel.adopt(VoiceProvider.defaultTranscriptionModel(format), VoiceProvider.defaultTranscriptionModel(next)),
+        speechModel = speechModel.adopt(VoiceProvider.defaultSpeechModel(format), VoiceProvider.defaultSpeechModel(next)),
+        speechVoice = speechVoice.adopt(VoiceProvider.defaultSpeechVoice(format), VoiceProvider.defaultSpeechVoice(next)),
+        models = emptyList(),
+    )
+
+    private fun String.adopt(oldDefault: String, newDefault: String) = if (isBlank() || this == oldDefault) newDefault else this
+
     val baseUrlError: UiText?
         get() = if (baseUrl.isBlank() || baseUrl.trim().toHttpUrlOrNull() != null) null else UiText.Resource(R.string.provider_base_url_invalid)
 
     val canSave: Boolean
         get() = name.isNotBlank() && baseUrl.isNotBlank() && baseUrlError == null && transcriptionModel.isNotBlank()
 
-    fun copyEndpoint(source: ProviderProfile) = copy(
+    fun copyEndpoint(source: ProviderProfile) = (if (source.format.hasVoice) withFormat(source.format) else this).copy(
         name = name.ifBlank { source.name },
         baseUrl = source.baseUrl,
         apiKey = source.apiKey,
@@ -48,8 +61,9 @@ data class VoiceProviderForm(
         apiKey = apiKey.trim(),
         extraHeaders = headers.filter { it.name.isNotBlank() },
         transcriptionModel = transcriptionModel.trim(),
-        speechModel = speechModel.trim().ifBlank { VoiceProvider.DEFAULT_SPEECH_MODEL },
-        speechVoice = speechVoice.trim().ifBlank { VoiceProvider.DEFAULT_SPEECH_VOICE },
+        speechModel = speechModel.trim().ifBlank { VoiceProvider.defaultSpeechModel(format) },
+        speechVoice = speechVoice.trim().ifBlank { VoiceProvider.defaultSpeechVoice(format) },
+        format = format,
     )
 }
 
@@ -85,6 +99,7 @@ class VoiceProviderEditorViewModel(
                     transcriptionModel = it.transcriptionModel,
                     speechModel = it.speechModel,
                     speechVoice = it.speechVoice,
+                    format = it.format,
                 )
             } ?: VoiceProviderForm(id = settings.newProviderId(), isNew = true))
         }

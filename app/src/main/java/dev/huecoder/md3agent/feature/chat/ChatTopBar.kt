@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.DropdownMenu
@@ -31,11 +32,13 @@ import com.composables.icons.materialsymbols.rounded.Delete
 import com.composables.icons.materialsymbols.rounded.Edit
 import com.composables.icons.materialsymbols.rounded.More_vert
 import com.composables.icons.materialsymbols.rounded.Palette
+import com.composables.icons.materialsymbols.rounded.Smart_toy
 import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.data.chat.ChatLook
 import dev.huecoder.md3agent.feature.home.DeleteChatsDialog
 import dev.huecoder.md3agent.feature.home.NameDialog
 import dev.huecoder.md3agent.feature.models.label
+import dev.huecoder.md3agent.llm.models.ModelFamily
 import dev.huecoder.md3agent.ui.components.BackButton
 import dev.huecoder.md3agent.ui.components.ChatBadge
 import dev.huecoder.md3agent.ui.components.ModelChip
@@ -54,35 +57,27 @@ fun ChatTopBar(
     onLookChange: (ChatLook) -> Unit,
 ) {
     var dialog by rememberSaveable { mutableStateOf<ChatDialog?>(null) }
+    val modelLabel = state.modelLabel()
     TopAppBar(
         title = {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                if (state.chatId != null) {
-                    ChatBadge(
-                        state.look,
-                        size = BADGE_SIZE,
-                        modifier = Modifier.clip(CircleShape).clickable(onClickLabel = stringResource(R.string.chat_look_title)) { dialog = ChatDialog.LOOK },
-                    )
-                }
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(title, style = MaterialTheme.typography.titleMediumEmphasized, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    ModelChip(
-                        family = state.modelFamily,
-                        label = state.modelName?.let { name ->
-                            listOfNotNull(name, state.selection?.reasoningEffort?.let { stringResource(it.label) }).joinToString(" · ")
-                        },
-                        onClick = onPickModel,
-                    )
-                }
+            if (state.isStarted) {
+                StartedChatTitle(title, state.look, onOpenLook = { dialog = ChatDialog.LOOK })
+            } else {
+                NewChatTitle(title, state.modelFamily, modelLabel, onPickModel)
             }
         },
         navigationIcon = { BackButton(onBack) },
         actions = {
-            if (state.chatId != null) {
-                ChatMenu(onRename = { dialog = ChatDialog.RENAME }, onLook = { dialog = ChatDialog.LOOK }, onDelete = { dialog = ChatDialog.DELETE })
+            if (state.isStarted) {
+                ChatMenu(
+                    modelSummary = listOfNotNull(modelLabel, state.agentName).joinToString(LABEL_SEPARATOR),
+                    onPickModel = onPickModel,
+                    onRename = { dialog = ChatDialog.RENAME },
+                    onLook = { dialog = ChatDialog.LOOK },
+                    onDelete = { dialog = ChatDialog.DELETE },
+                )
             }
         },
-        expandedHeight = TOP_BAR_HEIGHT,
     )
     when (dialog) {
         ChatDialog.RENAME -> NameDialog(
@@ -100,13 +95,56 @@ fun ChatTopBar(
 }
 
 @Composable
-private fun ChatMenu(onRename: () -> Unit, onLook: () -> Unit, onDelete: () -> Unit) {
+private fun StartedChatTitle(title: String, look: ChatLook, onOpenLook: () -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        ChatBadge(
+            look,
+            size = BADGE_SIZE,
+            modifier = Modifier.clip(CircleShape).clickable(onClickLabel = stringResource(R.string.chat_look_title), onClick = onOpenLook),
+        )
+        Text(title, style = MaterialTheme.typography.titleMediumEmphasized, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+}
+
+@Composable
+private fun NewChatTitle(title: String, family: ModelFamily?, modelLabel: String?, onPickModel: () -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+        Text(title, style = MaterialTheme.typography.titleMediumEmphasized, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Box(Modifier.weight(1f).padding(start = 12.dp), contentAlignment = Alignment.Center) {
+            ModelChip(family = family, label = modelLabel, onClick = onPickModel)
+        }
+    }
+}
+
+@Composable
+private fun ChatUiState.modelLabel(): String? = modelName?.let { name ->
+    listOfNotNull(name, selection?.reasoningEffort?.let { stringResource(it.label) }).joinToString(LABEL_SEPARATOR)
+}
+
+@Composable
+private fun ChatMenu(modelSummary: String, onPickModel: () -> Unit, onRename: () -> Unit, onLook: () -> Unit, onDelete: () -> Unit) {
     var open by rememberSaveable { mutableStateOf(false) }
     Box {
         IconButton(onClick = { open = true }, shapes = IconButtonDefaults.shapes()) {
             Icon(MaterialSymbols.Rounded.More_vert, contentDescription = stringResource(R.string.chat_more_options))
         }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }, modifier = Modifier.clickHaptics()) {
+            DropdownMenuItem(
+                text = {
+                    Column {
+                        Text(stringResource(R.string.chat_model_and_agent))
+                        Text(
+                            modelSummary,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                },
+                leadingIcon = { Icon(MaterialSymbols.Rounded.Smart_toy, contentDescription = null) },
+                onClick = { open = false; onPickModel() },
+            )
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.home_rename)) },
                 leadingIcon = { Icon(MaterialSymbols.Rounded.Edit, contentDescription = null) },
@@ -126,5 +164,5 @@ private fun ChatMenu(onRename: () -> Unit, onLook: () -> Unit, onDelete: () -> U
     }
 }
 
-private val TOP_BAR_HEIGHT = 72.dp
+private const val LABEL_SEPARATOR = " · "
 private val BADGE_SIZE = 40.dp

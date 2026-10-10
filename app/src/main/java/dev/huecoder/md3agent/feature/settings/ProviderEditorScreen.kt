@@ -30,6 +30,7 @@ import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Delete
 import com.composables.icons.materialsymbols.rounded.Sync
 import dev.huecoder.md3agent.R
+import dev.huecoder.md3agent.data.settings.ApiFormat
 import dev.huecoder.md3agent.ui.components.LabeledSwitch
 import dev.huecoder.md3agent.ui.components.SectionHeader
 import dev.huecoder.md3agent.ui.components.FormField
@@ -66,6 +67,13 @@ fun ProviderEditorScreen(providerId: String?, onDone: () -> Unit) {
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            ChoiceRow(
+                title = stringResource(R.string.provider_format),
+                choices = apiFormatChoices(ApiFormat.entries),
+                selected = current.format,
+                onSelect = { format -> viewModel.edit { it.withFormat(format) } },
+                hint = stringResource(R.string.provider_format_hint),
+            )
             FormField(
                 value = current.name,
                 onValueChange = { value -> viewModel.edit { it.copy(name = value) } },
@@ -76,7 +84,7 @@ fun ProviderEditorScreen(providerId: String?, onDone: () -> Unit) {
                 value = current.baseUrl,
                 onValueChange = { value -> viewModel.edit { it.copy(baseUrl = value) } },
                 label = stringResource(R.string.provider_base_url),
-                placeholder = stringResource(R.string.provider_base_url_placeholder),
+                placeholder = current.format.defaultBaseUrl,
                 isError = current.baseUrlError != null,
                 supportingText = current.baseUrlError?.asString(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),

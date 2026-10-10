@@ -39,6 +39,8 @@ import dev.huecoder.md3agent.feature.main.MainNavBarClearance
 import dev.huecoder.md3agent.conversation.ChatActivity
 import dev.huecoder.md3agent.ui.components.WorkingBadge
 import dev.huecoder.md3agent.data.db.ChatSummary
+import dev.huecoder.md3agent.data.settings.AgentSettings
+import dev.huecoder.md3agent.ui.avatar.AgentLook
 import dev.huecoder.md3agent.ui.components.SectionHeader
 import dev.huecoder.md3agent.ui.components.ShapeBadge
 import dev.huecoder.md3agent.ui.components.groupedListColors
@@ -54,6 +56,7 @@ data class RowSwipes(val right: RowAction?, val left: RowAction?)
 fun ChatList(
     groups: List<ChatGroup>,
     activity: Map<String, ChatActivity>,
+    agents: AgentSettings,
     selection: Set<String>,
     swipes: RowSwipes,
     @StringRes emptyText: Int,
@@ -111,6 +114,7 @@ fun ChatList(
                     ChatRow(
                         chat = chat,
                         activity = activity[chat.id],
+                        agentLook = AgentLook.of(agents.forChat(chat.agentId)),
                         selected = chat.id in selection,
                         shapes = shapes,
                         onClick = { onClick(chat.id) },
@@ -126,6 +130,7 @@ fun ChatList(
 private fun ChatRow(
     chat: ChatSummary,
     activity: ChatActivity?,
+    agentLook: AgentLook,
     selected: Boolean,
     shapes: ListItemShapes,
     onClick: () -> Unit,
@@ -145,7 +150,7 @@ private fun ChatRow(
         leadingContent = {
             when {
                 selected -> ShapeBadge(icon = MaterialSymbols.Rounded.Check)
-                activity != null -> WorkingBadge(activity)
+                activity != null -> WorkingBadge(activity, look = agentLook)
                 else -> ChatBadge(ChatLook.of(chat.iconKey, chat.colorKey, chat.shapeKey))
             }
         },

@@ -81,6 +81,7 @@ fun SwipeableRow(
     val scope = rememberCoroutineScope()
     val state = rememberSwipeToDismissBoxState()
     LaunchedEffect(state) {
+        if (state.currentValue != SwipeToDismissBoxValue.Settled) state.snapTo(SwipeToDismissBoxValue.Settled)
         snapshotFlow { state.targetValue }.distinctUntilChanged().drop(1).collect { haptics.tick() }
     }
     SwipeToDismissBox(

@@ -2,7 +2,6 @@ package dev.huecoder.md3agent.feature.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import dev.huecoder.md3agent.data.settings.AgentProfile
 import dev.huecoder.md3agent.data.settings.AppSettings
 import dev.huecoder.md3agent.data.settings.ChatSettings
 import dev.huecoder.md3agent.data.settings.InterfaceSettings
@@ -19,10 +18,6 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
 
     fun updateChat(transform: (ChatSettings) -> ChatSettings) {
         viewModelScope.launch { repository.updateChat(transform) }
-    }
-
-    fun updateAgent(transform: (AgentProfile) -> AgentProfile) {
-        viewModelScope.launch { repository.updateAgent(transform) }
     }
 
     fun updateInterface(transform: (InterfaceSettings) -> InterfaceSettings) {

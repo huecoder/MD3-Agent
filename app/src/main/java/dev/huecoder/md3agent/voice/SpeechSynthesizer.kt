@@ -6,17 +6,27 @@ import android.media.MediaPlayer
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import dev.huecoder.md3agent.data.settings.VoiceProvider
+import dev.huecoder.md3agent.data.settings.ApiFormat
 import dev.huecoder.md3agent.llm.ProviderEndpoint
+import dev.huecoder.md3agent.llm.ProviderException
+import dev.huecoder.md3agent.llm.wire.GeminiGenerate
 import dev.huecoder.md3agent.net.HttpClientProvider
 import dev.huecoder.md3agent.net.fetchToFile
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonArray
+import kotlinx.serialization.json.putJsonObject
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
 import java.io.IOException
+import java.util.Base64
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
@@ -95,17 +105,49 @@ class ProviderSpeechSynthesizer(
 ) : SpeechSynthesizer {
     private var player: MediaPlayer? = null
 
-    override suspend fun prepare(text: String): PreparedSpeech {
+    private val endpoint by lazy { ProviderEndpoint(provider.asEndpointProfile()) }
+
+    override suspend fun prepare(text: String): PreparedSpeech = when (provider.format) {
+        ApiFormat.GEMINI -> gemini(text)
+        else -> openAi(text)
+    }
+
+    private suspend fun openAi(text: String): PreparedSpeech {
         val body = buildJsonObject {
             put("model", provider.speechModel)
             put("voice", provider.speechVoice)
             put("input", text)
             put("response_format", RESPONSE_FORMAT)
         }.toString().toRequestBody(JSON)
-        val request = ProviderEndpoint(provider.asEndpointProfile()).authorizedRequest(SPEECH_PATH).post(body).build()
-        val target = File.createTempFile(FILE_PREFIX, ".$RESPONSE_FORMAT", cacheDir)
+        val request = endpoint.authorizedRequest(SPEECH_PATH).post(body).build()
+        return withTempFile(".$RESPONSE_FORMAT") { target -> PreparedSpeech.Audio(httpClients.current().fetchToFile(request, target)) }
+    }
+
+    private suspend fun gemini(text: String): PreparedSpeech = withContext(Dispatchers.IO) {
+        val body = buildJsonObject {
+            putJsonArray("contents") { addJsonObject { putJsonArray("parts") { addJsonObject { put("text", text) } } } }
+            putJsonObject("generationConfig") {
+                putJsonArray("responseModalities") { add("AUDIO") }
+                putJsonObject("speechConfig") {
+                    putJsonObject("voiceConfig") { putJsonObject("prebuiltVoiceConfig") { put("voiceName", provider.speechVoice) } }
+                }
+            }
+        }
+        val request = GeminiGenerate.request(endpoint, provider.speechModel, body)
+        val response = withTempFile(".json") { target ->
+            httpClients.current().fetchToFile(request, target).readText().also { target.delete() }
+        }
+        val audio = GeminiGenerate.inlineData(GeminiGenerate.parts(response))
+            ?: throw ProviderException.MalformedResponse("Gemini returned no audio")
+        withTempFile(".wav") { target ->
+            PreparedSpeech.Audio(PcmWav.write(Base64.getDecoder().decode(audio.base64), PcmWav.sampleRateOf(audio.mimeType), target))
+        }
+    }
+
+    private inline fun <T> withTempFile(suffix: String, block: (File) -> T): T {
+        val target = File.createTempFile(FILE_PREFIX, suffix, cacheDir)
         return try {
-            PreparedSpeech.Audio(httpClients.current().fetchToFile(request, target))
+            block(target)
         } catch (e: Exception) {
             target.delete()
             throw e

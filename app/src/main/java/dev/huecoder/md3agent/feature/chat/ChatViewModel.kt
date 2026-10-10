@@ -51,6 +51,7 @@ import java.io.IOException
 data class ChatUiState(
     val chatId: String? = null,
     val title: UiText = NEW_CHAT_TITLE,
+    val agentId: String? = null,
     val agentName: String = AgentProfile.DEFAULT_AGENT_NAME,
     val modelId: String? = null,
     val selection: ModelSelection? = null,
@@ -65,6 +66,8 @@ data class ChatUiState(
     val look: ChatLook = ChatLook.Default,
     val focusItemId: String? = null,
 ) {
+    val isStarted: Boolean get() = chatId != null
+
     fun canSend(text: String): Boolean = (text.isNotBlank() || pendingAttachments.isNotEmpty()) && !isImporting
 
     companion object {
@@ -91,6 +94,7 @@ class ChatViewModel(
     private val _errors = MutableStateFlow<UiText?>(null)
     private val pending = MutableStateFlow(PendingAttachments())
     private val pendingSelection = MutableStateFlow<ModelSelection?>(null)
+    private val pendingAgentId = MutableStateFlow<String?>(null)
 
     val errors: StateFlow<UiText?> = _errors.asStateFlow()
 
@@ -108,13 +112,15 @@ class ChatViewModel(
     val state: StateFlow<ChatUiState> = chatId
         .flatMapLatest { id ->
             if (id == null) {
-                combine(appSettings, pendingSelection) { current, chosen ->
-                    ChatUiState(agentName = current.agent.name, showTokenUsage = current.chat.showTokenUsage, typing = current.chat.typing).withSelection(chosen ?: current.activeSelection)
+                combine(appSettings, pendingSelection, pendingAgentId) { current, chosen, chosenAgentId ->
+                    val agent = current.agents.resolve(chosenAgentId)
+                    ChatUiState(agentId = agent.id, agentName = agent.name, showTokenUsage = current.chat.showTokenUsage, typing = current.chat.typing).withSelection(chosen ?: current.activeSelection)
                 }
             } else {
                 combine(chats.observeChat(id), chats.observeMessages(id), runner.drafts, appSettings, pendingFocus) { chat, messages, drafts, current, focus ->
+                    val agent = current.agents.forChat(chat?.agentId)
                     buildState(id, chat, messages, drafts[id], focus)
-                        .copy(agentName = current.agent.name, showTokenUsage = current.chat.showTokenUsage, typing = current.chat.typing)
+                        .copy(agentId = agent.id, agentName = agent.name, showTokenUsage = current.chat.showTokenUsage, typing = current.chat.typing)
                         .withSelection(chat?.selection ?: current.activeSelection)
                 }
             }
@@ -145,7 +151,7 @@ class ChatViewModel(
         viewModelScope.launch {
             val id = chatId.value
             try {
-                if (id == null) chatId.value = runner.startChat(text, attached, pendingSelection.value).id else runner.send(id, text, attached)
+                if (id == null) chatId.value = runner.startChat(text, attached, pendingSelection.value, state.value.agentId).id else runner.send(id, text, attached)
             } catch (e: NoModelConfiguredException) {
                 pending.update { it.copy(items = attached + it.items) }
                 _errors.value = UiText.Resource(R.string.chat_error_no_model)
@@ -175,11 +181,12 @@ class ChatViewModel(
 
     fun selectModel(selection: ModelSelection) {
         val id = chatId.value
-        if (id == null) pendingSelection.value = selection
-        viewModelScope.launch {
-            if (id != null) chats.setModel(id, selection)
-            settings.setActiveSelection(selection)
-        }
+        if (id == null) pendingSelection.value = selection else viewModelScope.launch { chats.setModel(id, selection) }
+    }
+
+    fun selectAgent(agentId: String) {
+        val id = chatId.value
+        if (id == null) pendingAgentId.value = agentId else viewModelScope.launch { chats.setAgent(id, agentId) }
     }
 
     private suspend fun ChatUiState.withSelection(selection: ModelSelection?): ChatUiState {

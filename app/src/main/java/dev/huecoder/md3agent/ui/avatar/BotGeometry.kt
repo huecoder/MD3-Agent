@@ -2,18 +2,28 @@ package dev.huecoder.md3agent.ui.avatar
 
 import androidx.graphics.shapes.Cubic
 import kotlin.math.PI
+import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.hypot
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sin
 
-class Eye(val xs: FloatArray, val ys: FloatArray) {
+class Outline(val xs: FloatArray, val ys: FloatArray) {
     val reach: Float get() = xs.indices.maxOf { hypot(xs[it], ys[it]) }
-    val width: Float get() = xs.max() - xs.min()
-    val height: Float get() = ys.max() - ys.min()
-    val centerX: Float get() = (xs.max() + xs.min()) / 2f
-    val centerY: Float get() = (ys.max() + ys.min()) / 2f
+}
+
+class Eye(val outlines: List<Outline>) {
+    val reach: Float get() = outlines.maxOf { it.reach }
+    val width: Float get() = right - left
+    val height: Float get() = bottom - top
+    val centerX: Float get() = (right + left) / 2f
+    val centerY: Float get() = (bottom + top) / 2f
+
+    private val left: Float get() = outlines.minOf { it.xs.min() }
+    private val right: Float get() = outlines.maxOf { it.xs.max() }
+    private val top: Float get() = outlines.minOf { it.ys.min() }
+    private val bottom: Float get() = outlines.maxOf { it.ys.max() }
 }
 
 data class Gaze(val yaw: Float, val pitch: Float) {
@@ -34,10 +44,13 @@ object BotGeometry {
     private const val CLOSED_EYE = 0.14f
     private const val MAX_WOBBLE = 0.1f
     private const val BLINK_STRETCH = 0.25f
+    private const val STROKE_RADIUS = 0.075f
+    private const val MIN_SCALE = 0.01f
     private const val CAP_POINTS = 16
     private const val SIDE_POINTS = 12
     private const val EPSILON = 1e-4f
-    private val FRONT = Vec3(0f, 0f, 1f)
+    private const val MIN_POLYGON = 3
+    private val FRONT = Vec3.Front
 
     fun innerRadius(cubics: List<Cubic>): Float {
         var nearest = Float.MAX_VALUE
@@ -53,19 +66,64 @@ object BotGeometry {
     }
 
     fun eyes(gaze: Gaze, blink: Float, wobble: Float, safeRadius: Float): Pair<Eye, Eye> {
-        val closing = blink.coerceIn(0f, 1f)
-        val radius = EYE_RADIUS * (1f + MAX_WOBBLE * wobble.coerceIn(-1f, 1f)) * (1f + BLINK_STRETCH * closing)
-        val halfLength = EYE_HALF_LENGTH * (1f - (1f - CLOSED_EYE) * closing)
         val yaw = gaze.yaw.coerceIn(-Gaze.MAX_YAW, Gaze.MAX_YAW)
         val pitch = gaze.pitch.coerceIn(-Gaze.MAX_PITCH, Gaze.MAX_PITCH) + EYE_LIFT
-        val left = project(sphericalCapsule(halfLength, radius), yaw - EYE_SPREAD, pitch, safeRadius)
-        val right = project(sphericalCapsule(halfLength, radius), yaw + EYE_SPREAD, pitch, safeRadius)
+        val capsule = plainCapsule(blink, wobble, scale = 1f)
+        val left = flatten(place(capsule, yaw - EYE_SPREAD, pitch), safeRadius)
+        val right = flatten(place(capsule, yaw + EYE_SPREAD, pitch), safeRadius)
         return left to right
+    }
+
+    fun eyes(
+        orientation: Orientation,
+        blink: Float,
+        safeRadius: Float,
+        gaze: Gaze = Gaze.Center,
+        wobble: Float = 0f,
+        glyph: EyeGlyph = EyeGlyph.Plain,
+        scale: Float = 1f,
+    ): Pair<Eye?, Eye?> {
+        if (scale < MIN_SCALE) return null to null
+        val yaw = gaze.yaw.coerceIn(-Gaze.MAX_YAW, Gaze.MAX_YAW)
+        val pitch = gaze.pitch.coerceIn(-Gaze.MAX_PITCH, Gaze.MAX_PITCH) + EYE_LIFT
+        val leftShapes = glyphShapes(glyph, mirrored = false, blink, wobble, scale)
+        val rightShapes = if (glyph == EyeGlyph.Plain) leftShapes else glyphShapes(glyph, mirrored = true, blink, wobble, scale)
+        fun turned(shapes: List<List<Vec3>>, spread: Float): Eye? {
+            val visible = shapes.mapNotNull { shape ->
+                clipToFront(place(shape, yaw + spread, pitch).map(orientation::rotate)).takeIf { it.size >= MIN_POLYGON }
+            }
+            return if (visible.isEmpty()) null else Eye(visible.map { outline(it, safeRadius) })
+        }
+        return turned(leftShapes, -EYE_SPREAD) to turned(rightShapes, EYE_SPREAD)
     }
 
     fun gazeTowards(dx: Float, dy: Float): Gaze = Gaze(dx * Gaze.MAX_YAW, -dy * Gaze.MAX_PITCH)
 
     fun isInside(eye: Eye, safeRadius: Float) = eye.reach <= safeRadius + EPSILON
+
+    private fun glyphShapes(glyph: EyeGlyph, mirrored: Boolean, blink: Float, wobble: Float, scale: Float): List<List<Vec3>> =
+        if (glyph == EyeGlyph.Plain) {
+            listOf(plainCapsule(blink, wobble, scale))
+        } else {
+            glyph.strokes(mirrored).map { strokeCapsule(it, scale) }
+        }
+
+    private fun plainCapsule(blink: Float, wobble: Float, scale: Float): List<Vec3> {
+        val closing = blink.coerceIn(0f, 1f)
+        val radius = EYE_RADIUS * (1f + MAX_WOBBLE * wobble.coerceIn(-1f, 1f)) * (1f + BLINK_STRETCH * closing)
+        val halfLength = EYE_HALF_LENGTH * (1f - (1f - CLOSED_EYE) * closing)
+        return sphericalCapsule(halfLength * scale, radius * scale)
+    }
+
+    private fun strokeCapsule(stroke: GlyphStroke, scale: Float): List<Vec3> {
+        val dx = (stroke.endX - stroke.startX) * scale
+        val dy = (stroke.endY - stroke.startY) * scale
+        val radius = STROKE_RADIUS * scale
+        val capsule = sphericalCapsule(hypot(dx, dy) / 2f + radius, radius)
+        val centerX = (stroke.startX + stroke.endX) / 2f * scale
+        val centerY = (stroke.startY + stroke.endY) / 2f * scale
+        return place(rolled(capsule, atan2(-dx, dy)), centerX, -centerY)
+    }
 
     private fun sphericalCapsule(halfLength: Float, radius: Float): List<Vec3> {
         val upright = halfLength >= radius
@@ -97,27 +155,37 @@ object BotGeometry {
 
     private fun arcPoint(t: Float, along: Vec3) = FRONT * cos(t) + along * sin(t)
 
-    private fun project(points: List<Vec3>, yaw: Float, pitch: Float, radius: Float): Eye {
-        val xs = FloatArray(points.size)
-        val ys = FloatArray(points.size)
-        points.forEachIndexed { index, point ->
-            val liftedY = point.y * cos(pitch) - point.z * sin(pitch)
-            val liftedZ = point.y * sin(pitch) + point.z * cos(pitch)
-            xs[index] = (point.x * cos(yaw) + liftedZ * sin(yaw)) * radius
-            ys[index] = liftedY * radius
+    private fun place(points: List<Vec3>, yaw: Float, pitch: Float): List<Vec3> = points.map { point ->
+        val liftedY = point.y * cos(pitch) - point.z * sin(pitch)
+        val liftedZ = point.y * sin(pitch) + point.z * cos(pitch)
+        Vec3(point.x * cos(yaw) + liftedZ * sin(yaw), liftedY, liftedZ * cos(yaw) - point.x * sin(yaw))
+    }
+
+    private fun rolled(points: List<Vec3>, angle: Float): List<Vec3> {
+        val cosine = cos(angle)
+        val sine = sin(angle)
+        return points.map { Vec3(it.x * cosine - it.y * sine, it.x * sine + it.y * cosine, it.z) }
+    }
+
+    private fun flatten(points: List<Vec3>, radius: Float): Eye = Eye(listOf(outline(points, radius)))
+
+    private fun outline(points: List<Vec3>, radius: Float): Outline =
+        Outline(FloatArray(points.size) { points[it].x * radius }, FloatArray(points.size) { points[it].y * radius })
+
+    private fun clipToFront(points: List<Vec3>): List<Vec3> = buildList {
+        points.indices.forEach { index ->
+            val current = points[index]
+            val next = points[(index + 1) % points.size]
+            if (current.z >= 0f) add(current)
+            if ((current.z >= 0f) != (next.z >= 0f)) {
+                val t = current.z / (current.z - next.z)
+                add(current + (next - current) * t)
+            }
         }
-        return Eye(xs, ys)
     }
 
     private fun bezier(t: Float, p0: Float, p1: Float, p2: Float, p3: Float): Float {
         val u = 1f - t
         return u * u * u * p0 + 3 * u * u * t * p1 + 3 * u * t * t * p2 + t * t * t * p3
     }
-}
-
-private data class Vec3(val x: Float, val y: Float, val z: Float) {
-    operator fun plus(other: Vec3) = Vec3(x + other.x, y + other.y, z + other.z)
-    operator fun minus(other: Vec3) = Vec3(x - other.x, y - other.y, z - other.z)
-    operator fun times(scale: Float) = Vec3(x * scale, y * scale, z * scale)
-    operator fun unaryMinus() = Vec3(-x, -y, -z)
 }

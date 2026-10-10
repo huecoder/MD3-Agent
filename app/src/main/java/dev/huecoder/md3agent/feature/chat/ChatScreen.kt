@@ -34,6 +34,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -51,7 +52,9 @@ import dev.huecoder.md3agent.ui.text.asString
 import dev.huecoder.md3agent.ui.text.resolve
 import dev.huecoder.md3agent.voice.DictationState
 import dev.huecoder.md3agent.voice.DictationViewModel
+import dev.huecoder.md3agent.ui.avatar.AvatarHandoff
 import dev.huecoder.md3agent.ui.avatar.KnockoutStage
+import dev.huecoder.md3agent.ui.avatar.ProvideAgentLook
 import dev.huecoder.md3agent.ui.avatar.TypingAttention
 import dev.huecoder.md3agent.ui.avatar.knockoutArea
 import dev.huecoder.md3agent.ui.avatar.knockoutObstacle
@@ -73,6 +76,11 @@ fun ChatScreen(chatId: String?, onBack: () -> Unit, focusMessageId: String? = nu
     var pickingModel by rememberSaveable { mutableStateOf(false) }
     val typingAttention = remember { TypingAttention() }
     val knockout = remember { KnockoutStage() }
+    val handoff = remember { AvatarHandoff() }
+    val hasMessages = state.messages.isNotEmpty()
+    LaunchedEffect(hasMessages) {
+        if (chatId == null && hasMessages && !knockout.isPlaying) handoff.play()
+    }
     val pickFiles = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
         if (uris.isNotEmpty()) viewModel.attach(uris)
     }
@@ -97,75 +105,87 @@ fun ChatScreen(chatId: String?, onBack: () -> Unit, focusMessageId: String? = nu
     }
 
     if (pickingModel) {
-        ModelPickerSheet(current = state.selection, onSelect = viewModel::selectModel, onDismiss = { pickingModel = false })
+        ModelPickerSheet(
+            model = state.selection,
+            agentId = state.agentId,
+            onSelectModel = viewModel::selectModel,
+            onSelectAgent = viewModel::selectAgent,
+            onDismiss = { pickingModel = false },
+        )
     }
 
-    LightboxHost {
-        Scaffold(
-            topBar = {
-                ChatTopBar(
-                    title = state.title.asString(),
-                    state = state,
-                    onBack = onBack,
-                    onPickModel = { pickingModel = true },
-                    onRename = viewModel::rename,
-                    onDelete = { viewModel.delete(); onBack() },
-                    onLookChange = viewModel::setLook,
-                )
-            },
-            snackbarHost = { SnackbarHost(snackbarHost) },
-        ) { padding ->
-            Box(Modifier.fillMaxSize().padding(top = padding.calculateTopPadding()).imePadding().knockoutArea(knockout)) {
-                if (state.messages.isEmpty()) {
-                    EmptyConversation(
-                        Modifier.align(Alignment.Center),
-                        interactive = true,
-                        typing = typingAttention,
-                        listeningLevel = dictation.listeningLevel(),
-                        knockout = knockout,
+    ProvideAgentLook(state.agentId) {
+        LightboxHost {
+            Scaffold(
+                topBar = {
+                    ChatTopBar(
+                        title = state.title.asString(),
+                        state = state,
+                        onBack = onBack,
+                        onPickModel = { pickingModel = true },
+                        onRename = viewModel::rename,
+                        onDelete = { viewModel.delete(); onBack() },
+                        onLookChange = viewModel::setLook,
                     )
-                } else {
-                    MessageList(
-                        messages = state.messages,
-                        showUsage = state.showTokenUsage,
-                        typing = state.typing,
-                        speakingId = speakingId,
-                        onRegenerate = viewModel::regenerate,
-                        onToggleSpeech = viewModel::toggleSpeech,
-                        onSend = viewModel::send,
-                        onApproval = viewModel::respondToApproval,
-                        focusItemId = state.focusItemId,
-                        onFocusShown = viewModel::focusShown,
-                    )
-                }
-                val composerModifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .knockoutObstacle(knockout, COMPOSER_OBSTACLE)
-                    .background(MaterialTheme.colorScheme.surface)
-                    .navigationBarsPadding()
-                    .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 12.dp)
-                val asked = prompt
-                if (asked != null) {
-                    PromptPanel(asked, onAnswer = { viewModel.answerPrompt(asked, it) }, modifier = composerModifier)
-                } else {
-                    ChatInput(
-                        text = input,
-                        onTextChange = updateInput,
-                        isStreaming = state.isStreaming,
-                        canSend = state.canSend(input),
-                        onSend = {
-                            viewModel.send(input)
-                            updateInput("")
-                        },
-                        onStop = viewModel::stop,
-                        attachments = state.pendingAttachments,
-                        isImporting = state.isImporting,
-                        onAttach = { pickFiles.launch(PICKABLE_MIME_TYPES) },
-                        onRemoveAttachment = viewModel::removeAttachment,
-                        dictation = dictation,
-                        modifier = composerModifier,
-                        onLetterTyped = typingAttention::onLetter,
-                    )
+                },
+                snackbarHost = { SnackbarHost(snackbarHost) },
+            ) { padding ->
+                Box(Modifier.fillMaxSize().padding(top = padding.calculateTopPadding()).imePadding().knockoutArea(knockout)) {
+                    val isEmpty = state.messages.isEmpty()
+                    if (!isEmpty) {
+                        MessageList(
+                            messages = state.messages,
+                            showUsage = state.showTokenUsage,
+                            typing = state.typing,
+                            speakingId = speakingId,
+                            onRegenerate = viewModel::regenerate,
+                            onToggleSpeech = viewModel::toggleSpeech,
+                            onSend = viewModel::send,
+                            onApproval = viewModel::respondToApproval,
+                            focusItemId = state.focusItemId,
+                            onFocusShown = viewModel::focusShown,
+                            avatarHandoff = handoff,
+                        )
+                    }
+                    if (isEmpty || handoff.isActive) {
+                        EmptyConversation(
+                            Modifier.align(Alignment.Center),
+                            interactive = isEmpty,
+                            typing = typingAttention,
+                            listeningLevel = dictation.listeningLevel(),
+                            knockout = knockout,
+                            handoff = handoff,
+                        )
+                    }
+                    val composerModifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .knockoutObstacle(knockout, COMPOSER_OBSTACLE)
+                        .background(MaterialTheme.colorScheme.surface)
+                        .navigationBarsPadding()
+                        .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 12.dp)
+                    val asked = prompt
+                    if (asked != null) {
+                        PromptPanel(asked, onAnswer = { viewModel.answerPrompt(asked, it) }, modifier = composerModifier)
+                    } else {
+                        ChatInput(
+                            text = input,
+                            onTextChange = updateInput,
+                            isStreaming = state.isStreaming,
+                            canSend = state.canSend(input),
+                            onSend = {
+                                viewModel.send(input)
+                                updateInput("")
+                            },
+                            onStop = viewModel::stop,
+                            attachments = state.pendingAttachments,
+                            isImporting = state.isImporting,
+                            onAttach = { pickFiles.launch(PICKABLE_MIME_TYPES) },
+                            onRemoveAttachment = viewModel::removeAttachment,
+                            dictation = dictation,
+                            modifier = composerModifier,
+                            onLetterTyped = typingAttention::onLetter,
+                        )
+                    }
                 }
             }
         }
@@ -186,7 +206,9 @@ fun MessageList(
     bottomPadding: Dp = ComposerClearance,
     focusItemId: String? = null,
     onFocusShown: () -> Unit = {},
+    avatarHandoff: AvatarHandoff? = null,
 ) {
+    val handoffTargetId = if (avatarHandoff?.isActive == true) messages.firstOrNull { it is ChatItem.Reply }?.id else null
     val listState = rememberLazyListState()
     val flash = remember { Animatable(0f) }
     var flashing by remember { mutableStateOf<String?>(null) }
@@ -232,6 +254,7 @@ fun MessageList(
                     onSend = onSend,
                     onApproval = onApproval,
                     modifier = placed,
+                    avatarHandoff = avatarHandoff.takeIf { item.id == handoffTargetId },
                 )
             }
         }
@@ -247,17 +270,25 @@ fun EmptyConversation(
     typing: TypingAttention? = null,
     listeningLevel: Float? = null,
     knockout: KnockoutStage? = null,
+    handoff: AvatarHandoff? = null,
 ) {
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(20.dp)) {
         AgentAvatar(
             isWorking = false,
             size = avatarSize,
+            modifier = handoff?.avatarModifier() ?: Modifier,
             interactive = interactive,
             typing = typing,
             listeningLevel = listeningLevel,
             knockout = knockout,
         )
-        Text(stringResource(R.string.chat_empty_greeting), style = style, modifier = Modifier.knockoutObstacle(knockout, GREETING_OBSTACLE))
+        Text(
+            stringResource(R.string.chat_empty_greeting),
+            style = style,
+            modifier = Modifier
+                .knockoutObstacle(knockout, GREETING_OBSTACLE)
+                .graphicsLayer { alpha = handoff?.greetingAlpha ?: 1f },
+        )
     }
 }
 
@@ -266,6 +297,7 @@ private fun DictationControls.listeningLevel(): Float? =
 
 private const val FOCUS_FLASH_MS = 1_600
 private val FOCUS_CORNER = 20.dp
+
 private const val GREETING_OBSTACLE = "greeting"
 private const val COMPOSER_OBSTACLE = "composer"
 

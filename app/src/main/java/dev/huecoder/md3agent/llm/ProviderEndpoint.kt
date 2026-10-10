@@ -1,5 +1,6 @@
 package dev.huecoder.md3agent.llm
 
+import dev.huecoder.md3agent.data.settings.ApiFormat
 import dev.huecoder.md3agent.data.settings.ProviderProfile
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
@@ -11,15 +12,26 @@ class ProviderEndpoint(private val provider: ProviderProfile) {
 
     fun url(path: String): HttpUrl = base.newBuilder().addPathSegments(path).build()
 
-    fun authorizedRequest(path: String): Request.Builder {
-        val builder = Request.Builder().url(url(path))
-        if (provider.apiKey.isNotBlank()) builder.header("Authorization", "Bearer ${provider.apiKey}")
+    fun authorizedRequest(path: String): Request.Builder = authorizedRequest(url(path))
+
+    fun authorizedRequest(url: HttpUrl): Request.Builder {
+        val builder = Request.Builder().url(url)
+        val key = provider.apiKey.trim()
+        when (provider.format) {
+            ApiFormat.OPENAI -> if (key.isNotEmpty()) builder.header("Authorization", "Bearer $key")
+            ApiFormat.ANTHROPIC -> {
+                if (key.isNotEmpty()) builder.header("x-api-key", key)
+                builder.header("anthropic-version", ANTHROPIC_VERSION)
+            }
+            ApiFormat.GEMINI -> if (key.isNotEmpty()) builder.header("x-goog-api-key", key)
+        }
         provider.extraHeaders.filter { it.name.isNotBlank() }.forEach { builder.header(it.name.trim(), it.value) }
         return builder
     }
 
     private companion object {
-        val KNOWN_ENDPOINT_SUFFIXES = listOf("/chat/completions", "/models", "/")
+        const val ANTHROPIC_VERSION = "2023-06-01"
+        val KNOWN_ENDPOINT_SUFFIXES = listOf("/chat/completions", "/messages", "/models", "/")
 
         fun normalizeBase(raw: String): HttpUrl? {
             var trimmed = raw.trim()

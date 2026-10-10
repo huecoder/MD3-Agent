@@ -1,9 +1,11 @@
 package dev.huecoder.md3agent.ui.avatar
 
-import dev.huecoder.md3agent.data.settings.AvatarRestShape
+import dev.huecoder.md3agent.data.settings.AgentProfile
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import kotlin.math.PI
 import kotlin.math.hypot
 
 class BotGeometryTest {
@@ -54,9 +56,9 @@ class BotGeometryTest {
 
     @Test
     fun `real shapes keep the eyes inside through every morph frame`() {
-        AvatarRestShape.entries.forEach { rest ->
-            val shapes = BotShapes.of(rest)
-            assertTrue("safe radius ${shapes.safeRadius}", shapes.safeRadius in 0.25f..0.5f)
+        AgentShapes.faces.forEach { rest ->
+            val shapes = BotShapes.of(rest, AgentProfile.DEFAULT_WORKING_SHAPES)
+            assertTrue("$rest safe radius ${shapes.safeRadius}", shapes.safeRadius in 0.25f..0.5f)
             val morphs = shapes.working.indices.map(shapes::step) + shapes.working.indices.map(shapes::settle) + shapes.wake()
             morphs.forEach { morph ->
                 (0..40).forEach { step ->
@@ -69,5 +71,29 @@ class BotGeometryTest {
                 }
             }
         }
+    }
+
+    @Test
+    fun `upright orientation draws the same eyes as a straight gaze`() {
+        val (left, right) = BotGeometry.eyes(Orientation.Identity, blink = 0f, safeRadius = 0.4f)
+        val (straightLeft, straightRight) = BotGeometry.eyes(Gaze.Center, blink = 0f, wobble = 0f, safeRadius = 0.4f)
+        assertEquals(straightLeft.centerX, left!!.centerX, 1e-4f)
+        assertEquals(straightLeft.centerY, left.centerY, 1e-4f)
+        assertEquals(straightRight.height, right!!.height, 1e-4f)
+    }
+
+    @Test
+    fun `eyes hide behind the sphere when it turns its back`() {
+        val (left, right) = BotGeometry.eyes(Orientation.around(Vec3(0f, 1f, 0f), PI.toFloat()), blink = 0f, safeRadius = 0.4f)
+        assertNull(left)
+        assertNull(right)
+    }
+
+    @Test
+    fun `half turned sphere keeps the near eye and clips it to the rim`() {
+        val (left, right) = BotGeometry.eyes(Orientation.around(Vec3(0f, 1f, 0f), 1.35f), blink = 0f, safeRadius = 0.4f)
+        val visible = listOfNotNull(left, right)
+        assertTrue(visible.isNotEmpty())
+        visible.forEach { assertTrue(BotGeometry.isInside(it, 0.4f)) }
     }
 }

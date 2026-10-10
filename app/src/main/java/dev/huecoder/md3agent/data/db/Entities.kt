@@ -28,6 +28,7 @@ data class ChatEntity(
     @ColumnInfo(defaultValue = "FIRST_MESSAGE") val titleSource: TitleSource = TitleSource.FIRST_MESSAGE,
     val archivedAt: Long? = null,
     val trashedAt: Long? = null,
+    val agentId: String? = null,
 )
 
 val ChatEntity.selection: ModelSelection?

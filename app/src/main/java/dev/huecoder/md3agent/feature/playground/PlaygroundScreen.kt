@@ -28,7 +28,6 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.scale
@@ -44,7 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
 import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.ui.avatar.BotGeometry
-import dev.huecoder.md3agent.ui.avatar.Eye
+import dev.huecoder.md3agent.ui.avatar.toPath
 import dev.huecoder.md3agent.ui.haptics.rememberHaptics
 import kotlinx.coroutines.delay
 
@@ -134,11 +133,6 @@ private fun DrawScope.drawPiece(playground: Playground, piece: Piece) {
             }
         }
     }
-}
-
-private fun Eye.toPath(): Path = Path().apply {
-    xs.indices.forEach { index -> if (index == 0) moveTo(xs[index], ys[index]) else lineTo(xs[index], ys[index]) }
-    close()
 }
 
 @Composable

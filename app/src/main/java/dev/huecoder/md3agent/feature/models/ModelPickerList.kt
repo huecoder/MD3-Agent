@@ -10,7 +10,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItemDefaults
@@ -35,14 +37,20 @@ import dev.huecoder.md3agent.llm.models.ReasoningEffort
 import dev.huecoder.md3agent.ui.components.VendorBadge
 
 @Composable
-internal fun ModelList(rows: List<ModelRow>, selectedId: String?, onPick: (ModelRow) -> Unit, modifier: Modifier = Modifier) {
+internal fun ModelList(
+    rows: List<ModelRow>,
+    selectedId: String?,
+    onPick: (ModelRow) -> Unit,
+    modifier: Modifier = Modifier,
+    listState: LazyListState = rememberLazyListState(),
+) {
     if (rows.isEmpty()) {
         Box(modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.TopCenter) {
             Text(stringResource(R.string.model_empty), color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         return
     }
-    LazyColumn(modifier = modifier, contentPadding = PickerListPadding, verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)) {
+    LazyColumn(state = listState, modifier = modifier, contentPadding = PickerListPadding, verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)) {
         itemsIndexed(rows, key = { _, row -> row.info.id }) { index, row ->
             ModelRowItem(row, isSelected = row.info.id == selectedId, index = index, count = rows.size, onClick = { onPick(row) })
         }

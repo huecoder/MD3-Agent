@@ -23,19 +23,29 @@ import kotlinx.coroutines.launch
 import org.dyn4j.dynamics.Body
 import kotlin.math.PI
 import kotlin.math.abs
+import kotlin.math.cos
+import kotlin.math.exp
 import kotlin.math.roundToInt
 import kotlin.math.sign
+import kotlin.math.sin
 import kotlin.math.sqrt
 import kotlin.random.Random
 
 @Stable
 class KnockoutStage {
+    private class Flight(val world: PhysicsWorld, val bot: Body, val pixelsPerMeter: Float)
+
     private val obstacles = mutableMapOf<String, Rect>()
     private var area = Rect.Zero
+    private var flight: Flight? = null
+    private var tumble = Vec3.Zero
+    private var knockedLoose = false
 
     var offset: Offset by mutableStateOf(Offset.Zero)
         private set
     var spin: Float by mutableFloatStateOf(0f)
+        private set
+    var orientation: Orientation by mutableStateOf(Orientation.Identity)
         private set
     var isDazed: Boolean by mutableStateOf(false)
         private set
@@ -50,7 +60,7 @@ class KnockoutStage {
         area = bounds
     }
 
-    suspend fun play(home: Offset, radius: Float, away: Offset, pixelsPerMeter: Float, onImpact: (Float) -> Unit) {
+    suspend fun play(home: Offset, radius: Float, hit: Offset, power: Float, pixelsPerMeter: Float, onImpact: (Float) -> Unit) {
         if (isPlaying || area == Rect.Zero) return
         isPlaying = true
         isDazed = true
@@ -58,12 +68,20 @@ class KnockoutStage {
             val world = PhysicsWorld(pixelsPerMeter)
             world.onImpact { impact -> if (impact.speed > MIN_IMPACT_SPEED * pixelsPerMeter) onImpact(impact.strength(pixelsPerMeter)) }
             val bot = world.addBall(home, radius * COLLIDER_SHRINK, Material.Bouncy)
-            rollAway(world, bot, home, radius, away, pixelsPerMeter)
+            flight = Flight(world, bot, pixelsPerMeter)
+            tumble = spinFrom(hit, LAUNCH_TUMBLE)
+            rollAway(world, bot, home, radius, hit, launchBoost(power), pixelsPerMeter)
+            flight = null
             delay(OFFSCREEN_PAUSE_MS)
             isDazed = false
+            orientation = Orientation.Identity
             dropIn(world, bot, home, radius)
             settle()
         } finally {
+            flight = null
+            tumble = Vec3.Zero
+            knockedLoose = false
+            orientation = Orientation.Identity
             offset = Offset.Zero
             spin = 0f
             isDazed = false
@@ -71,23 +89,35 @@ class KnockoutStage {
         }
     }
 
-    private suspend fun rollAway(world: PhysicsWorld, bot: Body, home: Offset, radius: Float, away: Offset, pixelsPerMeter: Float) {
+    fun hit(direction: Offset, power: Float) {
+        val current = flight ?: return
+        val away = awayFrom(direction)
+        val strength = MIDAIR_MIN_SHARE + (1f - MIDAIR_MIN_SHARE) * power
+        val push = Offset(away.x, away.y - MIDAIR_LIFT) * (MIDAIR_SPEED * current.pixelsPerMeter * strength)
+        current.world.setVelocity(current.bot, current.world.velocity(current.bot) + push)
+        current.bot.angularVelocity += (away.x.sign.takeIf { it != 0f } ?: 1f) * MIDAIR_SPIN * strength
+        tumble += spinFrom(direction, MIDAIR_TUMBLE * strength)
+        knockedLoose = true
+    }
+
+    private suspend fun rollAway(world: PhysicsWorld, bot: Body, home: Offset, radius: Float, hit: Offset, boost: Float, pixelsPerMeter: Float) {
         val walls = obstacles.values.map { world.addWall(it, Material.Grippy) }
-        val exitSide = away.x.sign.takeIf { it != 0f } ?: if (Random.nextBoolean()) 1f else -1f
+        val exitSide = (-hit.x).sign.takeIf { it != 0f } ?: if (Random.nextBoolean()) 1f else -1f
         val firstLanding = landingBelow(home)
-        world.setVelocity(bot, launchVelocity(home, radius, exitSide, firstLanding, world.gravityPixels, pixelsPerMeter))
-        bot.angularVelocity = exitSide * LAUNCH_SPIN
+        world.setVelocity(bot, launchVelocity(home, radius, exitSide, firstLanding, boost, world.gravityPixels, pixelsPerMeter))
+        bot.angularVelocity = exitSide * LAUNCH_SPIN * boost
         var wallsDropped = false
         frames { seconds, elapsedMs ->
             world.step(seconds)
             val position = world.position(bot)
-            val overFirst = firstLanding != null && position.y < firstLanding.bottom
+            val overFirst = !knockedLoose && firstLanding != null && position.y < firstLanding.bottom
             world.driveSpin(bot, exitSide * if (overFirst) SHUFFLE_SPIN else ROLL_SPIN, ROLL_ACCELERATION)
             bot.linearDamping = if (overFirst) SHUFFLE_DRAG else 0.0
-            if (firstLanding != null && position.x !in firstLanding.left..firstLanding.right) {
+            if (!knockedLoose && firstLanding != null && position.x !in firstLanding.left..firstLanding.right) {
                 steerFall(world, bot, position, radius, below = firstLanding, seconds)
             }
             follow(world, bot, home)
+            rollEyes(world, bot, radius, seconds)
             if (!wallsDropped && elapsedMs > STUCK_AFTER_MS) {
                 walls.forEach(world::remove)
                 wallsDropped = true
@@ -116,12 +146,22 @@ class KnockoutStage {
         world.remove(pedestal)
     }
 
-    private fun launchVelocity(home: Offset, radius: Float, exitSide: Float, below: Rect?, gravity: Float, pixelsPerMeter: Float): Offset {
-        val up = -LAUNCH_UP * pixelsPerMeter
-        if (below == null) return Offset(exitSide * LAUNCH_SIDE * pixelsPerMeter, up)
+    private fun rollEyes(world: PhysicsWorld, bot: Body, radius: Float, seconds: Float) {
+        val angle = world.angle(bot)
+        val velocity = world.velocity(bot)
+        val alongX = velocity.x * cos(angle) + velocity.y * sin(angle)
+        val alongY = velocity.y * cos(angle) - velocity.x * sin(angle)
+        val rolling = Vec3(-alongY, alongX, 0f) * (EYE_ROLL / radius)
+        tumble *= exp(-TUMBLE_DRAG * seconds)
+        orientation = orientation.spun(rolling + tumble, seconds)
+    }
+
+    private fun launchVelocity(home: Offset, radius: Float, exitSide: Float, below: Rect?, boost: Float, gravity: Float, pixelsPerMeter: Float): Offset {
+        val up = -LAUNCH_UP * boost * pixelsPerMeter
+        if (below == null) return Offset(exitSide * LAUNCH_SIDE * boost * pixelsPerMeter, up)
         val drop = below.top - radius - home.y
         val flightSeconds = (-up + sqrt(up * up + 2 * gravity * drop)) / gravity
-        val landingX = home.x + exitSide * below.width / 2f * LANDING_REACH
+        val landingX = home.x + exitSide * below.width / 2f * (LANDING_REACH * boost).coerceAtMost(MAX_LANDING_REACH)
         return Offset((landingX - home.x) / flightSeconds, up)
     }
 
@@ -163,6 +203,18 @@ class KnockoutStage {
     }
 
     private companion object {
+        const val MIN_LAUNCH_BOOST = 1.15f
+        const val MAX_LAUNCH_BOOST = 1.5f
+        const val MAX_LANDING_REACH = 0.8f
+        const val CENTER_HIT = 0.08f
+        const val MIDAIR_SPEED = 6f
+        const val MIDAIR_LIFT = 0.6f
+        const val MIDAIR_MIN_SHARE = 0.5f
+        const val MIDAIR_SPIN = 8.0
+        const val LAUNCH_TUMBLE = 10f
+        const val MIDAIR_TUMBLE = 12f
+        const val TUMBLE_DRAG = 0.8f
+        const val EYE_ROLL = 1f
         const val COLLIDER_SHRINK = 0.92f
         const val MIN_IMPACT_SPEED = 1.2f
         const val HARD_IMPACT_SPEED = 9f
@@ -201,6 +253,15 @@ class KnockoutStage {
         }
 
         fun nearestUpright(degrees: Float): Float = degrees - (degrees / FULL_TURN).roundToInt() * FULL_TURN
+
+        fun launchBoost(power: Float): Float = MIN_LAUNCH_BOOST + (MAX_LAUNCH_BOOST - MIN_LAUNCH_BOOST) * power.coerceIn(0f, 1f)
+
+        fun awayFrom(hit: Offset): Offset {
+            val distance = hit.getDistance()
+            return if (distance > CENTER_HIT) -hit / distance else Offset(0f, -1f)
+        }
+
+        fun spinFrom(hit: Offset, strength: Float): Vec3 = Vec3(hit.y, -hit.x, 0f) * strength
     }
 
     private fun Impact.strength(pixelsPerMeter: Float): Float = (speed / (HARD_IMPACT_SPEED * pixelsPerMeter)).coerceIn(0f, 1f)

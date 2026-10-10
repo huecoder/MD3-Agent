@@ -19,6 +19,7 @@ data class ChatSummary(
     val shapeKey: String? = null,
     val archivedAt: Long? = null,
     val trashedAt: Long? = null,
+    val agentId: String? = null,
 )
 
 data class AttachedFiles(val role: MessageRole, val attachmentsJson: String, val createdAt: Long)
@@ -36,7 +37,7 @@ data class MessageHit(
 interface ChatDao {
     @Query(
         """
-        SELECT c.id, c.title, c.updatedAt, c.modelId, c.folderId, c.iconKey, c.colorKey, c.shapeKey, c.archivedAt, c.trashedAt,
+        SELECT c.id, c.title, c.updatedAt, c.modelId, c.folderId, c.iconKey, c.colorKey, c.shapeKey, c.archivedAt, c.trashedAt, c.agentId,
             (SELECT m.content FROM messages m
              WHERE m.chatId = c.id AND m.role IN ('USER', 'ASSISTANT') AND m.content != ''
              ORDER BY m.createdAt DESC LIMIT 1) AS lastMessage
@@ -97,6 +98,9 @@ interface ChatDao {
 
     @Query("UPDATE chats SET providerId = :providerId, modelId = :modelId, reasoningEffort = :reasoningEffort WHERE id = :id")
     suspend fun setModel(id: String, providerId: String?, modelId: String?, reasoningEffort: String?)
+
+    @Query("UPDATE chats SET agentId = :agentId WHERE id = :id")
+    suspend fun setAgent(id: String, agentId: String)
 
     @Query("DELETE FROM chats WHERE id = :id")
     suspend fun delete(id: String)

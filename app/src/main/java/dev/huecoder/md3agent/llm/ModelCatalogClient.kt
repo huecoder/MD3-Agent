@@ -1,5 +1,6 @@
 package dev.huecoder.md3agent.llm
 
+import dev.huecoder.md3agent.data.settings.ApiFormat
 import dev.huecoder.md3agent.data.settings.ProviderProfile
 import dev.huecoder.md3agent.llm.models.ModelInfo
 import dev.huecoder.md3agent.llm.models.ModelInfoParser
@@ -16,7 +17,15 @@ class ModelCatalogClient(private val httpClients: HttpClientProvider) {
     suspend fun listModels(provider: ProviderProfile): List<String> = listModelInfo(provider).map { it.id }
 
     suspend fun listModelInfo(provider: ProviderProfile): List<ModelInfo> = withContext(Dispatchers.IO) {
-        val request = ProviderEndpoint(provider).authorizedRequest(MODELS_PATH).get().build()
+        val endpoint = ProviderEndpoint(provider)
+        val url = endpoint.url(MODELS_PATH).newBuilder().apply {
+            when (provider.format) {
+                ApiFormat.OPENAI -> Unit
+                ApiFormat.ANTHROPIC -> addQueryParameter("limit", PAGE_SIZE)
+                ApiFormat.GEMINI -> addQueryParameter("pageSize", PAGE_SIZE)
+            }
+        }.build()
+        val request = endpoint.authorizedRequest(url).get().build()
         try {
             httpClients.current().newCall(request).execute().use { response ->
                 val body = response.body.string()
@@ -36,6 +45,7 @@ class ModelCatalogClient(private val httpClients: HttpClientProvider) {
 
     private companion object {
         const val MODELS_PATH = "models"
+        const val PAGE_SIZE = "1000"
         const val ERROR_PREVIEW_CHARS = 300
         const val UNKNOWN_FORMAT = "Server returned the model list in an unknown format"
     }

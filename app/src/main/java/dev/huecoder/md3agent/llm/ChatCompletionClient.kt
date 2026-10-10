@@ -1,8 +1,10 @@
 package dev.huecoder.md3agent.llm
 
 import dev.huecoder.md3agent.data.settings.ProviderProfile
-import dev.huecoder.md3agent.llm.models.ModelOutput
-import dev.huecoder.md3agent.llm.models.ReasoningControl
+import dev.huecoder.md3agent.llm.wire.ChatRequest
+import dev.huecoder.md3agent.llm.wire.ChatStream
+import dev.huecoder.md3agent.llm.wire.ChatWire
+import dev.huecoder.md3agent.llm.wire.wireJson
 import dev.huecoder.md3agent.net.HttpClientProvider
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -13,28 +15,15 @@ import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.serialization.SerializationException
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.add
-import kotlinx.serialization.json.addJsonObject
-import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.put
-import kotlinx.serialization.json.putJsonArray
-import kotlinx.serialization.json.putJsonObject
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import java.io.IOException
 
 class ChatCompletionClient(private val httpClients: HttpClientProvider) {
-    private val json = Json { ignoreUnknownKeys = true }
-
     fun stream(
         provider: ProviderProfile,
         model: String,
@@ -42,18 +31,14 @@ class ChatCompletionClient(private val httpClients: HttpClientProvider) {
         tools: List<ToolSpec> = emptyList(),
         options: CompletionOptions = CompletionOptions(),
     ): Flow<CompletionEvent> = flow {
-        val request = ProviderEndpoint(provider)
-            .authorizedRequest(CHAT_COMPLETIONS_PATH)
-            .header("Accept", "text/event-stream")
-            .post(requestBody(model, turns, tools, options).toString().toRequestBody(JSON_MEDIA_TYPE))
-            .build()
-
+        val wire = ChatWire.of(provider.format)
+        val request = wire.request(ProviderEndpoint(provider), ChatRequest(model, turns, tools, options))
         val call = httpClients.current().newCall(request)
         val cancellation = currentCoroutineContext()[Job]?.invokeOnCompletion { call.cancel() }
         try {
             call.execute().use { response ->
                 if (!response.isSuccessful) throw httpError(response)
-                emitServerSentEvents(response)
+                emitServerSentEvents(response, wire.newStream())
             }
         } catch (e: IOException) {
             if (call.isCanceled()) throw CancellationException("Stream cancelled", e)
@@ -63,7 +48,7 @@ class ChatCompletionClient(private val httpClients: HttpClientProvider) {
         }
     }.flowOn(Dispatchers.IO)
 
-    private suspend fun FlowCollector<CompletionEvent>.emitServerSentEvents(response: Response) {
+    private suspend fun FlowCollector<CompletionEvent>.emitServerSentEvents(response: Response, stream: ChatStream) {
         val source = response.body.source()
         var finished = false
         var usageSeen = false
@@ -73,7 +58,7 @@ class ChatCompletionClient(private val httpClients: HttpClientProvider) {
             val data = line.removePrefix(SSE_DATA_PREFIX).trim()
             if (data == SSE_DONE) break
             if (data.isEmpty()) continue
-            for (event in parseChunk(data)) {
+            for (event in stream.events(parseChunk(data))) {
                 emit(event)
                 if (event is CompletionEvent.Finished) finished = true
                 if (event is CompletionEvent.Usage) usageSeen = true
@@ -82,145 +67,16 @@ class ChatCompletionClient(private val httpClients: HttpClientProvider) {
         if (!finished) emit(CompletionEvent.Finished(reason = null))
     }
 
-    private fun parseChunk(data: String): List<CompletionEvent> {
+    private fun parseChunk(data: String): JsonObject {
         val chunk = try {
-            json.parseToJsonElement(data).jsonObject
+            wireJson.parseToJsonElement(data).jsonObject
         } catch (e: SerializationException) {
             throw ProviderException.MalformedResponse("Could not parse response chunk: ${data.take(ERROR_PREVIEW_CHARS)}")
         } catch (e: IllegalArgumentException) {
             throw ProviderException.MalformedResponse("Response chunk is not a JSON object: ${data.take(ERROR_PREVIEW_CHARS)}")
         }
-        chunk["error"]?.let { throw ProviderException.Http(code = 0, message = errorMessageOf(it.toString())) }
-
-        val events = mutableListOf<CompletionEvent>()
-        val choice = (chunk["choices"] as? JsonArray)?.firstOrNull() as? JsonObject
-        if (choice != null) events += choiceEvents(choice)
-        (chunk["usage"] as? JsonObject)?.let(::usageOf)?.let { events += it }
-        return events
-    }
-
-    private fun choiceEvents(choice: JsonObject): List<CompletionEvent> {
-        val delta = choice["delta"] as? JsonObject
-        val events = mutableListOf<CompletionEvent>()
-        delta?.stringField("reasoning_content", "reasoning")?.let { events += CompletionEvent.ReasoningDelta(it) }
-        delta?.stringField("content")?.let { events += CompletionEvent.ContentDelta(it) }
-        (delta?.get("content") as? JsonArray)?.forEach { part -> (part as? JsonObject)?.let { events += contentPartEvents(it) } }
-        (delta?.get("images") as? JsonArray)?.forEach { part -> (part as? JsonObject)?.let { events += contentPartEvents(it) } }
-        (delta?.get("tool_calls") as? JsonArray)?.forEachIndexed { position, element ->
-            (element as? JsonObject)?.let { events += toolCallDelta(it, position) }
-        }
-        (choice["finish_reason"] as? JsonPrimitive)?.contentOrNull?.let { events += CompletionEvent.Finished(it) }
-        return events
-    }
-
-    private fun contentPartEvents(part: JsonObject): List<CompletionEvent> {
-        val text = (part["text"] as? JsonPrimitive)?.contentOrNull
-        val imageUrl = (part["image_url"] as? JsonObject)?.get("url") ?: part["image_url"] ?: part["url"]
-        val image = (imageUrl as? JsonPrimitive)?.contentOrNull
-            ?: (part["b64_json"] as? JsonPrimitive)?.contentOrNull?.let { "data:image/png;base64,$it" }
-        return listOfNotNull(
-            text?.takeIf { it.isNotEmpty() && part.isTextPart() }?.let(CompletionEvent::ContentDelta),
-            image?.let(CompletionEvent::ImageOutput),
-        )
-    }
-
-    private fun JsonObject.isTextPart() = (this["type"] as? JsonPrimitive)?.contentOrNull.let { it == null || it == "text" || it == "output_text" }
-
-    private fun usageOf(usage: JsonObject): CompletionEvent.Usage? {
-        val prompt = (usage["prompt_tokens"] as? JsonPrimitive)?.intOrNull ?: return null
-        val completion = (usage["completion_tokens"] as? JsonPrimitive)?.intOrNull ?: return null
-        val cached = (usage["prompt_tokens_details"] as? JsonObject)?.int("cached_tokens")
-            ?: usage.int("prompt_cache_hit_tokens") ?: usage.int("cache_read_input_tokens") ?: 0
-        return CompletionEvent.Usage(TokenUsage(prompt, completion, cached))
-    }
-
-    private fun toolCallDelta(call: JsonObject, position: Int): CompletionEvent.ToolCallDelta {
-        val function = call["function"] as? JsonObject
-        return CompletionEvent.ToolCallDelta(
-            index = (call["index"] as? JsonPrimitive)?.intOrNull ?: position,
-            id = (call["id"] as? JsonPrimitive)?.contentOrNull,
-            name = (function?.get("name") as? JsonPrimitive)?.contentOrNull,
-            arguments = function?.get("arguments")?.let { arguments ->
-                (arguments as? JsonPrimitive)?.takeIf { it.isString }?.content ?: arguments.toString()
-            },
-        )
-    }
-
-    private fun JsonObject.int(name: String) = (this[name] as? JsonPrimitive)?.intOrNull
-
-    private fun JsonObject.stringField(vararg names: String): String? = names.firstNotNullOfOrNull { name ->
-        (this[name] as? JsonPrimitive)?.takeIf { it.isString }?.content?.takeIf { it.isNotEmpty() }
-    }
-
-    private fun requestBody(model: String, turns: List<ChatTurn>, tools: List<ToolSpec>, options: CompletionOptions): JsonObject = buildJsonObject {
-        put("model", model)
-        put("stream", true)
-        options.reasoningEffort?.let { effort ->
-            when (options.reasoningControl) {
-                ReasoningControl.EFFORT_FIELD -> put("reasoning_effort", effort.wireName)
-                ReasoningControl.REASONING_OBJECT -> putJsonObject("reasoning") { put("effort", effort.wireName) }
-            }
-        }
-        when (options.output) {
-            ModelOutput.TEXT -> Unit
-            ModelOutput.IMAGE -> putJsonArray("modalities") { add("image") }
-            ModelOutput.TEXT_AND_IMAGE -> putJsonArray("modalities") { add("image"); add("text") }
-        }
-        putJsonObject("stream_options") { put("include_usage", true) }
-        putJsonArray("messages") { turns.forEach { add(wireMessage(it, options.explicitCaching && it.cacheBreakpoint)) } }
-        if (tools.isNotEmpty()) {
-            putJsonArray("tools") {
-                tools.forEach { tool ->
-                    addJsonObject {
-                        put("type", "function")
-                        putJsonObject("function") {
-                            put("name", tool.name)
-                            put("description", tool.description)
-                            put("parameters", tool.parameters)
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private fun wireMessage(turn: ChatTurn, markCache: Boolean): JsonObject = buildJsonObject {
-        put("role", turn.role.wireName)
-        when {
-            turn.imageUrls.isNotEmpty() || (markCache && turn.content.isNotEmpty()) -> putJsonArray("content") {
-                if (turn.content.isNotEmpty()) {
-                    addJsonObject {
-                        put("type", "text")
-                        put("text", turn.content)
-                        if (markCache && turn.imageUrls.isEmpty()) putJsonObject("cache_control") { put("type", "ephemeral") }
-                    }
-                }
-                turn.imageUrls.forEachIndexed { index, url ->
-                    addJsonObject {
-                        put("type", "image_url")
-                        putJsonObject("image_url") { put("url", url) }
-                        if (markCache && index == turn.imageUrls.lastIndex) putJsonObject("cache_control") { put("type", "ephemeral") }
-                    }
-                }
-            }
-            turn.toolCalls.isNotEmpty() && turn.content.isEmpty() -> put("content", JsonNull)
-            else -> put("content", turn.content)
-        }
-        if (turn.toolCalls.isNotEmpty()) {
-            putJsonArray("tool_calls") {
-                turn.toolCalls.forEach { call ->
-                    addJsonObject {
-                        put("id", call.id)
-                        put("type", "function")
-                        putJsonObject("function") {
-                            put("name", call.name)
-                            put("arguments", call.arguments)
-                        }
-                    }
-                }
-            }
-        }
-        turn.toolCallId?.let { put("tool_call_id", it) }
+        chunk["error"]?.let { throw ProviderException.Http(code = 0, message = errorMessageOf(chunk.toString())) }
+        return chunk
     }
 
     private fun httpError(response: Response): ProviderException.Http {
@@ -229,21 +85,19 @@ class ChatCompletionClient(private val httpClients: HttpClientProvider) {
     }
 
     private fun errorMessageOf(body: String): String {
-        val parsed = runCatching { json.parseToJsonElement(body).jsonObject }.getOrNull()
-        val error = parsed?.get("error")
-        val message = when (error) {
+        val parsed = runCatching { wireJson.parseToJsonElement(body) }.getOrNull()
+        val root = (parsed as? JsonObject) ?: ((parsed as? JsonArray)?.firstOrNull() as? JsonObject)
+        val message = when (val error = root?.get("error")) {
             is JsonObject -> (error["message"] as? JsonPrimitive)?.contentOrNull
             is JsonPrimitive -> error.contentOrNull
-            else -> (parsed?.get("message") as? JsonPrimitive)?.contentOrNull
+            else -> (root?.get("message") as? JsonPrimitive)?.contentOrNull
         }
         return message ?: body.take(ERROR_PREVIEW_CHARS).ifBlank { "empty response" }
     }
 
     private companion object {
-        const val CHAT_COMPLETIONS_PATH = "chat/completions"
         const val SSE_DATA_PREFIX = "data:"
         const val SSE_DONE = "[DONE]"
         const val ERROR_PREVIEW_CHARS = 300
-        val JSON_MEDIA_TYPE = "application/json".toMediaType()
     }
 }

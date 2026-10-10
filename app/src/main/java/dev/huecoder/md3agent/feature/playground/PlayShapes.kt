@@ -1,12 +1,13 @@
 package dev.huecoder.md3agent.feature.playground
 
-import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.toPath
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Path
 import androidx.graphics.shapes.Morph
 import androidx.graphics.shapes.RoundedPolygon
+import dev.huecoder.md3agent.data.settings.AgentShape
 import dev.huecoder.md3agent.ui.avatar.BotGeometry
+import dev.huecoder.md3agent.ui.avatar.polygon
 
 class PlayShape private constructor(polygon: RoundedPolygon) {
     val outline: Path = Morph(polygon, polygon).toPath(0f).apply { translate(-CENTER_OFFSET) }
@@ -20,18 +21,7 @@ class PlayShape private constructor(polygon: RoundedPolygon) {
         private val CENTER_OFFSET = Offset(BotGeometry.CENTER, BotGeometry.CENTER)
 
         val all: List<PlayShape> by lazy {
-            listOf(
-                MaterialShapes.Circle, MaterialShapes.Square, MaterialShapes.Slanted, MaterialShapes.Arch,
-                MaterialShapes.Fan, MaterialShapes.Arrow, MaterialShapes.SemiCircle, MaterialShapes.Oval,
-                MaterialShapes.Pill, MaterialShapes.Triangle, MaterialShapes.Diamond, MaterialShapes.ClamShell,
-                MaterialShapes.Pentagon, MaterialShapes.Gem, MaterialShapes.Sunny, MaterialShapes.VerySunny,
-                MaterialShapes.Cookie4Sided, MaterialShapes.Cookie6Sided, MaterialShapes.Cookie7Sided,
-                MaterialShapes.Cookie9Sided, MaterialShapes.Cookie12Sided, MaterialShapes.Ghostish,
-                MaterialShapes.Clover4Leaf, MaterialShapes.Clover8Leaf, MaterialShapes.Burst, MaterialShapes.SoftBurst,
-                MaterialShapes.Boom, MaterialShapes.SoftBoom, MaterialShapes.Flower, MaterialShapes.Puffy,
-                MaterialShapes.PuffyDiamond, MaterialShapes.PixelCircle, MaterialShapes.PixelTriangle,
-                MaterialShapes.Bun, MaterialShapes.Heart,
-            ).map(::PlayShape)
+            AgentShape.entries.filter { it != AgentShape.HEXAGON }.map { PlayShape(it.polygon) }
         }
 
         val faces: List<PlayShape> by lazy { all.filter { it.eyeRadius != null } }

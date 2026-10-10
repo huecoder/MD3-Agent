@@ -15,9 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Arrow_drop_down
@@ -30,49 +28,37 @@ fun ModelChip(
     label: String?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    size: ModelChipSize = ModelChipSize.Compact,
 ) {
     val tint = MaterialTheme.colorScheme.onSurfaceVariant
     Surface(onClick = onClick, shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainerHigh, modifier = modifier) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(size.gap),
-            modifier = Modifier.heightIn(min = size.height).padding(start = size.startPadding, end = size.endPadding),
+            horizontalArrangement = Arrangement.spacedBy(GAP),
+            modifier = Modifier.heightIn(min = HEIGHT).padding(start = START_PADDING, end = END_PADDING),
         ) {
-            VendorGlyph(family, size = size.glyph, tint = tint)
+            VendorGlyph(family, size = GLYPH, tint = tint)
             Text(
                 label ?: stringResource(R.string.chat_change_model),
-                style = size.textStyle(),
+                style = MaterialTheme.typography.labelLarge,
                 color = tint,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.widthIn(max = size.maxTextWidth),
+                modifier = Modifier.weight(1f, fill = false).widthIn(max = MAX_TEXT_WIDTH),
             )
             Icon(
                 MaterialSymbols.Rounded.Arrow_drop_down,
                 contentDescription = stringResource(R.string.chat_change_model),
                 tint = tint,
-                modifier = Modifier.size(size.arrow),
+                modifier = Modifier.size(ARROW),
             )
         }
     }
 }
 
-enum class ModelChipSize(
-    val height: Dp,
-    val glyph: Dp,
-    val arrow: Dp,
-    val gap: Dp,
-    val startPadding: Dp,
-    val endPadding: Dp,
-    val maxTextWidth: Dp,
-) {
-    Compact(height = 24.dp, glyph = 12.dp, arrow = 16.dp, gap = 4.dp, startPadding = 8.dp, endPadding = 2.dp, maxTextWidth = 220.dp),
-    Regular(height = 36.dp, glyph = 16.dp, arrow = 20.dp, gap = 6.dp, startPadding = 12.dp, endPadding = 6.dp, maxTextWidth = 150.dp);
-
-    @Composable
-    fun textStyle(): TextStyle = when (this) {
-        Compact -> MaterialTheme.typography.labelMedium
-        Regular -> MaterialTheme.typography.labelLarge
-    }
-}
+private val HEIGHT = 36.dp
+private val GLYPH = 16.dp
+private val ARROW = 20.dp
+private val GAP = 6.dp
+private val START_PADDING = 12.dp
+private val END_PADDING = 6.dp
+private val MAX_TEXT_WIDTH = 150.dp

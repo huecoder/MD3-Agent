@@ -54,11 +54,9 @@ class SettingsRepository(context: Context, private val cipher: SecretCipher) {
         if (effort == null) prefs.remove(Keys.ACTIVE_REASONING) else prefs[Keys.ACTIVE_REASONING] = effort.wireName
     }
 
-    suspend fun updateAgent(agent: AgentProfile) = updateAgent { agent }
-
-    suspend fun updateAgent(transform: (AgentProfile) -> AgentProfile) = store.edit { prefs ->
-        val current = decodeOrDefault(prefs[Keys.AGENT], AgentProfile.serializer(), AgentProfile()).migrated()
-        prefs[Keys.AGENT] = json.encodeToString(AgentProfile.serializer(), transform(current))
+    suspend fun updateAgents(transform: (AgentSettings) -> AgentSettings) = store.edit { prefs ->
+        prefs[Keys.AGENTS] = json.encodeToString(AgentSettings.serializer(), transform(decodeAgents(prefs)))
+        prefs.remove(Keys.LEGACY_AGENT)
     }
 
     suspend fun updateNetwork(network: NetworkSettings) = store.edit { prefs ->
@@ -107,7 +105,7 @@ class SettingsRepository(context: Context, private val cipher: SecretCipher) {
         return AppSettings(
             providers = providers,
             activeSelection = selection,
-            agent = decodeOrDefault(prefs[Keys.AGENT], AgentProfile.serializer(), AgentProfile()).migrated(),
+            agents = decodeAgents(prefs),
             network = decodeOrDefault(prefs[Keys.NETWORK], NetworkSettings.serializer(), NetworkSettings()),
             tools = decodeTools(prefs[Keys.TOOLS_ENCRYPTED]),
             chat = decodeOrDefault(prefs[Keys.CHAT], ChatSettings.serializer(), ChatSettings()),
@@ -152,6 +150,13 @@ class SettingsRepository(context: Context, private val cipher: SecretCipher) {
         return decodeOrDefault(plain, VoiceSettings.serializer(), VoiceSettings())
     }
 
+    private fun decodeAgents(prefs: Preferences): AgentSettings {
+        val stored = prefs[Keys.AGENTS]
+        if (stored != null) return decodeOrDefault(stored, AgentSettings.serializer(), AgentSettings()).takeIf { it.agents.isNotEmpty() } ?: AgentSettings()
+        val legacy = prefs[Keys.LEGACY_AGENT] ?: return AgentSettings()
+        return decodeOrDefault(legacy, LegacyAgentProfile.serializer(), LegacyAgentProfile()).toAgents()
+    }
+
     private fun decodeTools(encrypted: String?): ToolSettings {
         if (encrypted == null) return ToolSettings()
         val plain = try {
@@ -178,7 +183,8 @@ class SettingsRepository(context: Context, private val cipher: SecretCipher) {
         val ACTIVE_PROVIDER = stringPreferencesKey("active_provider")
         val ACTIVE_MODEL = stringPreferencesKey("active_model")
         val ACTIVE_REASONING = stringPreferencesKey("active_reasoning")
-        val AGENT = stringPreferencesKey("agent")
+        val LEGACY_AGENT = stringPreferencesKey("agent")
+        val AGENTS = stringPreferencesKey("agents")
         val NETWORK = stringPreferencesKey("network")
         val TOOLS_ENCRYPTED = stringPreferencesKey("tools_encrypted")
         val CHAT = stringPreferencesKey("chat")

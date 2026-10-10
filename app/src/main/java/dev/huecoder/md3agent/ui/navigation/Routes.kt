@@ -12,7 +12,10 @@ data class ChatRoute(val chatId: String? = null, val focusMessageId: String? = n
 data class ProviderEditorRoute(val providerId: String? = null)
 
 @Serializable
-data object AgentSettingsRoute
+data object AgentsRoute
+
+@Serializable
+data class AgentEditorRoute(val agentId: String? = null)
 
 @Serializable
 data object NetworkSettingsRoute

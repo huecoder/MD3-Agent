@@ -11,7 +11,8 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import dev.huecoder.md3agent.feature.chat.ChatScreen
 import dev.huecoder.md3agent.feature.main.MainScreen
-import dev.huecoder.md3agent.feature.settings.AgentSettingsScreen
+import dev.huecoder.md3agent.feature.settings.AgentEditorScreen
+import dev.huecoder.md3agent.feature.settings.AgentsScreen
 import dev.huecoder.md3agent.data.files.LibraryLocation
 import dev.huecoder.md3agent.data.files.LibraryRoot
 import dev.huecoder.md3agent.feature.files.FolderScreen
@@ -61,7 +62,7 @@ fun AppNavHost(chatToOpen: String?, onChatOpened: () -> Unit) {
                     models = { navController.navigate(ModelsRoute) },
                     appearance = { navController.navigate(AppearanceRoute) },
                     about = { navController.navigate(AboutRoute) },
-                    agent = { navController.navigate(AgentSettingsRoute) },
+                    agent = { navController.navigate(AgentsRoute) },
                     memory = { navController.navigate(MemorySettingsRoute) },
                     network = { navController.navigate(NetworkSettingsRoute) },
                     tools = { navController.navigate(ToolSettingsRoute) },
@@ -79,7 +80,12 @@ fun AppNavHost(chatToOpen: String?, onChatOpened: () -> Unit) {
         screen<ProviderEditorRoute>(navController) { entry ->
             ProviderEditorScreen(providerId = entry.toRoute<ProviderEditorRoute>().providerId, onDone = navController::popBackStack)
         }
-        screen<AgentSettingsRoute>(navController) { AgentSettingsScreen(onBack = navController::popBackStack) }
+        screen<AgentsRoute>(navController) {
+            AgentsScreen(onBack = navController::popBackStack, onEditAgent = { navController.navigate(AgentEditorRoute(it)) })
+        }
+        screen<AgentEditorRoute>(navController) { entry ->
+            AgentEditorScreen(agentId = entry.toRoute<AgentEditorRoute>().agentId, onDone = navController::popBackStack)
+        }
         screen<MemorySettingsRoute>(navController) { MemorySettingsScreen(onBack = navController::popBackStack) }
         screen<NetworkSettingsRoute>(navController) { NetworkSettingsScreen(onBack = navController::popBackStack) }
         screen<ToolSettingsRoute>(navController) { ToolSettingsScreen(onBack = navController::popBackStack) }

@@ -85,6 +85,15 @@ fun ChatTint.colors(): TintColors {
     return if (isSystemInDarkTheme()) TintColors(deep, light) else TintColors(light, deep)
 }
 
+@Composable
+fun ChatTint.boldColors(): TintColors {
+    if (this == ChatTint.THEME) {
+        return TintColors(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.onPrimary)
+    }
+    val (light, deep) = palette
+    return if (isSystemInDarkTheme()) TintColors(light, deep) else TintColors(deep, light)
+}
+
 private val ChatTint.palette: Pair<Color, Color>
     get() = when (this) {
         ChatTint.THEME, ChatTint.BLUE -> Color(0xFFD8E2FF) to Color(0xFF2A4678)

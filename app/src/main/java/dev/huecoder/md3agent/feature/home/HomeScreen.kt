@@ -8,9 +8,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.MediumFlexibleTopAppBar
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -38,8 +38,7 @@ import com.composables.icons.materialsymbols.rounded.Close
 import com.composables.icons.materialsymbols.rounded.Select_all
 import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.feature.models.ModelPickerSheet
-import dev.huecoder.md3agent.ui.components.ModelChip
-import dev.huecoder.md3agent.ui.components.ModelChipSize
+import dev.huecoder.md3agent.ui.avatar.AgentLook
 import dev.huecoder.md3agent.ui.components.appViewModel
 
 @Composable
@@ -48,11 +47,10 @@ fun HomeScreen(
     onOpenMessage: (chatId: String, messageId: String) -> Unit,
     onOpenSettings: () -> Unit,
 ) {
-    val viewModel = appViewModel { HomeViewModel(it.chats, it.settings, it.modelCatalog, it.conversations) }
+    val viewModel = appViewModel { HomeViewModel(it.chats, it.settings, it.conversations) }
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val defaultModel by viewModel.defaultModel.collectAsStateWithLifecycle()
     var pickingModel by remember { mutableStateOf(false) }
-    val topBarScroll = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val topBarScroll = TopAppBarDefaults.pinnedScrollBehavior()
     var dialog by remember { mutableStateOf<HomeDialog?>(null) }
     val snackbar = remember { SnackbarHostState() }
     val resources = LocalResources.current
@@ -73,7 +71,7 @@ fun HomeScreen(
     Scaffold(
         modifier = Modifier.nestedScroll(topBarScroll.nestedScrollConnection),
         topBar = {
-            MediumFlexibleTopAppBar(
+            TopAppBar(
                 title = {
                     val title = if (state.isSelecting) {
                         pluralStringResource(R.plurals.home_selected, state.selection.size, state.selection.size)
@@ -101,12 +99,10 @@ fun HomeScreen(
                             Text(stringResource(R.string.home_empty_trash))
                         }
                     } else if (state.hasProvider) {
-                        ModelChip(
-                            family = defaultModel?.family,
-                            label = defaultModel?.name,
+                        DefaultAgentButton(
+                            look = AgentLook.of(state.agents.active),
                             onClick = { pickingModel = true },
-                            size = ModelChipSize.Regular,
-                            modifier = Modifier.padding(end = 12.dp),
+                            modifier = Modifier.padding(end = 8.dp),
                         )
                     }
                 },
@@ -123,6 +119,7 @@ fun HomeScreen(
                 else -> ChatList(
                     groups = state.groups,
                     activity = state.activity,
+                    agents = state.agents,
                     selection = state.selection,
                     swipes = RowSwipes(
                         right = RowAction.resolve(state.swipeRight, state.filter, isRight = true),
@@ -161,7 +158,13 @@ fun HomeScreen(
 
     HomeDialogHost(dialog, state, viewModel, onChange = { dialog = it })
     if (pickingModel) {
-        ModelPickerSheet(current = defaultModel?.selection, onSelect = viewModel::selectDefaultModel, onDismiss = { pickingModel = false })
+        ModelPickerSheet(
+            model = state.defaultSelection,
+            agentId = state.agents.active.id,
+            onSelectModel = viewModel::selectDefaultModel,
+            onSelectAgent = viewModel::selectDefaultAgent,
+            onDismiss = { pickingModel = false },
+        )
     }
 }
 

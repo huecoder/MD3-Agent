@@ -6,13 +6,11 @@ import dev.huecoder.md3agent.conversation.ChatActivity
 import dev.huecoder.md3agent.conversation.ConversationRunner
 import dev.huecoder.md3agent.data.chat.ChatRepository
 import dev.huecoder.md3agent.data.db.ChatSummary
+import dev.huecoder.md3agent.data.settings.AgentSettings
 import dev.huecoder.md3agent.data.db.FolderEntity
-import dev.huecoder.md3agent.data.models.ModelCatalog
 import dev.huecoder.md3agent.data.settings.ModelSelection
 import dev.huecoder.md3agent.data.settings.SettingsRepository
 import dev.huecoder.md3agent.data.settings.SwipeAction
-import dev.huecoder.md3agent.llm.models.ModelFamily
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,9 +18,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -61,20 +57,18 @@ data class HomeUiState(
     val hasProvider: Boolean = true,
     val isLoaded: Boolean = false,
     val activity: Map<String, ChatActivity> = emptyMap(),
+    val agents: AgentSettings = AgentSettings(),
+    val defaultSelection: ModelSelection? = null,
 ) {
     val isSelecting: Boolean get() = selection.isNotEmpty()
     val visibleIds: List<String> get() = groups.flatMap { group -> group.chats.map { it.id } }
 }
 
-data class DefaultModel(val selection: ModelSelection, val name: String, val family: ModelFamily?)
-
 private data class Filters(val filter: ChatFilter, val selection: Set<String>)
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModel(
     private val chats: ChatRepository,
     private val settings: SettingsRepository,
-    catalog: ModelCatalog,
     runner: ConversationRunner,
     private val zone: () -> ZoneId = ZoneId::systemDefault,
 ) : ViewModel() {
@@ -92,19 +86,12 @@ class HomeViewModel(
         viewModelScope.launch { chats.trashEvents.collect { _notices.send(HomeNotice.Trashed(it)) } }
     }
 
-    val defaultModel: StateFlow<DefaultModel?> = settings.settings
-        .map { it.activeSelection }
-        .distinctUntilChanged()
-        .mapLatest { selection ->
-            selection?.let {
-                val info = catalog.infoLoaded(it.providerId, it.modelId)
-                DefaultModel(it, info.displayName, info.family)
-            }
-        }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), null)
-
     fun selectDefaultModel(selection: ModelSelection) {
         viewModelScope.launch { settings.setActiveSelection(selection) }
+    }
+
+    fun selectDefaultAgent(agentId: String) {
+        viewModelScope.launch { settings.updateAgents { it.activate(agentId) } }
     }
 
     val state: StateFlow<HomeUiState> = combine(
@@ -129,6 +116,8 @@ class HomeViewModel(
             hasProvider = current.providers.isNotEmpty(),
             isLoaded = true,
             activity = activity,
+            agents = current.agents,
+            defaultSelection = current.activeSelection,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), HomeUiState())
 

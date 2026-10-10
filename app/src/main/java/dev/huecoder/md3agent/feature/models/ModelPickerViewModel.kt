@@ -3,6 +3,7 @@ package dev.huecoder.md3agent.feature.models
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.huecoder.md3agent.data.models.ModelCatalog
+import dev.huecoder.md3agent.data.settings.AgentProfile
 import dev.huecoder.md3agent.data.settings.ModelSelection
 import dev.huecoder.md3agent.data.settings.ProviderProfile
 import dev.huecoder.md3agent.data.settings.SettingsRepository
@@ -19,6 +20,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOn
@@ -57,6 +59,11 @@ class ModelPickerViewModel(
     val queryText: StateFlow<String> = query.asStateFlow()
     val activeCapabilities: StateFlow<Set<CapabilityFilter>> = capabilities.asStateFlow()
     val activeVendor: StateFlow<ModelVendor?> = vendor.asStateFlow()
+
+    val agents: StateFlow<List<AgentProfile>> = settings.settings
+        .map { it.agents.agents }
+        .distinctUntilChanged()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), emptyList())
 
     private val providers = settings.settings.map { it.providers }
 

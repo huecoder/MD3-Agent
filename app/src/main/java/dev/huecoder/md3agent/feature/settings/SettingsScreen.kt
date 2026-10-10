@@ -103,7 +103,7 @@ fun SettingsScreen(destinations: SettingsDestinations) {
             SettingsEntry(
                 icon = MaterialSymbols.Rounded.Face,
                 title = stringResource(R.string.settings_agent),
-                summary = stringResource(R.string.settings_agent_summary, current.agent.name),
+                summary = stringResource(R.string.settings_agent_summary, current.agents.active.name),
                 onClick = destinations.agent,
             ),
             SettingsEntry(

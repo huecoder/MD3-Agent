@@ -91,62 +91,24 @@ fun ToolSettingsScreen(onBack: () -> Unit) {
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
         ) {
-            val grouped = container.tools.all.groupBy { ToolCatalog.of(it).category }
-            ToolCategory.entries.forEach { category ->
-                val categoryTools = grouped[category].orEmpty()
-                if (categoryTools.isEmpty()) return@forEach
-                val enabled = categoryTools.count { container.tools.permission(it, current) != ToolPermission.OFF }
-                FoldableHeader(
-                    title = stringResource(category.title),
-                    expanded = folds.isOpen(category.name),
-                    onToggle = { folds.toggle(category.name) },
-                    summary = stringResource(R.string.tools_category_enabled, enabled, categoryTools.size),
-                )
-                AnimatedVisibility(
-                    visible = folds.isOpen(category.name),
-                    enter = expandVertically(LayoutMotion.settle()) + fadeIn(),
-                    exit = shrinkVertically(LayoutMotion.settle()) + fadeOut(),
-                ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)) {
-                        categoryTools.forEachIndexed { index, tool ->
-                            val name = tool.spec.name
-                            ToolPermissionRow(
-                                info = ToolCatalog.of(tool),
-                                permission = container.tools.permission(tool, current),
-                                shape = ListItemDefaults.segmentedShapes(index, categoryTools.size).shape,
-                                onChange = { tools = current.withPermission(name, it) },
-                            )
-                        }
-                        if (category == ToolCategory.WEB) {
-                            ServiceCard(R.string.tools_section_search, Modifier.padding(top = 12.dp)) {
-                                SearchSection(current.search) { tools = current.copy(search = it) }
-                            }
-                            ServiceCard(R.string.tools_section_fetch) {
-                                FetchSection(current.fetch) { tools = current.copy(fetch = it) }
-                            }
-                            ServiceCard(R.string.tools_weather_title) {
-                                WeatherSection(current.weather) { tools = current.copy(weather = it) }
-                            }
-                        }
+            ToolPermissionGroups(
+                tools = container.tools.all,
+                permissionOf = { container.tools.permission(it, current) },
+                onChange = { tool, permission -> tools = current.withPermission(tool.spec.name, permission) },
+                folds = folds,
+            ) { category ->
+                if (category == ToolCategory.WEB) {
+                    ServiceCard(R.string.tools_section_search, Modifier.padding(top = 12.dp)) {
+                        SearchSection(current.search) { tools = current.copy(search = it) }
+                    }
+                    ServiceCard(R.string.tools_section_fetch) {
+                        FetchSection(current.fetch) { tools = current.copy(fetch = it) }
+                    }
+                    ServiceCard(R.string.tools_weather_title) {
+                        WeatherSection(current.weather) { tools = current.copy(weather = it) }
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun ToolPermissionRow(info: ToolInfo, permission: ToolPermission, shape: Shape, onChange: (ToolPermission) -> Unit) {
-    Surface(shape = shape, color = MaterialTheme.colorScheme.surfaceContainer, modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                ShapeBadge(info.icon, size = BADGE_SIZE)
-                Column(Modifier.weight(1f)) {
-                    Text(info.title.asString(), style = MaterialTheme.typography.titleMediumEmphasized)
-                    Text(info.summary.asString(), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
-            SegmentedChoices(PERMISSION_CHOICES, permission, onChange)
         }
     }
 }
@@ -160,12 +122,6 @@ private fun ServiceCard(@StringRes title: Int, modifier: Modifier = Modifier, co
         }
     }
 }
-
-private val PERMISSION_CHOICES = listOf(
-    Choice(ToolPermission.OFF, R.string.tools_permission_off),
-    Choice(ToolPermission.ASK, R.string.tools_permission_ask),
-    Choice(ToolPermission.AUTO, R.string.tools_permission_auto),
-)
 
 @Composable
 private fun SearchSection(search: SearchSettings, onChange: (SearchSettings) -> Unit) {
@@ -306,4 +262,3 @@ private fun ToolSettings.trimmed() = copy(
     fetch = fetch.copy(jinaApiKey = fetch.jinaApiKey.trim(), customUrl = fetch.customUrl.trim(), customApiKey = fetch.customApiKey.trim()),
 )
 
-private val BADGE_SIZE = 40.dp

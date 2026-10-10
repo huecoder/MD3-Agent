@@ -3,8 +3,8 @@
     <string name="app_name" translatable="false">MD3 Agent</string>
     <string name="settings_title">Settings</string>
     <string name="settings_section_assistant">Assistant</string>
-    <string name="settings_agent">Agent</string>
-    <string name="settings_agent_summary">%1$s · system prompt</string>
+    <string name="settings_agent">Agents</string>
+    <string name="settings_agent_summary">New chats: %1$s</string>
     <string name="settings_section_capabilities">Capabilities</string>
     <string name="settings_tools">Tools</string>
     <string name="settings_tools_summary">%1$d of %2$d enabled · search, weather, screen</string>
@@ -29,6 +29,20 @@
     <string name="network_doh_https_required">An https address is required</string>
     <string name="network_doh_resolved">Requests will go to %1$s</string>
     <string name="network_doh_bootstrap_note">The DoH server itself is resolved via system DNS, everything else goes through it.</string>
+    <string name="agents_hint">New chats start with the selected agent. Each agent keeps its own prompt, look and tools.</string>
+    <string name="agents_add">New agent</string>
+    <string name="agents_new_name">Agent %1$d</string>
+    <string name="agents_for_new_chats">For new chats</string>
+    <string name="agents_use_for_new_chats">Use for new chats</string>
+    <string name="agent_section_look">Look</string>
+    <string name="agent_shape">Shape</string>
+    <string name="agent_color">Color</string>
+    <string name="agent_working_shapes">Working animation</string>
+    <string name="agent_working_hint">Shapes the avatar morphs through while it works. Pick at least two.</string>
+    <string name="agent_section_tools">Tools</string>
+    <string name="agent_tools_hint">Changes here apply to this agent only. Tools you leave alone follow the Tools tab.</string>
+    <string name="agent_tools_follow">Follow the Tools tab</string>
+    <string name="agent_delete">Delete agent</string>
     <string name="agent_name">Agent name</string>
     <string name="agent_system_prompt">System prompt</string>
     <string name="agent_variables_hint">Variables are filled in on every request. Tap one to insert it at the cursor.</string>
@@ -93,7 +107,12 @@
     <string name="provider_delete">Delete</string>
     <string name="provider_name">Name</string>
     <string name="provider_base_url" translatable="false">Base URL</string>
-    <string name="provider_base_url_placeholder" translatable="false">https://api.example.com/v1</string>
+    <string name="api_format_openai" translatable="false">OpenAI</string>
+    <string name="api_format_anthropic" translatable="false">Anthropic</string>
+    <string name="api_format_gemini" translatable="false">Gemini</string>
+    <string name="provider_format">API format</string>
+    <string name="provider_format_hint">OpenAI also covers compatible servers like OpenRouter, Ollama and LM Studio</string>
+    <string name="voice_provider_format_hint">Anthropic has no voice API, so only OpenAI and Gemini are here</string>
     <string name="provider_api_key">API key (Bearer)</string>
     <string name="provider_section_model">Model</string>
     <string name="provider_fetch_models">Load models</string>
@@ -232,6 +251,7 @@
     <string name="voice_provider_speech_model">Speech model</string>
     <string name="voice_provider_speech_voice">Voice</string>
     <string name="voice_provider_speech_voice_hint">alloy, nova, shimmer and so on, depends on the provider.</string>
+    <string name="voice_provider_speech_voice_hint_gemini">Kore, Puck, Charon, Aoede and so on, see the Gemini voice list.</string>
     <string name="chat_thinking">Thinking…</string>
     <string name="chat_speak">Read aloud</string>
     <string name="chat_stop_speaking">Stop reading</string>
@@ -365,7 +385,8 @@
     <string name="lightbox_download">Save to Downloads</string>
     <string name="lightbox_saved">Saved to Downloads/MD3 Agent</string>
     <string name="lightbox_save_failed">Couldn\'t save the image</string>
-    <string name="model_picker_title">Model</string>
+    <string name="picker_tab_model">Model</string>
+    <string name="picker_tab_agents">Agents</string>
     <string name="model_search">Search by name, company or id</string>
     <string name="model_search_clear">Clear search</string>
     <string name="model_refresh">Refresh the model list</string>
@@ -383,6 +404,8 @@
     <string name="reasoning_high">High</string>
     <string name="reasoning_xhigh">Max</string>
     <string name="chat_change_model">Change model</string>
+    <string name="chat_model_and_agent">Model and agent</string>
+    <string name="home_agent_picker">Model and agent for new chats</string>
     <string name="chat_more_options">More options</string>
     <plurals name="model_picker_count">
         <item quantity="one">%1$d model</item>
@@ -415,12 +438,6 @@
     <string name="mcp_sign_in_needed">This server asks you to sign in</string>
     <string name="mcp_sign_in">Sign in</string>
     <string name="mcp_sign_out">Sign out</string>
-    <string name="agent_avatar">Avatar</string>
-    <string name="agent_avatar_classic">Classic</string>
-    <string name="agent_avatar_bot">GrokBot</string>
-    <string name="agent_avatar_rest_shape">Shape when idle</string>
-    <string name="agent_avatar_rest_circle">Circle</string>
-    <string name="agent_avatar_rest_hexagon">Hexagon</string>
     <string name="tools_category_memory">Memory</string>
     <string name="tools_memory_save_title">Remember facts</string>
     <string name="tools_memory_save_summary">Saves preferences and facts about you to instant or long-term memory</string>

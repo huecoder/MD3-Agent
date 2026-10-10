@@ -67,4 +67,23 @@ class ModelCatalogParsingTest {
         assertEquals(listOf("a", "b"), infos.map { it.id })
         assertEquals(null, infos.first().reasoning)
     }
+
+    @Test
+    fun `gemini and anthropic model lists keep clean ids and display names`() {
+        val gemini = ModelInfoParser.parseList(
+            Json.parseToJsonElement(
+                """{"models":[{"name":"models/gemini-2.5-flash","displayName":"Gemini 2.5 Flash","inputTokenLimit":1048576,"thinking":true}]}""",
+            ),
+        ).single()
+        assertEquals("gemini-2.5-flash", gemini.id)
+        assertEquals("Gemini 2.5 Flash", gemini.displayName)
+        assertEquals(1_048_576, gemini.contextLength)
+        assertEquals(true, gemini.reasoning)
+
+        val claude = ModelInfoParser.parseList(
+            Json.parseToJsonElement("""{"data":[{"type":"model","id":"claude-sonnet-4-5","display_name":"Claude Sonnet 4.5"}]}"""),
+        ).single()
+        assertEquals("claude-sonnet-4-5", claude.id)
+        assertEquals("Claude Sonnet 4.5", claude.displayName)
+    }
 }

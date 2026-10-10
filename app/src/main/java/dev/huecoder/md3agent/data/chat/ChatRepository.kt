@@ -46,7 +46,7 @@ class ChatRepository(
 
     suspend fun history(chatId: String): List<MessageEntity> = messageDao.listForChat(chatId)
 
-    suspend fun createChat(title: String, selection: ModelSelection): ChatEntity {
+    suspend fun createChat(title: String, selection: ModelSelection, agentId: String): ChatEntity {
         val now = clock()
         val chat = ChatEntity(
             id = UUID.randomUUID().toString(),
@@ -56,6 +56,7 @@ class ChatRepository(
             providerId = selection.providerId,
             modelId = selection.modelId,
             reasoningEffort = selection.reasoningEffort?.wireName,
+            agentId = agentId,
         )
         chatDao.insert(chat)
         return chat
@@ -110,6 +111,8 @@ class ChatRepository(
 
     suspend fun setModel(chatId: String, selection: ModelSelection) =
         chatDao.setModel(chatId, selection.providerId, selection.modelId, selection.reasoningEffort?.wireName)
+
+    suspend fun setAgent(chatId: String, agentId: String) = chatDao.setAgent(chatId, agentId)
 
     suspend fun trash(chatIds: Collection<String>) {
         chatDao.setTrashed(chatIds.toList(), clock())

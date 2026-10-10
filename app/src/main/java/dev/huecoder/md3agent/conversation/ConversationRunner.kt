@@ -8,6 +8,7 @@ import dev.huecoder.md3agent.data.db.ChatEntity
 import dev.huecoder.md3agent.data.db.MessageEntity
 import dev.huecoder.md3agent.data.db.MessageRole
 import dev.huecoder.md3agent.data.db.MessageStatus
+import dev.huecoder.md3agent.data.settings.AgentProfile
 import dev.huecoder.md3agent.data.settings.AppSettings
 import dev.huecoder.md3agent.data.settings.ProviderProfile
 import dev.huecoder.md3agent.data.settings.SettingsRepository
@@ -78,9 +79,10 @@ class ConversationRunner(
         scope.launch { chats.recoverInterruptedStreams() }
     }
 
-    suspend fun startChat(text: String, attached: List<Attachment>, selection: ModelSelection? = null): ChatEntity {
-        val chosen = selection ?: settings.current().activeSelection ?: throw NoModelConfiguredException()
-        val chat = chats.createChat(titleFrom(text, attached), chosen)
+    suspend fun startChat(text: String, attached: List<Attachment>, selection: ModelSelection? = null, agentId: String? = null): ChatEntity {
+        val current = settings.current()
+        val chosen = selection ?: current.activeSelection ?: throw NoModelConfiguredException()
+        val chat = chats.createChat(titleFrom(text, attached), chosen, current.agent(agentId).id)
         send(chat.id, text, attached)
         return chat
     }
@@ -117,11 +119,13 @@ class ConversationRunner(
     private suspend fun generateReply(chatId: String) {
         val current = settings.current()
         val model = resolveModel(chatId, current) ?: return chats.save(errorMessage(chatId, NO_MODEL_SELECTED))
+        val agent = current.agents.forChat(chats.chat(chatId)?.agentId)
+        val toolSettings = agent.tools(current.tools)
         try {
             while (true) {
-                val round = streamRound(chatId, model, current) ?: return
+                val round = streamRound(chatId, model, agent, toolSettings) ?: return
                 if (round.toolCalls.isEmpty()) return labelLater(chatId, model, current)
-                val endsTurn = runTools(chatId, round, current)
+                val endsTurn = runTools(chatId, round, toolSettings)
                 if (endsTurn) return
             }
         } finally {
@@ -134,7 +138,7 @@ class ConversationRunner(
         if (current.chat.autoTitle) scope.launch { titler.labelIfNeeded(chatId, model) }
     }
 
-    private suspend fun streamRound(chatId: String, model: ResolvedModel, current: AppSettings): StreamingDraft? {
+    private suspend fun streamRound(chatId: String, model: ResolvedModel, agent: AgentProfile, toolSettings: ToolSettings): StreamingDraft? {
         tools.awaitReady()
         val info = catalog.infoLoaded(model.provider.id, model.modelId)
         val traits = info.traits
@@ -144,8 +148,8 @@ class ConversationRunner(
             output = traits.output,
             explicitCaching = info.family == ModelFamily.CLAUDE,
         )
-        val toolSpecs = if (traits.output == ModelOutput.IMAGE || info.toolUse == false) emptyList() else tools.specs(current.tools)
-        val turns = buildTurns(current, chats.history(chatId))
+        val toolSpecs = if (traits.output == ModelOutput.IMAGE || info.toolUse == false) emptyList() else tools.specs(toolSettings)
+        val turns = buildTurns(agent, toolSettings, chats.history(chatId))
         val message = chats.startAssistantMessage(chatId, model.modelId)
         val accumulator = ToolCallAccumulator()
         var draft = StreamingDraft(message.id, content = "", reasoning = "", toolCalls = emptyList(), runningCallIds = emptySet(), awaitingCallId = null, usage = null)
@@ -173,11 +177,11 @@ class ConversationRunner(
         }
     }
 
-    private suspend fun runTools(chatId: String, round: StreamingDraft, current: AppSettings): Boolean {
+    private suspend fun runTools(chatId: String, round: StreamingDraft, toolSettings: ToolSettings): Boolean {
         for (call in round.toolCalls) {
-            val outcome = if (isApproved(chatId, round, call, current.tools)) {
+            val outcome = if (isApproved(chatId, round, call, toolSettings)) {
                 publish(chatId, round.copy(runningCallIds = setOf(call.id)))
-                tools.run(call, current.tools, ToolContext(chatId))
+                tools.run(call, toolSettings, ToolContext(chatId))
             } else {
                 ToolOutcome.denied()
             }
@@ -192,12 +196,12 @@ class ConversationRunner(
         return approvals.request(chatId, call)
     }
 
-    private suspend fun buildTurns(current: AppSettings, history: List<MessageEntity>): List<ChatTurn> {
+    private suspend fun buildTurns(agent: AgentProfile, toolSettings: ToolSettings, history: List<MessageEntity>): List<ChatTurn> {
         val contents = mutableMapOf<String, AttachmentContent>()
         history.flatMap { Attachment.decode(it.attachmentsJson) }.forEach { attachment ->
             attachments.contentFor(attachment)?.let { contents[attachment.id] = it }
         }
-        return TurnAssembler.assemble(systemPrompt.render(current.agent, tools.promptNotes(current.tools), memories.instant()), history, contents)
+        return TurnAssembler.assemble(systemPrompt.render(agent, tools.promptNotes(toolSettings), memories.instant()), history, contents)
     }
 
     private suspend fun resolveModel(chatId: String, current: AppSettings): ResolvedModel? {

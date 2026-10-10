@@ -12,6 +12,7 @@ object ModelInfoParser {
     private const val IMAGE = "image"
     private const val TEXT = "text"
     private const val MODALITY_ARROW = "->"
+    private const val GEMINI_MODEL_PREFIX = "models/"
 
     fun parseList(root: JsonElement): List<ModelInfo> {
         val entries = when (root) {
@@ -23,7 +24,8 @@ object ModelInfoParser {
     }
 
     fun parse(entry: JsonObject): ModelInfo? {
-        val id = entry.string("id") ?: return null
+        val geminiName = entry.string("name")?.takeIf { it.startsWith(GEMINI_MODEL_PREFIX) }
+        val id = entry.string("id") ?: geminiName?.removePrefix(GEMINI_MODEL_PREFIX) ?: return null
         val architecture = entry.obj("architecture")
         val capabilities = entry.obj("capabilities")
         val parameters = entry.strings("supported_parameters")
@@ -34,15 +36,15 @@ object ModelInfoParser {
 
         val effortField = parameters?.contains("reasoning_effort") == true
         val reasoningObject = parameters?.any { it == "reasoning" || it == "include_reasoning" } == true
-        val reasoning = capabilities?.flag("reasoning", "thinking") ?: entry.flag("supports_reasoning", "reasoning")
+        val reasoning = capabilities?.flag("reasoning", "thinking") ?: entry.flag("supports_reasoning", "reasoning", "thinking")
             ?: parameters?.let { effortField || reasoningObject }
         val efforts = (entry.strings("supported_reasoning_efforts") ?: entry.obj("reasoning")?.strings("efforts")
             ?: capabilities?.strings("reasoning_efforts")).orEmpty().mapNotNull(ReasoningEffort::fromWire)
 
         return ModelInfo(
             id = id,
-            name = entry.string("name") ?: entry.string("display_name"),
-            contextLength = entry.int("context_length") ?: entry.int("context_window") ?: entry.int("max_context_length")
+            name = entry.string("displayName") ?: entry.string("name")?.takeIf { geminiName == null } ?: entry.string("display_name"),
+            contextLength = entry.int("context_length") ?: entry.int("context_window") ?: entry.int("max_context_length") ?: entry.int("inputTokenLimit")
                 ?: entry.obj("top_provider")?.int("context_length"),
             vision = capabilities?.flag("vision", "image_input") ?: entry.flag("supports_vision", "vision") ?: inputs?.contains(IMAGE),
             reasoning = reasoning,

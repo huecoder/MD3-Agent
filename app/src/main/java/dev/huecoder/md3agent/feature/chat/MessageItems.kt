@@ -21,6 +21,7 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.res.stringResource
@@ -35,6 +36,7 @@ import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.feature.chat.diagram.DiagramCard
 import dev.huecoder.md3agent.data.settings.TypingStyle
 import dev.huecoder.md3agent.conversation.ApprovalDecision
+import dev.huecoder.md3agent.ui.avatar.AvatarHandoff
 import dev.huecoder.md3agent.ui.components.AgentAvatar
 import dev.huecoder.md3agent.ui.components.ShimmerText
 import dev.huecoder.md3agent.ui.components.copyText
@@ -82,9 +84,15 @@ fun AssistantReply(
     onSend: (String) -> Unit,
     onApproval: (ToolCallUi, ApprovalDecision) -> Unit,
     modifier: Modifier = Modifier,
+    avatarHandoff: AvatarHandoff? = null,
 ) {
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        AgentAvatar(isWorking = reply.isActive, size = AvatarSize)
+        val awaitingAvatar = avatarHandoff?.isActive == true
+        AgentAvatar(
+            isWorking = reply.isActive && !awaitingAvatar,
+            size = AvatarSize,
+            modifier = (avatarHandoff?.targetModifier() ?: Modifier).alpha(if (awaitingAvatar) 0f else 1f),
+        )
         reply.parts.forEachIndexed { index, part ->
             key(index) {
                 when (part) {

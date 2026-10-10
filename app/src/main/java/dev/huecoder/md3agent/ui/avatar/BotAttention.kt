@@ -19,6 +19,7 @@ object GazeSprings {
     val Glance = spring<Offset>(dampingRatio = 0.8f, stiffness = 50f)
     val Home = spring<Offset>(dampingRatio = 0.8f, stiffness = 70f)
     val Bored = spring<Offset>(dampingRatio = 0.9f, stiffness = 28f)
+    val Follow = spring<Offset>(dampingRatio = 0.9f, stiffness = 90f)
 }
 
 suspend fun BotMotion.watchTyping(typing: TypingAttention, toGaze: (Offset) -> Offset?) = coroutineScope {
@@ -47,8 +48,10 @@ suspend fun BotMotion.watchTyping(typing: TypingAttention, toGaze: (Offset) -> O
         seen = keystroke
         if (now - lastKeyAt > PAUSE_MS) sessionStart = now
         lastKeyAt = now
-        if (now - sessionStart < BORED_AFTER_MS) {
-            typing.letter?.let(toGaze)?.let { look(it, GazeSprings.Saccade) }
+        val typingFor = now - sessionStart
+        if (typingFor < NOTICE_AFTER_MS) continue
+        if (typingFor < BORED_AFTER_MS) {
+            typing.letter?.let(toGaze)?.let { look(it, GazeSprings.Follow) }
         } else if (bored?.isActive != true) {
             gazeJob?.cancel()
             bored = launch { actBored(typing, toGaze) }
@@ -62,9 +65,35 @@ private suspend fun BotMotion.actBored(typing: TypingAttention, toGaze: (Offset)
         val away = Offset(side * Random.nextDouble(AWAY_MIN_X, 1.0).toFloat(), -Random.nextDouble(0.0, AWAY_MAX_UP).toFloat())
         lookTo(away, GazeSprings.Bored)
         delay(Random.nextLong(AWAY_MIN_MS, AWAY_MAX_MS))
-        typing.letter?.let(toGaze)?.let { lookTo(it, GazeSprings.Saccade) }
+        typing.letter?.let(toGaze)?.let { lookTo(it, GazeSprings.Follow) }
         delay(PEEK_MS)
         if (Random.nextFloat() < SWITCH_SIDE_CHANCE) side = -side
+    }
+}
+
+suspend fun BotMotion.watchBelow() {
+    lookTo(BELOW_POSE, GazeSprings.Glance)
+    while (true) {
+        delay(Random.nextLong(BELOW_HOLD_MIN_MS, BELOW_HOLD_MAX_MS))
+        val side = if (Random.nextBoolean()) 1f else -1f
+        if (Random.nextFloat() < AROUND_CHANCE) glanceAround(side) else scanBelow(side)
+        lookTo(BELOW_POSE, GazeSprings.Glance)
+    }
+}
+
+private suspend fun BotMotion.scanBelow(side: Float) {
+    lookTo(Offset(-side * SCAN_REACH_X, SCAN_DEPTH_Y), GazeSprings.Glance)
+    delay(Random.nextLong(SCAN_HOLD_MIN_MS, SCAN_HOLD_MAX_MS))
+    lookTo(Offset(side * SCAN_REACH_X, SCAN_DEPTH_Y), GazeSprings.Glance)
+    delay(Random.nextLong(SCAN_HOLD_MIN_MS, SCAN_HOLD_MAX_MS))
+}
+
+private suspend fun BotMotion.glanceAround(side: Float) {
+    lookTo(Offset(side * AROUND_REACH_X, AROUND_HEIGHT_Y), GazeSprings.Saccade)
+    delay(Random.nextLong(AROUND_HOLD_MIN_MS, AROUND_HOLD_MAX_MS))
+    if (Random.nextFloat() < OTHER_SIDE_CHANCE) {
+        lookTo(Offset(-side * AROUND_REACH_X, AROUND_HEIGHT_Y), GazeSprings.Saccade)
+        delay(Random.nextLong(AROUND_HOLD_MIN_MS, AROUND_HOLD_MAX_MS))
     }
 }
 
@@ -115,10 +144,24 @@ class BotListening {
 
 private const val IDLE_CHECK_MS = 250L
 private const val PAUSE_MS = 1_800L
+private const val NOTICE_AFTER_MS = 900L
 private const val BORED_AFTER_MS = 10_000L
 private const val AWAY_MIN_X = 0.7
 private const val AWAY_MAX_UP = 0.8
 private const val AWAY_MIN_MS = 2_200L
 private const val AWAY_MAX_MS = 4_200L
-private const val PEEK_MS = 450L
+private const val PEEK_MS = 700L
 private const val SWITCH_SIDE_CHANCE = 0.35f
+private val BELOW_POSE = Offset(0f, 1f)
+private const val SCAN_REACH_X = 0.7f
+private const val SCAN_DEPTH_Y = 0.9f
+private const val AROUND_REACH_X = 1f
+private const val AROUND_HEIGHT_Y = -0.1f
+private const val AROUND_CHANCE = 0.5f
+private const val OTHER_SIDE_CHANCE = 0.45f
+private const val BELOW_HOLD_MIN_MS = 1_200L
+private const val BELOW_HOLD_MAX_MS = 2_800L
+private const val SCAN_HOLD_MIN_MS = 250L
+private const val SCAN_HOLD_MAX_MS = 600L
+private const val AROUND_HOLD_MIN_MS = 500L
+private const val AROUND_HOLD_MAX_MS = 1_000L

@@ -1,31 +1,17 @@
 package dev.huecoder.md3agent.ui.avatar
 
-import androidx.compose.material3.MaterialShapes
-import androidx.graphics.shapes.CornerRounding
 import androidx.graphics.shapes.Morph
 import androidx.graphics.shapes.RoundedPolygon
-import dev.huecoder.md3agent.data.settings.AvatarRestShape
+import dev.huecoder.md3agent.data.settings.AgentProfile
+import dev.huecoder.md3agent.data.settings.AgentShape
 import java.util.concurrent.ConcurrentHashMap
 
-class BotShapes private constructor(restShape: AvatarRestShape) {
-    val working: List<RoundedPolygon> = listOf(
-        MaterialShapes.Cookie7Sided,
-        MaterialShapes.Cookie9Sided,
-        MaterialShapes.Gem,
-        MaterialShapes.Cookie12Sided,
-        MaterialShapes.Clover8Leaf,
-        MaterialShapes.Cookie6Sided,
-    )
+class BotShapes private constructor(restShape: AgentShape, workingShapes: List<AgentShape>) {
+    val working: List<RoundedPolygon> = workingShapes.map { it.polygon }
 
-    val rest: RoundedPolygon = when (restShape) {
-        AvatarRestShape.CIRCLE -> MaterialShapes.Circle
-        AvatarRestShape.HEXAGON -> ROUNDED_HEXAGON
-    }
+    val rest: RoundedPolygon = restShape.polygon
 
-    val restSymmetryDegrees: Float = when (restShape) {
-        AvatarRestShape.CIRCLE -> 0f
-        AvatarRestShape.HEXAGON -> HEXAGON_SYMMETRY
-    }
+    val restSymmetryDegrees: Float = restShape.symmetryDegrees
 
     private val steps: List<Morph> = working.indices.map { Morph(working[it], working[(it + 1) % working.size]) }
     private val settles: List<Morph> = working.map { Morph(it, rest) }
@@ -45,21 +31,17 @@ class BotShapes private constructor(restShape: AvatarRestShape) {
     private fun narrowest(morph: Morph): Float =
         (0..PROGRESS_SAMPLES).minOf { BotGeometry.innerRadius(morph.asCubics(it / PROGRESS_SAMPLES.toFloat())) }
 
-    companion object {
-        private val cache = ConcurrentHashMap<AvatarRestShape, BotShapes>()
+    private data class Key(val rest: AgentShape, val working: List<AgentShape>)
 
-        fun of(restShape: AvatarRestShape): BotShapes = cache.getOrPut(restShape) { BotShapes(restShape) }
+    companion object {
+        private val cache = ConcurrentHashMap<Key, BotShapes>()
+
+        fun of(restShape: AgentShape, workingShapes: List<AgentShape>): BotShapes {
+            val working = workingShapes.distinct().takeIf { it.size >= AgentProfile.MIN_WORKING_SHAPES } ?: AgentProfile.DEFAULT_WORKING_SHAPES
+            return cache.getOrPut(Key(restShape, working)) { BotShapes(restShape, working) }
+        }
 
         private const val PROGRESS_SAMPLES = 20
         private const val SAFETY = 0.94f
-        private const val HEXAGON_SYMMETRY = 60f
-        private const val HEXAGON_ROUNDING = 0.28f
-        private val ROUNDED_HEXAGON: RoundedPolygon = RoundedPolygon(
-            numVertices = 6,
-            radius = BotGeometry.CENTER,
-            centerX = BotGeometry.CENTER,
-            centerY = BotGeometry.CENTER,
-            rounding = CornerRounding(HEXAGON_ROUNDING),
-        ).normalized()
     }
 }

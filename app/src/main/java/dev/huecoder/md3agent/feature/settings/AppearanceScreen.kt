@@ -29,13 +29,6 @@ fun AppearanceScreen(onBack: () -> Unit) {
             modifier = Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            SectionHeader(stringResource(R.string.agent_avatar))
-            AvatarPicker(
-                style = current.agent.avatar,
-                restShape = current.agent.restShape,
-                onStyle = { style -> viewModel.updateAgent { it.copy(avatar = style) } },
-                onRestShape = { shape -> viewModel.updateAgent { it.copy(restShape = shape) } },
-            )
             SectionHeader(stringResource(R.string.chat_settings_section_replies))
             LabeledSwitch(
                 title = stringResource(R.string.chat_settings_show_tokens),

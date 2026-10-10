@@ -32,6 +32,7 @@ import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Delete
 import com.composables.icons.materialsymbols.rounded.Sync
 import dev.huecoder.md3agent.R
+import dev.huecoder.md3agent.data.settings.ApiFormat
 import dev.huecoder.md3agent.ui.components.FormField
 import dev.huecoder.md3agent.ui.components.SectionHeader
 import dev.huecoder.md3agent.ui.components.SaveAction
@@ -80,6 +81,13 @@ fun VoiceProviderEditorScreen(providerId: String?, onDone: () -> Unit) {
                     }
                 }
             }
+            ChoiceRow(
+                title = stringResource(R.string.provider_format),
+                choices = apiFormatChoices(ApiFormat.VOICE),
+                selected = current.format,
+                onSelect = { format -> viewModel.edit { it.withFormat(format) } },
+                hint = stringResource(R.string.voice_provider_format_hint),
+            )
             FormField(
                 value = current.name,
                 onValueChange = { value -> viewModel.edit { it.copy(name = value) } },
@@ -90,7 +98,7 @@ fun VoiceProviderEditorScreen(providerId: String?, onDone: () -> Unit) {
                 value = current.baseUrl,
                 onValueChange = { value -> viewModel.edit { it.copy(baseUrl = value) } },
                 label = stringResource(R.string.provider_base_url),
-                placeholder = stringResource(R.string.provider_base_url_placeholder),
+                placeholder = current.format.defaultBaseUrl,
                 isError = current.baseUrlError != null,
                 supportingText = current.baseUrlError?.asString(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
@@ -121,7 +129,7 @@ fun VoiceProviderEditorScreen(providerId: String?, onDone: () -> Unit) {
                 value = current.speechVoice,
                 onValueChange = { value -> viewModel.edit { it.copy(speechVoice = value) } },
                 label = stringResource(R.string.voice_provider_speech_voice),
-                supportingText = stringResource(R.string.voice_provider_speech_voice_hint),
+                supportingText = stringResource(if (current.format == ApiFormat.GEMINI) R.string.voice_provider_speech_voice_hint_gemini else R.string.voice_provider_speech_voice_hint),
                 modifier = Modifier.fillMaxWidth(),
             )
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -150,5 +158,5 @@ fun VoiceProviderEditorScreen(providerId: String?, onDone: () -> Unit) {
 
 private fun List<String>.matching(hints: List<String>) = filter { model -> hints.any { model.contains(it, ignoreCase = true) } }.ifEmpty { this }
 
-private val TRANSCRIPTION_HINTS = listOf("whisper", "transcribe", "stt")
+private val TRANSCRIPTION_HINTS = listOf("whisper", "transcribe", "stt", "gemini")
 private val SPEECH_HINTS = listOf("tts", "speech")

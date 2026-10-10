@@ -3,6 +3,7 @@ package dev.huecoder.md3agent.feature.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.huecoder.md3agent.R
+import dev.huecoder.md3agent.data.settings.ApiFormat
 import dev.huecoder.md3agent.data.settings.HeaderEntry
 import dev.huecoder.md3agent.data.settings.ModelSelection
 import dev.huecoder.md3agent.data.settings.ProviderProfile
@@ -26,7 +27,10 @@ data class ProviderForm(
     val models: List<String> = emptyList(),
     val defaultModel: String = "",
     val makeActive: Boolean = true,
+    val format: ApiFormat = ApiFormat.OPENAI,
 ) {
+    fun withFormat(next: ApiFormat) = copy(format = next, baseUrl = next.adoptBaseUrl(baseUrl))
+
     val baseUrlError: UiText?
         get() = if (baseUrl.isBlank() || baseUrl.trim().toHttpUrlOrNull() != null) null else UiText.Resource(R.string.provider_base_url_invalid)
 
@@ -41,6 +45,7 @@ data class ProviderForm(
         extraHeaders = headers.filter { it.name.isNotBlank() },
         models = models,
         defaultModel = defaultModel.trim(),
+        format = format,
     )
 }
 
@@ -80,6 +85,7 @@ class ProviderEditorViewModel(
                     models = existing.models,
                     defaultModel = existing.defaultModel,
                     makeActive = current.activeSelection?.providerId == existing.id,
+                    format = existing.format,
                 )
             })
         }
