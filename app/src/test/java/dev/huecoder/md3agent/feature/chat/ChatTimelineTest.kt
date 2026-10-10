@@ -129,4 +129,16 @@ class ChatTimelineTest {
         val stopped = timeline[3] as ChatItem.Reply
         assertEquals(ToolStatus.CANCELLED, (stopped.parts.single() as ReplyPart.Tools).calls.single().status)
     }
+
+    @Test
+    fun `text of a stopped round is marked stopped, also while its draft is still being removed`() {
+        val messages = listOf(row(MessageRole.USER, "1"), row(MessageRole.ASSISTANT, "Привет, мир", status = MessageStatus.CANCELLED))
+        val draft = StreamingDraft(messages[1].id, "Привет, мир", "", emptyList(), runningCallIds = emptySet(), awaitingCallId = null, usage = null)
+
+        val settled = ChatTimeline.build(messages, draft = null)[1] as ChatItem.Reply
+        val lingering = ChatTimeline.build(messages, draft)[1] as ChatItem.Reply
+
+        assertEquals(ReplyPart.Text("Привет, мир", isStreaming = false, isStopped = true), settled.parts.single())
+        assertEquals(ReplyPart.Text("Привет, мир", isStreaming = true, isStopped = true), lingering.parts.single())
+    }
 }

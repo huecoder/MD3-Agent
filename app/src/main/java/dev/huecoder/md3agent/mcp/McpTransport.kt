@@ -2,10 +2,9 @@ package dev.huecoder.md3agent.mcp
 
 import dev.huecoder.md3agent.data.settings.HeaderEntry
 import dev.huecoder.md3agent.net.HttpStatusException
+import dev.huecoder.md3agent.net.executeCancellable
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -112,14 +111,11 @@ class McpTransport(
             .build()
         return withContext(Dispatchers.IO) {
             val call = client().newCall(request)
-            val cancellation = currentCoroutineContext()[Job]?.invokeOnCompletion { call.cancel() }
             try {
-                call.execute().use { response -> handle(response, read) }
+                call.executeCancellable { response -> handle(response, read) }
             } catch (e: IOException) {
                 if (call.isCanceled()) throw CancellationException("MCP request cancelled", e)
                 throw e
-            } finally {
-                cancellation?.dispose()
             }
         }
     }

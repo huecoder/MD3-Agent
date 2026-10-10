@@ -6,10 +6,9 @@ import dev.huecoder.md3agent.llm.wire.ChatStream
 import dev.huecoder.md3agent.llm.wire.ChatWire
 import dev.huecoder.md3agent.llm.wire.wireJson
 import dev.huecoder.md3agent.net.HttpClientProvider
+import dev.huecoder.md3agent.net.executeCancellable
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.flow
@@ -34,17 +33,14 @@ class ChatCompletionClient(private val httpClients: HttpClientProvider) {
         val wire = ChatWire.of(provider.format)
         val request = wire.request(ProviderEndpoint(provider), ChatRequest(model, turns, tools, options))
         val call = httpClients.current().newCall(request)
-        val cancellation = currentCoroutineContext()[Job]?.invokeOnCompletion { call.cancel() }
         try {
-            call.execute().use { response ->
+            call.executeCancellable { response ->
                 if (!response.isSuccessful) throw httpError(response)
                 emitServerSentEvents(response, wire.newStream())
             }
         } catch (e: IOException) {
             if (call.isCanceled()) throw CancellationException("Stream cancelled", e)
             throw ProviderException.Network(e)
-        } finally {
-            cancellation?.dispose()
         }
     }.flowOn(Dispatchers.IO)
 

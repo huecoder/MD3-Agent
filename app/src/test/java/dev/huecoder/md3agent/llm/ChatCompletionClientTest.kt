@@ -4,10 +4,17 @@ import dev.huecoder.md3agent.data.settings.HeaderEntry
 import dev.huecoder.md3agent.data.settings.NetworkSettings
 import dev.huecoder.md3agent.data.settings.ProviderProfile
 import dev.huecoder.md3agent.net.HttpClientProvider
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.jsonArray
@@ -15,6 +22,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
+import mockwebserver3.SocketEffect
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -202,5 +210,24 @@ class ChatCompletionClientTest {
         val delta = client.stream(provider(), "m", turns).toList().filterIsInstance<CompletionEvent.ToolCallDelta>().single()
 
         assertEquals(CompletionEvent.ToolCallDelta(index = 0, id = "a", name = "x", arguments = """{"k":1}"""), delta)
+    }
+
+    @Test
+    fun `cancelling the collector aborts a request the server never answers`() = runBlocking {
+        server.enqueue(MockResponse.Builder().onResponseStart(SocketEffect.Stall).build())
+        val httpClients = HttpClientProvider(flowOf(NetworkSettings()), TestScope())
+        val collecting = launch(Dispatchers.Default) { ChatCompletionClient(httpClients).stream(provider(), "m", turns).collect() }
+        server.takeRequest()
+        val dispatcher = httpClients.current().dispatcher
+        assertEquals(1, dispatcher.runningCallsCount())
+
+        collecting.cancelAndJoin()
+
+        withTimeout(ABORT_TIMEOUT_MS) { while (dispatcher.runningCallsCount() > 0) delay(POLL_MS) }
+    }
+
+    private companion object {
+        const val ABORT_TIMEOUT_MS = 2_000L
+        const val POLL_MS = 10L
     }
 }

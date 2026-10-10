@@ -59,7 +59,7 @@ sealed interface ChatItem {
 sealed interface ReplyPart {
     data class Reasoning(val text: String, val isStreaming: Boolean) : ReplyPart
 
-    data class Text(val content: String, val isStreaming: Boolean) : ReplyPart
+    data class Text(val content: String, val isStreaming: Boolean, val isStopped: Boolean = false) : ReplyPart
 
     data class Tools(val calls: List<ToolCallUi>) : ReplyPart
 
@@ -138,7 +138,7 @@ object ChatTimeline {
         fun parts(results: Map<String?, MessageEntity>, live: StreamingDraft?): List<ReplyPart> = buildList {
             val isLive = live != null
             if (reasoning.isNotEmpty()) add(ReplyPart.Reasoning(reasoning, isStreaming = isLive && content.isEmpty() && calls.isEmpty()))
-            if (content.isNotEmpty()) add(ReplyPart.Text(content, isStreaming = isLive))
+            if (content.isNotEmpty()) add(ReplyPart.Text(content, isStreaming = isLive, isStopped = row.status == MessageStatus.CANCELLED))
             val generated = Attachment.decode(row.attachmentsJson)
             if (generated.isNotEmpty()) add(ReplyPart.Media(generated))
             val shown = calls.filter { it.name != ShowUiTool.NAME }

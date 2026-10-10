@@ -25,25 +25,27 @@ import org.intellij.markdown.MarkdownTokenTypes
 import kotlin.math.ceil
 
 @Composable
-fun ReplyText(text: String, isStreaming: Boolean, style: TypingStyle, modifier: Modifier = Modifier) {
+fun ReplyText(text: String, isStreaming: Boolean, style: TypingStyle, modifier: Modifier = Modifier, isStopped: Boolean = false) {
     val startedLive = remember { isStreaming }
     if (!style.isAnimated || !startedLive) {
         MarkdownContent(text, modifier)
         return
     }
     val tail = style.fadeTailChars
-    val frontier = rememberRevealFrontier(text, style.charsPerSecond, tail)
-    val shown = text.take(ceil(frontier).toInt().coerceIn(0, text.length))
+    val cuts = remember { GraphemeCuts() }
+    val frontier = rememberRevealFrontier(text, style.charsPerSecond, tail, isRunning = !isStopped)
+    val shown = if (isStopped) text else text.substring(0, cuts.floor(text, ceil(frontier).toInt()))
     val parsed = remember(shown) { parseMarkdown(shown) }
-    val annotator = if (tail == 0) PlainAnnotator else fadeAnnotator(frontier, tail, MaterialTheme.colorScheme.onSurface)
+    val annotator = if (tail == 0 || isStopped) PlainAnnotator else fadeAnnotator(frontier, tail, MaterialTheme.colorScheme.onSurface, cuts)
     MarkdownContent(parsed, annotator, modifier)
 }
 
 @Composable
-private fun rememberRevealFrontier(text: String, charsPerSecond: Int, tail: Int): Float {
+private fun rememberRevealFrontier(text: String, charsPerSecond: Int, tail: Int, isRunning: Boolean): Float {
     val frontier = remember { mutableFloatStateOf(0f) }
     val latest by rememberUpdatedState(text)
-    LaunchedEffect(charsPerSecond, tail) {
+    LaunchedEffect(charsPerSecond, tail, isRunning) {
+        if (!isRunning) return@LaunchedEffect
         while (true) {
             if (frontier.floatValue >= latest.length + tail) {
                 snapshotFlow { latest.length + tail }.first { it > frontier.floatValue }
@@ -68,15 +70,15 @@ private suspend fun advance(frontier: MutableFloatState, length: () -> Int, char
     }
 }
 
-private fun fadeAnnotator(frontier: Float, tail: Int, color: Color): MarkdownAnnotator = markdownAnnotator { content, node ->
+private fun fadeAnnotator(frontier: Float, tail: Int, color: Color, cuts: GraphemeCuts): MarkdownAnnotator = markdownAnnotator { content, node ->
     val fadeStart = frontier - tail
     if (node.type != MarkdownTokenTypes.TEXT || node.endOffset <= fadeStart) return@markdownAnnotator false
-    for (index in node.startOffset until node.endOffset) {
-        val alpha = ((frontier - index) / tail).coerceIn(0f, 1f)
+    cuts.forEach(content, node.startOffset, node.endOffset) { from, to ->
+        val alpha = ((frontier - from) / tail).coerceIn(0f, 1f)
         if (alpha >= 1f) {
-            append(content[index])
+            append(content, from, to)
         } else {
-            withStyle(SpanStyle(color = color.copy(alpha = alpha))) { append(content[index]) }
+            withStyle(SpanStyle(color = color.copy(alpha = alpha))) { append(content, from, to) }
         }
     }
     true
