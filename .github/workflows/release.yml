@@ -54,7 +54,7 @@ jobs:
         run: |
           umask 077
           mkdir keystore
-          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > keystore/release.jks
+          printf '%s' "$KEYSTORE_BASE64" | tr -d '[:space:]' | base64 --decode > keystore/release.jks
           {
             printf 'storeFile=keystore/release.jks\n'
             printf 'storePassword=%s\n' "$KEYSTORE_PASSWORD"
