@@ -9,6 +9,10 @@ Vendor glyphs in `app/src/main/res/drawable/ic_vendor_*.xml` are monochrome trac
 
 - [Google Sans](https://github.com/googlefonts/googlesans) (SIL OFL 1.1, Copyright 2025 The Google Sans Project Authors): `app/src/main/res/font/google_sans.ttf`, license text in `licenses/GoogleSans-OFL.txt`
 
+# Screenshots
+
+- `docs/screenshots/assistant.png` shows a photograph by Cassidy James on Unsplash (CC0-1.0) behind the assistant sheet
+
 # Libraries
 
 - [dyn4j](https://github.com/dyn4j/dyn4j) (BSD-3-Clause, Copyright (c) William Bittle): 2D physics for the avatar knockout and the about screen playground
