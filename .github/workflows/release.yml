@@ -1,0 +1,109 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Read the app version
+        run: |
+          version=$(sed -n 's/^ *versionName = "\(.*\)"$/\1/p' app/build.gradle.kts)
+          test -n "$version"
+          echo "APP_VERSION=$version" >> "$GITHUB_ENV"
+
+      - name: Check the tag against the app version
+        if: github.ref_type == 'tag'
+        run: |
+          if [ "$GITHUB_REF_NAME" != "v$APP_VERSION" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match versionName $APP_VERSION"
+            exit 1
+          fi
+
+      - name: Restore the signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          umask 077
+          mkdir keystore
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > keystore/release.jks
+          {
+            printf 'storeFile=keystore/release.jks\n'
+            printf 'storePassword=%s\n' "$KEYSTORE_PASSWORD"
+            printf 'keyAlias=%s\n' "$KEY_ALIAS"
+            printf 'keyPassword=%s\n' "$KEY_PASSWORD"
+          } > keystore/keystore.properties
+
+      - name: Test and build
+        run: ./gradlew --no-daemon testDebugUnitTest assembleRelease
+
+      - name: Remove the signing key
+        if: always()
+        run: rm -rf keystore
+
+      - name: Check the signature
+        run: |
+          apk="md3-agent-$APP_VERSION.apk"
+          cp app/build/outputs/apk/release/app-release.apk "$apk"
+          apksigner=$(ls -d "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -n 1)
+          digest=$("$apksigner" verify --print-certs "$apk" | awk '/certificate SHA-256 digest:/ && !found {found = $NF} END {print found}')
+          if [ -z "$digest" ] || ! grep -qi "$digest" README.md; then
+            echo "::error::signing certificate '$digest' is not the one listed in README.md"
+            exit 1
+          fi
+          echo "APK=$apk" >> "$GITHUB_ENV"
+          echo "CERT_SHA256=$digest" >> "$GITHUB_ENV"
+
+      - name: Keep the apk of a test run
+        if: github.ref_type != 'tag'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: ${{ env.APK }}
+          path: ${{ env.APK }}
+          retention-days: 3
+
+      - name: Attest the build provenance
+        if: github.ref_type == 'tag'
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
+        with:
+          subject-path: ${{ env.APK }}
+
+      - name: Publish the release
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            printf 'Signing certificate SHA-256: %s\n\n' "$CERT_SHA256"
+            printf 'Check that this file was built from this tag by the release workflow:\n\n'
+            printf '    gh attestation verify %s --repo %s\n' "$APK" "$GITHUB_REPOSITORY"
+          } > notes.md
+          gh release create "$GITHUB_REF_NAME" "$APK" --title "$GITHUB_REF_NAME" --notes-file notes.md --verify-tag
