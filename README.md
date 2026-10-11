@@ -3,8 +3,8 @@
 </h1>
 
 <p align="center">
-  A chat client for AI models that can actually use your Android phone.<br>
-  Bring your own API key. Built with Material 3 Expressive. No account, no analytics.
+  Open-source replacement for Gemini on Android. Summon it by gesture, bring your own API key,<br>
+  and it reads the screen and operates your phone. Material 3 Expressive, no account, no analytics.
 </p>
 
 <p align="center">
