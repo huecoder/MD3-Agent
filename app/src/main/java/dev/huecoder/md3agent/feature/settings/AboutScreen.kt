@@ -98,12 +98,6 @@ fun AboutScreen(onBack: () -> Unit, onSecret: () -> Unit) {
                     trailingContent = { Icon(MaterialSymbols.Rounded.Open_in_new, contentDescription = null) },
                 ) { Text(stringResource(link.title), style = MaterialTheme.typography.titleMediumEmphasized) }
             }
-            Text(
-                stringResource(R.string.about_private_note),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 12.dp, end = 12.dp, top = 12.dp),
-            )
         }
     }
 }

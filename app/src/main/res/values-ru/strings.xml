@@ -548,7 +548,6 @@
     <string name="about_license_summary">GNU GPL v3.0</string>
     <string name="about_third_party">Сторонние ресурсы</string>
     <string name="about_third_party_summary">Логотипы вендоров из Simple Icons и Lobe Icons</string>
-    <string name="about_private_note">Репозиторий откроется публично с релизом 1.0. До этого ссылки и проверка обновлений могут не работать.</string>
     <string name="chat_look_title">Иконка и цвет</string>
     <string name="chat_look_icon">Иконка</string>
     <string name="chat_look_color">Цвет</string>
