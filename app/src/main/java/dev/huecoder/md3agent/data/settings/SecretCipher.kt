@@ -9,25 +9,32 @@ import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
-class SecretCipher(private val keyAlias: String = DEFAULT_KEY_ALIAS) {
+interface TextCipher {
+    fun encrypt(plainText: String): String
 
-    fun encrypt(plainText: String): String {
+    fun decrypt(encoded: String): String
+}
+
+class SecretCipher(private val keyAlias: String = DEFAULT_KEY_ALIAS) : TextCipher {
+    private val key: SecretKey by lazy(::loadOrCreateKey)
+
+    override fun encrypt(plainText: String): String {
         val cipher = Cipher.getInstance(TRANSFORMATION)
-        cipher.init(Cipher.ENCRYPT_MODE, secretKey())
+        cipher.init(Cipher.ENCRYPT_MODE, key)
         val payload = cipher.iv + cipher.doFinal(plainText.toByteArray(Charsets.UTF_8))
         return Base64.encodeToString(payload, Base64.NO_WRAP)
     }
 
-    fun decrypt(encoded: String): String {
+    override fun decrypt(encoded: String): String {
         val payload = Base64.decode(encoded, Base64.NO_WRAP)
         val iv = payload.copyOfRange(0, IV_SIZE_BYTES)
         val cipherText = payload.copyOfRange(IV_SIZE_BYTES, payload.size)
         val cipher = Cipher.getInstance(TRANSFORMATION)
-        cipher.init(Cipher.DECRYPT_MODE, secretKey(), GCMParameterSpec(TAG_SIZE_BITS, iv))
+        cipher.init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(TAG_SIZE_BITS, iv))
         return String(cipher.doFinal(cipherText), Charsets.UTF_8)
     }
 
-    private fun secretKey(): SecretKey {
+    private fun loadOrCreateKey(): SecretKey {
         val keyStore = KeyStore.getInstance(KEYSTORE).apply { load(null) }
         (keyStore.getKey(keyAlias, null) as? SecretKey)?.let { return it }
 

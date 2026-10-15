@@ -8,10 +8,15 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dev.huecoder.md3agent.llm.models.ReasoningEffort
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.shareIn
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.builtins.ListSerializer
@@ -21,16 +26,31 @@ import java.util.UUID
 
 private val Context.settingsStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
-class SettingsRepository(context: Context, private val cipher: SecretCipher) {
-    private val store = context.settingsStore
+class SettingsRepository(
+    private val store: DataStore<Preferences>,
+    private val cipher: TextCipher,
+    scope: CoroutineScope,
+) {
+    constructor(context: Context, cipher: TextCipher, scope: CoroutineScope) : this(context.settingsStore, cipher, scope)
+
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
     private val providerListSerializer = ListSerializer(ProviderProfile.serializer())
+    private val providersCache = LastDecoded<List<ProviderProfile>>()
+    private val toolsCache = LastDecoded<ToolSettings>()
+    private val voiceCache = LastDecoded<VoiceSettings>()
 
-    val settings: Flow<AppSettings> = store.data.map(::toAppSettings).distinctUntilChanged()
+    val settings: Flow<AppSettings> = store.data
+        .map(::toAppSettings)
+        .distinctUntilChanged()
+        .shareIn(scope, SharingStarted.Eagerly, replay = 1)
 
     val networkSettings: Flow<NetworkSettings> = settings.map { it.network }.distinctUntilChanged()
 
-    suspend fun current(): AppSettings = settings.first()
+    val phonePanel: Flow<PhonePanelState> = store.data
+        .map { decodeOrDefault(it[Keys.PHONE_PANEL], PhonePanelState.serializer(), PhonePanelState()) }
+        .distinctUntilChanged()
+
+    suspend fun current(): AppSettings = withContext(Dispatchers.Default) { toAppSettings(store.data.first()) }
 
     suspend fun upsertProvider(provider: ProviderProfile) = editProviders { providers ->
         val index = providers.indexOfFirst { it.id == provider.id }
@@ -84,6 +104,11 @@ class SettingsRepository(context: Context, private val cipher: SecretCipher) {
         prefs.remove(Keys.LEGACY_SPEECH)
     }
 
+    suspend fun updatePhonePanel(transform: (PhonePanelState) -> PhonePanelState) = store.edit { prefs ->
+        val current = decodeOrDefault(prefs[Keys.PHONE_PANEL], PhonePanelState.serializer(), PhonePanelState())
+        prefs[Keys.PHONE_PANEL] = json.encodeToString(PhonePanelState.serializer(), transform(current))
+    }
+
     fun newProviderId(): String = UUID.randomUUID().toString()
 
     private suspend fun editProviders(transform: (List<ProviderProfile>) -> List<ProviderProfile>) {
@@ -117,7 +142,7 @@ class SettingsRepository(context: Context, private val cipher: SecretCipher) {
     private fun decodeProviders(encrypted: String?): List<ProviderProfile> {
         if (encrypted == null) return emptyList()
         return try {
-            json.decodeFromString(providerListSerializer, cipher.decrypt(encrypted))
+            providersCache.of(encrypted) { json.decodeFromString(providerListSerializer, cipher.decrypt(it)) }
         } catch (e: GeneralSecurityException) {
             Log.e(TAG, "Provider profiles could not be decrypted, starting empty", e)
             emptyList()
@@ -141,13 +166,12 @@ class SettingsRepository(context: Context, private val cipher: SecretCipher) {
                 activeProviderId,
             )
         }
-        val plain = try {
-            cipher.decrypt(encrypted)
+        return try {
+            voiceCache.of(encrypted) { decodeOrDefault(cipher.decrypt(it), VoiceSettings.serializer(), VoiceSettings()) }
         } catch (e: GeneralSecurityException) {
             Log.e(TAG, "Voice settings could not be decrypted, using defaults", e)
-            return VoiceSettings()
+            VoiceSettings()
         }
-        return decodeOrDefault(plain, VoiceSettings.serializer(), VoiceSettings())
     }
 
     private fun decodeAgents(prefs: Preferences): AgentSettings {
@@ -159,13 +183,12 @@ class SettingsRepository(context: Context, private val cipher: SecretCipher) {
 
     private fun decodeTools(encrypted: String?): ToolSettings {
         if (encrypted == null) return ToolSettings()
-        val plain = try {
-            cipher.decrypt(encrypted)
+        return try {
+            toolsCache.of(encrypted) { decodeOrDefault(cipher.decrypt(it), ToolSettings.serializer(), ToolSettings()).migrated() }
         } catch (e: GeneralSecurityException) {
             Log.e(TAG, "Tool settings could not be decrypted, using defaults", e)
-            return ToolSettings()
+            ToolSettings()
         }
-        return decodeOrDefault(plain, ToolSettings.serializer(), ToolSettings()).migrated()
     }
 
     private fun <T> decodeOrDefault(raw: String?, serializer: KSerializer<T>, default: T): T {
@@ -191,6 +214,17 @@ class SettingsRepository(context: Context, private val cipher: SecretCipher) {
         val INTERFACE = stringPreferencesKey("interface")
         val LEGACY_SPEECH = stringPreferencesKey("speech")
         val VOICE_ENCRYPTED = stringPreferencesKey("voice_encrypted")
+        val PHONE_PANEL = stringPreferencesKey("phone_panel")
+    }
+
+    private class LastDecoded<T> {
+        private var last: Pair<String, T>? = null
+
+        @Synchronized
+        fun of(encrypted: String, decode: (String) -> T): T {
+            last?.takeIf { it.first == encrypted }?.let { return it.second }
+            return decode(encrypted).also { last = encrypted to it }
+        }
     }
 
     private companion object {
