@@ -117,6 +117,33 @@ class ElevenLabsTest {
     }
 
     @Test
+    fun `a library of hundreds of heavy entries is read in full`() = runTest {
+        val padding = "x".repeat(4_000)
+        val body = (1..700).joinToString(prefix = """{"voices":[""", postfix = "]}", separator = ",") { index ->
+            """{"voice_id":"v$index","name":"Voice $index","samples":null,"fine_tuning":{"state":{"a":"b"}},"description":"$padding"}"""
+        }
+        assertTrue("the body must be larger than the capped text reader allows", body.length > 2 * 1024 * 1024)
+        server.enqueue(MockResponse.Builder().body(body).build())
+
+        val voices = VoiceListClient(httpClients).list(profile())
+
+        assertEquals(700, voices.size)
+        assertTrue(voices.any { it.id == "v700" })
+    }
+
+    @Test
+    fun `a body without a voices array is reported as an unknown format`() = runTest {
+        server.enqueue(MockResponse.Builder().body("""{"detail":"nothing here"}""").build())
+
+        try {
+            VoiceListClient(httpClients).list(profile())
+            fail("expected a failure")
+        } catch (e: ProviderException.MalformedResponse) {
+            assertTrue(e.message.orEmpty().contains("voice list"))
+        }
+    }
+
+    @Test
     fun `a rejected key surfaces as an http error`() = runTest {
         server.enqueue(MockResponse.Builder().code(401).body("""{"detail":{"status":"invalid_api_key"}}""").build())
 
