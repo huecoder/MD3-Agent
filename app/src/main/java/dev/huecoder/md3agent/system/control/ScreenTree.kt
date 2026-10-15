@@ -2,83 +2,111 @@ package dev.huecoder.md3agent.system.control
 
 import android.graphics.Rect
 import android.view.accessibility.AccessibilityNodeInfo
-
-data class ScreenElement(
-    val number: Int,
-    val role: String,
-    val label: String,
-    val bounds: Rect,
-    val clickable: Boolean,
-    val editable: Boolean,
-    val scrollable: Boolean,
-    val checked: Boolean?,
-    val focused: Boolean,
-)
+import android.view.accessibility.AccessibilityNodeInfo.AccessibilityAction
 
 class ScreenSnapshot(
     val packageName: String?,
     val elements: List<ScreenElement>,
+    val hidden: Int,
     val screenWidth: Int,
     val screenHeight: Int,
+    val cutouts: List<ScreenBox>,
+    val probe: ScreenProbe,
     internal val nodes: Map<Int, AccessibilityNodeInfo>,
 ) {
-    fun describe(): String = buildString {
-        appendLine("App: ${packageName ?: "unknown"}, screen ${screenWidth}x$screenHeight")
-        if (elements.isEmpty()) {
-            append("No readable elements, the app may hide its content. Use coordinates or global actions.")
-            return@buildString
-        }
-        elements.forEach { element ->
-            append('[').append(element.number).append("] ").append(element.role)
-            if (element.label.isNotEmpty()) append(" \"").append(element.label).append('"')
-            val traits = listOfNotNull(
-                "tap".takeIf { element.clickable },
-                "input".takeIf { element.editable },
-                "scroll".takeIf { element.scrollable },
-                element.checked?.let { if (it) "checked" else "unchecked" },
-                "focused".takeIf { element.focused },
-            )
-            if (traits.isNotEmpty()) append(" (").append(traits.joinToString()).append(')')
-            append(" @").append(element.bounds.centerX()).append(',').append(element.bounds.centerY())
-            appendLine()
-        }
-    }.trimEnd()
+    fun describe(detailed: Boolean = false, find: ElementSelector? = null): String =
+        ScreenText.describe(packageName, screenWidth, screenHeight, cutouts, elements, hidden, detailed, find)
 }
 
 object ScreenTree {
     private const val MAX_ELEMENTS = 160
     private const val MAX_LABEL_CHARS = 120
+    private const val FINGERPRINT_SEED = 1125899906842597L
+    private const val FINGERPRINT_PRIME = 31L
     private val WHITESPACE = Regex("""\s+""")
 
-    fun capture(root: AccessibilityNodeInfo?, screenWidth: Int, screenHeight: Int): ScreenSnapshot {
+    fun capture(root: AccessibilityNodeInfo?, screenWidth: Int, screenHeight: Int, cutouts: List<ScreenBox> = emptyList()): ScreenSnapshot {
         val elements = mutableListOf<ScreenElement>()
         val nodes = mutableMapOf<Int, AccessibilityNodeInfo>()
-        val screen = Rect(0, 0, screenWidth, screenHeight)
-        fun visit(node: AccessibilityNodeInfo) {
-            if (elements.size >= MAX_ELEMENTS || !node.isVisibleToUser) return
-            val bounds = Rect().also(node::getBoundsInScreen)
-            if (!bounds.intersect(screen) || bounds.isEmpty) return
+        val labels = mutableListOf<String>()
+        var hidden = 0
+        var fingerprint = FINGERPRINT_SEED
+        walk(root, Rect(0, 0, screenWidth, screenHeight)) { node, full, clipped ->
             val label = labelOf(node)
+            if (label.isNotEmpty()) labels += label
+            fingerprint = mix(fingerprint, label.hashCode(), clipped.left, clipped.top, clipped.right, clipped.bottom, flagsOf(node))
             val interactive = node.isClickable || node.isLongClickable || node.isEditable || node.isScrollable || node.isCheckable
-            if (label.isNotEmpty() || interactive) {
-                val number = elements.size + 1
-                elements += ScreenElement(
-                    number = number,
-                    role = roleOf(node),
-                    label = label,
-                    bounds = bounds,
-                    clickable = node.isClickable || node.isLongClickable,
-                    editable = node.isEditable,
-                    scrollable = node.isScrollable,
-                    checked = if (node.isCheckable) node.isChecked else null,
-                    focused = node.isFocused,
-                )
-                nodes[number] = node
+            if (label.isEmpty() && !interactive) return@walk
+            if (elements.size >= MAX_ELEMENTS) {
+                hidden++
+                return@walk
             }
-            for (index in 0 until node.childCount) node.getChild(index)?.let(::visit)
+            val number = elements.size + 1
+            elements += ScreenElement(
+                number = number,
+                role = roleOf(node),
+                label = label,
+                bounds = ScreenBox.of(clipped),
+                clickable = node.isClickable || node.isLongClickable,
+                editable = node.isEditable,
+                scrollable = node.isScrollable,
+                checked = if (node.isCheckable) node.isChecked else null,
+                focused = node.isFocused,
+                viewId = node.viewIdResourceName?.substringAfter(":id/"),
+                className = node.className?.toString().orEmpty(),
+                partial = clipped != full,
+                scrollMoves = if (node.isScrollable) scrollMovesOf(node) else "",
+            )
+            nodes[number] = node
         }
-        root?.let(::visit)
-        return ScreenSnapshot(root?.packageName?.toString(), elements, screenWidth, screenHeight, nodes)
+        val packageName = root?.packageName?.toString()
+        return ScreenSnapshot(packageName, elements, hidden, screenWidth, screenHeight, cutouts, ScreenProbe(packageName, fingerprint, labels), nodes)
+    }
+
+    fun probe(root: AccessibilityNodeInfo?, screenWidth: Int, screenHeight: Int): ScreenProbe {
+        val labels = mutableListOf<String>()
+        var fingerprint = FINGERPRINT_SEED
+        walk(root, Rect(0, 0, screenWidth, screenHeight)) { node, _, clipped ->
+            val label = labelOf(node)
+            if (label.isNotEmpty()) labels += label
+            fingerprint = mix(fingerprint, label.hashCode(), clipped.left, clipped.top, clipped.right, clipped.bottom, flagsOf(node))
+        }
+        return ScreenProbe(root?.packageName?.toString(), fingerprint, labels)
+    }
+
+    fun findAnywhere(root: AccessibilityNodeInfo?, text: String): List<AccessibilityNodeInfo> =
+        root?.findAccessibilityNodeInfosByText(text).orEmpty()
+
+    private fun walk(root: AccessibilityNodeInfo?, screen: Rect, visit: (AccessibilityNodeInfo, Rect, Rect) -> Unit) {
+        fun go(node: AccessibilityNodeInfo) {
+            if (!node.isVisibleToUser) return
+            val full = Rect().also(node::getBoundsInScreen)
+            val clipped = Rect(full)
+            if (!clipped.intersect(screen) || clipped.isEmpty) return
+            visit(node, full, clipped)
+            for (index in 0 until node.childCount) node.getChild(index)?.let(::go)
+        }
+        root?.let(::go)
+    }
+
+    private fun mix(seed: Long, vararg parts: Int): Long = parts.fold(seed) { acc, part -> acc * FINGERPRINT_PRIME + part }
+
+    private fun flagsOf(node: AccessibilityNodeInfo): Int =
+        (if (node.isChecked) 1 else 0) or (if (node.isFocused) 2 else 0) or (if (node.isSelected) 4 else 0) or (if (node.isEnabled) 8 else 0)
+
+    private fun scrollMovesOf(node: AccessibilityNodeInfo): String {
+        val ids = node.actionList.map { it.id }.toSet()
+        val moves = buildString {
+            if (AccessibilityAction.ACTION_SCROLL_DOWN.id in ids) append('↓')
+            if (AccessibilityAction.ACTION_SCROLL_UP.id in ids) append('↑')
+            if (AccessibilityAction.ACTION_SCROLL_RIGHT.id in ids) append('→')
+            if (AccessibilityAction.ACTION_SCROLL_LEFT.id in ids) append('←')
+        }
+        if (moves.isNotEmpty()) return moves
+        return buildString {
+            if (AccessibilityNodeInfo.ACTION_SCROLL_FORWARD in ids) append('↓')
+            if (AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD in ids) append('↑')
+        }
     }
 
     private fun labelOf(node: AccessibilityNodeInfo): String {
@@ -86,7 +114,7 @@ object ScreenTree {
             .map { it.toString().trim() }
             .filter { it.isNotEmpty() }
             .distinct()
-        return parts.joinToString(" · ").replace(WHITESPACE, " ").take(MAX_LABEL_CHARS)
+        return parts.joinToString(ScreenElement.LABEL_SEPARATOR).replace(WHITESPACE, " ").take(MAX_LABEL_CHARS)
     }
 
     private fun roleOf(node: AccessibilityNodeInfo): String {

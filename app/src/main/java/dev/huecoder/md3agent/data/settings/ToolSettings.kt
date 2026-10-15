@@ -16,13 +16,17 @@ data class ToolSettings(
     val access: AccessSettings = AccessSettings(),
     val mcpServers: List<McpServer> = emptyList(),
     val memory: MemorySettings = MemorySettings(),
+    val phoneUse: PhoneUseSettings = PhoneUseSettings(),
 ) {
     fun permission(toolName: String, default: ToolPermission): ToolPermission = permissions[toolName] ?: default
 
     fun withPermission(toolName: String, permission: ToolPermission) = copy(permissions = permissions + (toolName to permission))
 
-    fun migrated(): ToolSettings =
-        if (legacyDisabled.isEmpty()) this else copy(legacyDisabled = emptySet(), permissions = legacyDisabled.associateWith { ToolPermission.OFF } + permissions)
+    fun migrated(): ToolSettings {
+        val withPermissions =
+            if (legacyDisabled.isEmpty()) this else copy(legacyDisabled = emptySet(), permissions = legacyDisabled.associateWith { ToolPermission.OFF } + permissions)
+        return withPermissions.copy(phoneUse = withPermissions.phoneUse.withCurrentPanelDefaults())
+    }
 }
 
 @Serializable
@@ -127,5 +131,58 @@ data class MemorySettings(
         const val GEMINI_MODEL = "gemini-embedding-2"
         const val GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta"
         const val GEMINI_KEY_URL = "https://aistudio.google.com/apikey"
+    }
+}
+
+@Serializable
+enum class TouchGuard { BLOCK, OBSERVE }
+
+@Serializable
+enum class TapSound { OFF, SOFT_A, SOFT_B, MOUSE }
+
+@Serializable
+enum class AgentPlacement { BESIDE_CURSOR, ON_CURSOR, HIDDEN }
+
+@Serializable
+enum class CursorShape { BIBATA_MODERN, BIBATA_ORIGINAL, ROUNDED }
+
+@Serializable
+data class PhoneUseSettings(
+    val overlay: Boolean = true,
+    val touchGuard: TouchGuard = TouchGuard.BLOCK,
+    val keepAwake: Boolean = true,
+    val dimScreen: Boolean = false,
+    val panelOpacity: Float = DEFAULT_PANEL_OPACITY,
+    val panelWidth: Float = DEFAULT_PANEL_WIDTH,
+    val panelHeight: Float = DEFAULT_PANEL_HEIGHT,
+    val cursorSize: Float = DEFAULT_CURSOR_SIZE,
+    val cursorShape: CursorShape = CursorShape.BIBATA_MODERN,
+    val cursorCaption: Boolean = true,
+    val cursorTrail: Boolean = false,
+    val agentPlacement: AgentPlacement = AgentPlacement.BESIDE_CURSOR,
+    val tapSound: TapSound = TapSound.SOFT_A,
+    val soundVolume: Float = DEFAULT_SOUND_VOLUME,
+) {
+    fun withCurrentPanelDefaults(): PhoneUseSettings =
+        if (panelOpacity == FIRST_BUILD_PANEL_OPACITY && panelWidth == FIRST_BUILD_PANEL_WIDTH) {
+            copy(panelOpacity = DEFAULT_PANEL_OPACITY, panelWidth = DEFAULT_PANEL_WIDTH)
+        } else {
+            this
+        }
+
+    companion object {
+        const val FIRST_BUILD_PANEL_OPACITY = 0.82f
+        const val FIRST_BUILD_PANEL_WIDTH = 0.94f
+        const val MIN_PANEL_OPACITY = 0.3f
+        const val DEFAULT_PANEL_OPACITY = 1f
+        const val MIN_PANEL_WIDTH = 0.6f
+        const val DEFAULT_PANEL_WIDTH = 0.75f
+        const val MIN_PANEL_HEIGHT = 0.15f
+        const val MAX_PANEL_HEIGHT = 0.5f
+        const val DEFAULT_PANEL_HEIGHT = 0.3f
+        const val MIN_CURSOR_SIZE = 0.7f
+        const val MAX_CURSOR_SIZE = 1.8f
+        const val DEFAULT_CURSOR_SIZE = 1f
+        const val DEFAULT_SOUND_VOLUME = 0.6f
     }
 }

@@ -44,8 +44,10 @@ import dev.huecoder.md3agent.prompt.DeviceInfoProvider
 import dev.huecoder.md3agent.prompt.SystemPromptRenderer
 import dev.huecoder.md3agent.tools.ReadScreenTool
 import dev.huecoder.md3agent.system.control.PhoneControl
+import dev.huecoder.md3agent.system.control.PhoneUseSounds
 import dev.huecoder.md3agent.tools.phone.PhoneActionTool
 import dev.huecoder.md3agent.tools.phone.PhoneScreenTool
+import dev.huecoder.md3agent.tools.phone.PhoneScreenshotTool
 import dev.huecoder.md3agent.tools.ShowChartTool
 import dev.huecoder.md3agent.tools.ShowDiagramTool
 import dev.huecoder.md3agent.tools.ShowUiTool
@@ -92,7 +94,7 @@ class AppContainer(context: Context) {
     val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     val visibility = AppVisibility()
 
-    val settings = SettingsRepository(context, SecretCipher())
+    val settings = SettingsRepository(context, SecretCipher(), applicationScope)
     val hapticEngine = HapticEngine(appContext)
     val httpClients = HttpClientProvider(settings.networkSettings, applicationScope)
 
@@ -118,6 +120,7 @@ class AppContainer(context: Context) {
 
     val python = PythonRuntime(appContext)
     val phoneControl = PhoneControl(appContext)
+    val phoneSounds = PhoneUseSounds(appContext)
 
     val prompts = UserPrompts()
     private val clockApp = ClockApp(appContext) { visibility.isVisible.value }
@@ -132,6 +135,7 @@ class AppContainer(context: Context) {
             WeatherTool(httpClients),
             ReadScreenTool(screenContext),
             PhoneScreenTool(phoneControl),
+            PhoneScreenshotTool(phoneControl, attachments),
             PhoneActionTool(phoneControl),
             ShowUiTool(),
             ShowChartTool(),
@@ -189,6 +193,19 @@ class AppContainer(context: Context) {
             settings.settings.map { it.tools.mcpServers }.distinctUntilChanged().collect(mcp::sync)
         }
         applicationScope.launch {
+            settings.settings.map { it.tools.phoneUse }.distinctUntilChanged().collect { phoneControl.session.settings.value = it }
+        }
+        applicationScope.launch {
+            conversations.drafts.collect { drafts ->
+                drafts.forEach { (chatId, draft) ->
+                    val awaiting = draft.toolCalls.firstOrNull { it.id == draft.awaitingCallId }
+                    if (awaiting != null && awaiting.name in PHONE_TOOLS) phoneControl.session.begin(chatId)
+                }
+                val active = phoneControl.session.chatId.value
+                if (active != null && active !in drafts) phoneControl.session.end()
+            }
+        }
+        applicationScope.launch {
             conversations.activity.map { it.isNotEmpty() }.distinctUntilChanged().collect { busy ->
                 if (busy) withContext(Dispatchers.Main) { BackgroundWorkService.start(appContext) }
             }
@@ -196,6 +213,7 @@ class AppContainer(context: Context) {
     }
 
     private companion object {
+        val PHONE_TOOLS = setOf(PhoneScreenTool.NAME, PhoneScreenshotTool.NAME, PhoneActionTool.NAME)
         const val FILE_STAGING_DIR = "file-staging"
         const val UPLOADS_DIR = "uploads"
         const val MODEL_CATALOG_DIR = "model-catalog"

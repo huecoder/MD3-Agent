@@ -31,6 +31,7 @@ import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Neurology
 import com.composables.icons.materialsymbols.rounded.Notifications_active
 import com.composables.icons.materialsymbols.rounded.Extension
+import com.composables.icons.materialsymbols.rounded.Touch_app
 import com.composables.icons.materialsymbols.rounded.Info
 import com.composables.icons.materialsymbols.rounded.Palette
 import com.composables.icons.materialsymbols.rounded.Chevron_right
@@ -69,6 +70,7 @@ data class SettingsDestinations(
     val reminders: () -> Unit,
     val voice: () -> Unit,
     val access: () -> Unit,
+    val phoneUse: () -> Unit,
     val mcp: () -> Unit,
 )
 
@@ -131,6 +133,12 @@ fun SettingsScreen(destinations: SettingsDestinations) {
                 title = stringResource(R.string.settings_access),
                 summary = accessSummary(current, isAssistant),
                 onClick = destinations.access,
+            ),
+            SettingsEntry(
+                icon = MaterialSymbols.Rounded.Touch_app,
+                title = stringResource(R.string.settings_phone_use),
+                summary = stringResource(R.string.settings_phone_use_summary),
+                onClick = destinations.phoneUse,
             ),
             SettingsEntry(
                 icon = MaterialSymbols.Rounded.Extension,

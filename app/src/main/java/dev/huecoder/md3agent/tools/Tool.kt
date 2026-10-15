@@ -76,9 +76,10 @@ fun objectSchema(required: List<String>, properties: JsonObjectBuilder.() -> Uni
     putJsonArray("required") { required.forEach { add(JsonPrimitive(it)) } }
 }
 
-fun JsonObjectBuilder.stringProperty(name: String, description: String) = putJsonObject(name) {
+fun JsonObjectBuilder.stringProperty(name: String, description: String, maxLength: Int? = null) = putJsonObject(name) {
     put("type", "string")
     put("description", description)
+    maxLength?.let { put("maxLength", it) }
 }
 
 fun JsonObjectBuilder.integerProperty(name: String, description: String, minimum: Int, maximum: Int) = putJsonObject(name) {

@@ -72,7 +72,7 @@ fun ToolSettingsScreen(onBack: () -> Unit) {
         val draft = current.trimmed()
         SaveAction(isDirty = draft != saved, canSave = current.search.isComplete() && current.fetch.isComplete()) {
             scope.launch {
-                container.settings.updateTools { persisted -> draft.copy(access = persisted.access) }
+                container.settings.updateTools { persisted -> draft.copy(access = persisted.access, phoneUse = persisted.phoneUse) }
                 saved = draft
                 onBack()
             }

@@ -60,6 +60,7 @@ import dev.huecoder.md3agent.tools.reminders.SetReminderTool
 import dev.huecoder.md3agent.tools.reminders.SetTimerTool
 import dev.huecoder.md3agent.tools.phone.PhoneActionTool
 import dev.huecoder.md3agent.tools.phone.PhoneScreenTool
+import dev.huecoder.md3agent.tools.phone.PhoneScreenshotTool
 import dev.huecoder.md3agent.tools.system.RunCommandTool
 import dev.huecoder.md3agent.tools.system.RunPythonTool
 import dev.huecoder.md3agent.tools.weather.WeatherTool
@@ -102,6 +103,7 @@ object ToolCatalog {
         ShowDiagramTool.NAME to known(ToolCategory.SCREEN, MaterialSymbols.Rounded.Account_tree, R.string.tools_show_diagram_title, R.string.tools_show_diagram_summary),
         ShowChartTool.NAME to known(ToolCategory.SCREEN, MaterialSymbols.Rounded.Bar_chart, R.string.tools_show_chart_title, R.string.tools_show_chart_summary),
         PhoneScreenTool.NAME to known(ToolCategory.PHONE, MaterialSymbols.Rounded.Phone_android, R.string.tools_phone_screen_title, R.string.tools_phone_screen_summary),
+        PhoneScreenshotTool.NAME to known(ToolCategory.PHONE, MaterialSymbols.Rounded.Screenshot_monitor, R.string.tools_phone_screenshot_title, R.string.tools_phone_screenshot_summary),
         PhoneActionTool.NAME to known(ToolCategory.PHONE, MaterialSymbols.Rounded.Touch_app, R.string.tools_phone_action_title, R.string.tools_phone_action_summary),
         RunCommandTool.NAME to known(ToolCategory.SYSTEM, MaterialSymbols.Rounded.Terminal, R.string.tools_run_command_title, R.string.tools_run_command_summary),
         RunPythonTool.NAME to known(ToolCategory.SYSTEM, MaterialSymbols.Rounded.Code, R.string.tools_run_python_title, R.string.tools_run_python_summary),

@@ -33,8 +33,10 @@ import dev.huecoder.md3agent.tools.optionalInt
 import dev.huecoder.md3agent.tools.optionalString
 import dev.huecoder.md3agent.tools.ShowChartTool
 import dev.huecoder.md3agent.tools.ShowDiagramTool
+import dev.huecoder.md3agent.system.control.PhoneSay
 import dev.huecoder.md3agent.tools.phone.PhoneActionTool
 import dev.huecoder.md3agent.tools.phone.PhoneScreenTool
+import dev.huecoder.md3agent.tools.phone.PhoneScreenshotTool
 import dev.huecoder.md3agent.tools.system.RunCommandTool
 import dev.huecoder.md3agent.tools.system.RunPythonTool
 import dev.huecoder.md3agent.tools.weather.WeatherTool
@@ -197,6 +199,7 @@ private data class ToolLook(val icon: ImageVector, val title: UiText) {
                 WeatherTool.NAME -> UiText.Resource(R.string.chat_tool_weather, listOf(args.optionalString("location").orEmpty()))
                 ReadScreenTool.NAME -> UiText.Resource(if (running) R.string.chat_tool_reading_screen else R.string.chat_tool_screen)
                 PhoneScreenTool.NAME -> UiText.Resource(if (running) R.string.chat_tool_looking_phone else R.string.chat_tool_looked_phone)
+                PhoneScreenshotTool.NAME -> UiText.Resource(if (running) R.string.chat_tool_shooting_phone else R.string.chat_tool_shot_phone)
                 PhoneActionTool.NAME -> UiText.Resource(R.string.chat_tool_phone_action, listOf(phoneStep(args)))
                 RunCommandTool.NAME -> UiText.Resource(
                     if (running) R.string.chat_tool_running_command else R.string.chat_tool_command,
@@ -227,7 +230,7 @@ private data class ToolLook(val icon: ImageVector, val title: UiText) {
             return if (text.length > MAX_RESULT_CHARS) text.take(MAX_RESULT_CHARS) + "…" else text
         }
 
-        private fun phoneStep(args: JsonObject): String = listOfNotNull(
+        private fun phoneStep(args: JsonObject): String = PhoneSay.clean(args.optionalString("say")) ?: listOfNotNull(
             args.optionalString("action")?.replace('_', ' '),
             args.optionalString("app") ?: args.optionalString("key") ?: args.optionalString("direction"),
             args.optionalInt("element")?.let { "#$it" },

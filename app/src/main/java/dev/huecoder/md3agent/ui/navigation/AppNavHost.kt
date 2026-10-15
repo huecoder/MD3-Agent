@@ -23,6 +23,7 @@ import dev.huecoder.md3agent.feature.settings.AppearanceScreen
 import dev.huecoder.md3agent.feature.settings.ModelsScreen
 import dev.huecoder.md3agent.feature.settings.RemindersScreen
 import dev.huecoder.md3agent.feature.settings.DeviceAccessScreen
+import dev.huecoder.md3agent.feature.settings.PhoneUseSettingsScreen
 import dev.huecoder.md3agent.feature.settings.MemorySettingsScreen
 import dev.huecoder.md3agent.feature.settings.NetworkSettingsScreen
 import dev.huecoder.md3agent.feature.settings.ProviderEditorScreen
@@ -69,6 +70,7 @@ fun AppNavHost(chatToOpen: String?, onChatOpened: () -> Unit) {
                     reminders = { navController.navigate(RemindersRoute) },
                     voice = { navController.navigate(VoiceSettingsRoute) },
                     access = { navController.navigate(DeviceAccessRoute) },
+                    phoneUse = { navController.navigate(PhoneUseRoute) },
                     mcp = { navController.navigate(McpServersRoute) },
                 ),
             )
@@ -91,6 +93,7 @@ fun AppNavHost(chatToOpen: String?, onChatOpened: () -> Unit) {
         screen<ToolSettingsRoute>(navController) { ToolSettingsScreen(onBack = navController::popBackStack) }
         screen<RemindersRoute>(navController) { RemindersScreen(onBack = navController::popBackStack) }
         screen<DeviceAccessRoute>(navController) { DeviceAccessScreen(onBack = navController::popBackStack) }
+        screen<PhoneUseRoute>(navController) { PhoneUseSettingsScreen(onBack = navController::popBackStack) }
         screen<AppearanceRoute>(navController) { AppearanceScreen(onBack = navController::popBackStack) }
         screen<AboutRoute>(navController) {
             AboutScreen(onBack = navController::popBackStack, onSecret = { navController.navigate(PlaygroundRoute) })

@@ -9,6 +9,14 @@ Vendor glyphs in `app/src/main/res/drawable/ic_vendor_*.xml` are monochrome trac
 
 - [Google Sans](https://github.com/googlefonts/googlesans) (SIL OFL 1.1, Copyright 2025 The Google Sans Project Authors): `app/src/main/res/font/google_sans.ttf`, license text in `licenses/GoogleSans-OFL.txt`
 
+# Cursors
+
+- [Bibata Cursor](https://github.com/ful1e5/Bibata_Cursor) (GPL-3.0, Copyright (c) ful1e5): the Modern and Original arrow outlines (`left_ptr`) and their hotspot, drawn by the phone use overlay in `app/src/main/java/dev/huecoder/md3agent/feature/phoneuse/CursorShapes.kt`
+
+# Sounds
+
+- [Pixabay](https://pixabay.com) sound effects under the Pixabay Content License: soft app button tap sounds 2 and 5 by vadim_makes_sound, mouse click by universfield, in `app/src/main/res/raw/`
+
 # Screenshots
 
 - `docs/screenshots/assistant.png` shows a photograph by Cassidy James on Unsplash (CC0-1.0) behind the assistant sheet
