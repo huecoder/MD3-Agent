@@ -97,7 +97,15 @@ class FileLibrary(
 
     suspend fun delete(location: LibraryLocation, entries: Collection<LibraryEntry>) = withContext(Dispatchers.IO) {
         val folder = folderOf(location)
-        entries.filterNot { it.isReadOnly }.forEach { File(folder, it.name).deleteRecursively() }
+        val failures = entries.filterNot { it.isReadOnly }.mapNotNull { entry ->
+            try {
+                File(folder, entry.name).deleteTree()
+                null
+            } catch (e: IOException) {
+                e
+            }
+        }
+        failures.firstOrNull()?.let { throw it }
     }
 
     private suspend fun chatFiles(root: LibraryRoot): List<LibraryEntry> = sentFiles.all()

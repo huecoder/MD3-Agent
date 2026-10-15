@@ -9,6 +9,8 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import java.io.File
 import java.io.IOException
+import java.nio.file.AccessDeniedException
+import java.nio.file.Files
 
 class FileLibraryTest {
     @get:Rule
@@ -86,5 +88,62 @@ class FileLibraryTest {
         assertEquals(listOf("final.md"), library.list(location).map { it.name })
         library.delete(location, library.list(location))
         assertTrue(library.list(location).isEmpty())
+    }
+
+    @Test
+    fun `a folder with nested content and a read-only directory inside is deleted`() = runTest {
+        File(workspace, "project/src/deep/a.txt").withBytes("a")
+        File(workspace, "project/src/b.txt").withBytes("b")
+        File(workspace, "project/src").setWritable(false)
+        File(workspace, "project/src/deep").setWritable(false)
+        val location = LibraryLocation(LibraryRoot.AGENT)
+
+        library.delete(location, library.list(location))
+
+        assertTrue(library.list(location).isEmpty())
+    }
+
+    @Test
+    fun `deleting a folder removes a symlink inside it but never what it points to`() = runTest {
+        val outside = temp.newFolder("outside").also { File(it, "keep.txt").withBytes("keep") }
+        File(workspace, "linked").mkdirs()
+        Files.createSymbolicLink(File(workspace, "linked/shortcut").toPath(), outside.toPath())
+        val location = LibraryLocation(LibraryRoot.AGENT)
+
+        library.delete(location, library.list(location))
+
+        assertTrue(library.list(location).isEmpty())
+        assertEquals("keep", File(outside, "keep.txt").readText())
+    }
+
+    @Test
+    fun `deleting something that is already gone is not an error`() = runTest {
+        File(uploads, "gone.txt").withBytes("x")
+        val location = LibraryLocation(LibraryRoot.MINE)
+        val listed = library.list(location)
+        File(uploads, "gone.txt").delete()
+
+        library.delete(location, listed)
+
+        assertTrue(library.list(location).isEmpty())
+    }
+
+    @Test
+    fun `the rest of a folder is still deleted when one entry cannot be removed`() {
+        val tree = temp.newFolder("tree")
+        File(tree, "free.txt").withBytes("x")
+        File(tree, "stuck/inner.txt").withBytes("y")
+        File(tree, "other/more.txt").withBytes("z")
+        val stuckFile = File(tree, "stuck/inner.txt").toPath()
+
+        val failure = runCatching {
+            tree.deleteTree { path -> if (path == stuckFile) throw AccessDeniedException(path.toString()) else Files.deleteIfExists(path) }
+        }.exceptionOrNull()
+
+        assertTrue(failure is IOException)
+        assertTrue(!File(tree, "free.txt").exists())
+        assertTrue(!File(tree, "other").exists())
+        assertTrue(File(tree, "stuck/inner.txt").exists())
+        assertTrue(tree.exists())
     }
 }
