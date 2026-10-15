@@ -1,5 +1,10 @@
 package dev.huecoder.md3agent.feature.chat
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,8 +22,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -41,6 +49,7 @@ import dev.huecoder.md3agent.ui.components.AgentAvatar
 import dev.huecoder.md3agent.ui.components.ShimmerText
 import dev.huecoder.md3agent.ui.components.copyText
 import dev.huecoder.md3agent.ui.text.asString
+import dev.huecoder.md3agent.ui.theme.LayoutMotion
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -52,21 +61,37 @@ private val ActionIconSize = 18.dp
 
 @Composable
 fun UserMessage(message: ChatItem.User, modifier: Modifier = Modifier) {
+    var actionsShown by rememberSaveable(message.id) { mutableStateOf(false) }
+    val clipboard = LocalClipboard.current
+    val scope = rememberCoroutineScope()
     Column(modifier.fillMaxWidth(), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         if (message.attachments.isNotEmpty()) AttachmentStrip(message.attachments)
         if (message.content.isNotEmpty()) {
-            Surface(
-                shape = UserBubbleShape,
-                color = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier.widthIn(max = MaxUserBubbleWidth),
-            ) {
-                SelectionContainer {
-                    Text(
-                        message.content,
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp),
-                    )
+            Column(horizontalAlignment = Alignment.End) {
+                Surface(
+                    onClick = { actionsShown = !actionsShown },
+                    shape = UserBubbleShape,
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.widthIn(max = MaxUserBubbleWidth),
+                ) {
+                    SelectionContainer {
+                        Text(
+                            message.content,
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp),
+                        )
+                    }
+                }
+                AnimatedVisibility(
+                    visible = actionsShown,
+                    enter = expandVertically(LayoutMotion.settle()) + fadeIn(),
+                    exit = shrinkVertically(LayoutMotion.settle()) + fadeOut(),
+                ) {
+                    ActionIcon(MaterialSymbols.Rounded.Content_copy, stringResource(R.string.chat_copy)) {
+                        scope.launch { clipboard.copyText(message.content) }
+                        actionsShown = false
+                    }
                 }
             }
         }
