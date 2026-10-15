@@ -25,10 +25,15 @@ fun ReasoningBlock(reasoning: String, isStreaming: Boolean) {
             )
         },
     ) {
-        Text(
-            reasoning,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        ReasoningText(reasoning)
     }
+}
+
+@Composable
+fun ReasoningText(reasoning: String) {
+    Text(
+        reasoning,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
 }

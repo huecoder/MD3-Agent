@@ -20,6 +20,7 @@ import com.composables.icons.materialsymbols.rounded.Cancel
 import com.composables.icons.materialsymbols.rounded.Check
 import com.composables.icons.materialsymbols.rounded.Error
 import com.composables.icons.materialsymbols.rounded.Handyman
+import com.composables.icons.materialsymbols.rounded.Neurology
 import com.composables.icons.materialsymbols.rounded.Shield_question
 import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.tools.ReadScreenTool
@@ -50,13 +51,17 @@ import kotlinx.serialization.json.JsonPrimitive
 import java.net.URI
 
 @Composable
-fun ToolGroup(calls: List<ToolCallUi>, modifier: Modifier = Modifier) {
+fun WorkBlock(work: ReplyPart.Work, modifier: Modifier = Modifier) {
+    val steps = work.steps
+    val calls = work.calls
     val current = calls.firstOrNull { it.status == ToolStatus.AWAITING_APPROVAL } ?: calls.firstOrNull { it.status == ToolStatus.RUNNING }
-    val single = calls.singleOrNull()
+    val single = steps.singleOrNull()
+    val isThinking = (steps.last() as? WorkStep.Thought)?.isStreaming == true
     val title = when {
         current != null -> ToolLook.of(current).titleText()
-        single != null -> ToolLook.of(single).titleText()
-        else -> groupSummary(calls).asString()
+        isThinking -> stringResource(R.string.chat_reasoning_streaming)
+        single is WorkStep.Call -> ToolLook.of(single.call).titleText()
+        else -> workSummary(work).asString()
     }
     ExpandableBlock(
         title = title,
@@ -64,16 +69,35 @@ fun ToolGroup(calls: List<ToolCallUi>, modifier: Modifier = Modifier) {
         leading = {
             when {
                 current != null -> StatusMark(current.status)
+                isThinking -> StepIcon(MaterialSymbols.Rounded.Neurology)
                 calls.any { it.status == ToolStatus.ERROR } -> StatusMark(ToolStatus.ERROR)
-                else -> StepIcon(single?.let { ToolLook.of(it).icon } ?: MaterialSymbols.Rounded.Handyman)
+                single is WorkStep.Call -> StepIcon(ToolLook.of(single.call).icon)
+                steps.any { it is WorkStep.Thought } -> StepIcon(MaterialSymbols.Rounded.Neurology)
+                else -> StepIcon(MaterialSymbols.Rounded.Handyman)
             }
         },
     ) {
         if (single != null) {
-            ToolDetails(single)
+            StepDetails(single)
         } else {
-            Column { calls.forEach { call -> key(call.id) { ToolStep(call) } } }
+            Column { steps.forEachIndexed { index, step -> key(index) { StepRow(step) } } }
         }
+    }
+}
+
+@Composable
+private fun StepRow(step: WorkStep) {
+    when (step) {
+        is WorkStep.Thought -> ReasoningBlock(step.text, step.isStreaming)
+        is WorkStep.Call -> ToolStep(step.call)
+    }
+}
+
+@Composable
+private fun StepDetails(step: WorkStep) {
+    when (step) {
+        is WorkStep.Thought -> ReasoningText(step.text)
+        is WorkStep.Call -> ToolDetails(step.call)
     }
 }
 
@@ -104,9 +128,12 @@ private fun ToolDetails(call: ToolCallUi) {
     }
 }
 
-private fun groupSummary(calls: List<ToolCallUi>): UiText {
+private fun workSummary(work: ReplyPart.Work): UiText {
+    val calls = work.calls
+    if (calls.isEmpty()) return UiText.Resource(R.string.chat_reasoning)
+    val actions = UiText.Plural(R.plurals.chat_tool_group_actions, calls.size, listOf(calls.size))
+    val base = if (work.steps.any { it is WorkStep.Thought }) UiText.Resource(R.string.chat_work_with_reasoning, listOf(actions)) else actions
     val failed = calls.count { it.status == ToolStatus.ERROR }
-    val base = UiText.Plural(R.plurals.chat_tool_group_actions, calls.size, listOf(calls.size))
     return if (failed == 0) base else UiText.Resource(R.string.chat_tool_group_with_failures, listOf(base, failed))
 }
 

@@ -57,11 +57,11 @@ sealed interface ChatItem {
 }
 
 sealed interface ReplyPart {
-    data class Reasoning(val text: String, val isStreaming: Boolean) : ReplyPart
+    data class Work(val steps: List<WorkStep>) : ReplyPart {
+        val calls: List<ToolCallUi> get() = steps.filterIsInstance<WorkStep.Call>().map { it.call }
+    }
 
     data class Text(val content: String, val isStreaming: Boolean, val isStopped: Boolean = false) : ReplyPart
-
-    data class Tools(val calls: List<ToolCallUi>) : ReplyPart
 
     data class Media(val attachments: List<Attachment>) : ReplyPart
 
@@ -70,6 +70,12 @@ sealed interface ReplyPart {
     data class Diagram(val spec: DiagramSpec) : ReplyPart
 
     data class Error(val text: UiText) : ReplyPart
+}
+
+sealed interface WorkStep {
+    data class Thought(val text: String, val isStreaming: Boolean) : WorkStep
+
+    data class Call(val call: ToolCallUi) : WorkStep
 }
 
 data class ReplyEnd(
@@ -123,7 +129,7 @@ object ChatTimeline {
         } + listOfNotNull(live?.usage)
         return ChatItem.Reply(
             id = rounds.first().id,
-            parts = views.flatMap { it.parts(results, live?.takeIf { d -> d.messageId == it.row.id }) }.mergeAdjacentTools(),
+            parts = views.flatMap { it.parts(results, live?.takeIf { d -> d.messageId == it.row.id }) }.mergeAdjacentWork(),
             isActive = isActive,
             isWaiting = isActive && last.content.isEmpty() && last.reasoning.isEmpty() && last.calls.isEmpty(),
             startedAt = rounds.first().createdAt,
@@ -137,14 +143,16 @@ object ChatTimeline {
     private class RoundView(val row: MessageEntity, val content: String, val reasoning: String, val calls: List<ToolCall>) {
         fun parts(results: Map<String?, MessageEntity>, live: StreamingDraft?): List<ReplyPart> = buildList {
             val isLive = live != null
-            if (reasoning.isNotEmpty()) add(ReplyPart.Reasoning(reasoning, isStreaming = isLive && content.isEmpty() && calls.isEmpty()))
+            if (reasoning.isNotEmpty()) {
+                add(ReplyPart.Work(listOf(WorkStep.Thought(reasoning, isStreaming = isLive && content.isEmpty() && calls.isEmpty()))))
+            }
             if (content.isNotEmpty()) add(ReplyPart.Text(content, isStreaming = isLive, isStopped = row.status == MessageStatus.CANCELLED))
             val generated = Attachment.decode(row.attachmentsJson)
             if (generated.isNotEmpty()) add(ReplyPart.Media(generated))
             val shown = calls.filter { it.name != ShowUiTool.NAME }
             if (shown.isNotEmpty()) {
                 val toolCalls = shown.map { it.toUi(results[it.id], live) }
-                add(ReplyPart.Tools(toolCalls))
+                add(ReplyPart.Work(toolCalls.map(WorkStep::Call)))
                 val sharedWithUser = toolCalls.flatMap { call -> call.attachments.filterNot { it.forModel } }
                 if (sharedWithUser.isNotEmpty()) add(ReplyPart.Media(sharedWithUser))
                 toolCalls.filter { it.name == ShowChartTool.NAME && it.status == ToolStatus.DONE }
@@ -174,10 +182,10 @@ object ChatTimeline {
         }
     }
 
-    private fun List<ReplyPart>.mergeAdjacentTools(): List<ReplyPart> = fold(mutableListOf()) { merged, part ->
+    private fun List<ReplyPart>.mergeAdjacentWork(): List<ReplyPart> = fold(mutableListOf()) { merged, part ->
         val previous = merged.lastOrNull()
-        if (part is ReplyPart.Tools && previous is ReplyPart.Tools) {
-            merged[merged.lastIndex] = ReplyPart.Tools(previous.calls + part.calls)
+        if (part is ReplyPart.Work && previous is ReplyPart.Work) {
+            merged[merged.lastIndex] = ReplyPart.Work(previous.steps + part.steps)
         } else {
             merged += part
         }

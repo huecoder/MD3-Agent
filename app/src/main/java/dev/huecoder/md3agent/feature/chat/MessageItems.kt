@@ -121,10 +121,9 @@ fun AssistantReply(
         reply.parts.forEachIndexed { index, part ->
             key(index) {
                 when (part) {
-                    is ReplyPart.Reasoning -> ReasoningBlock(part.text, part.isStreaming)
                     is ReplyPart.Text -> SelectionContainer { ReplyText(part.content, part.isStreaming, typing, isStopped = part.isStopped) }
-                    is ReplyPart.Tools -> {
-                        ToolGroup(part.calls)
+                    is ReplyPart.Work -> {
+                        WorkBlock(part)
                         part.calls.firstOrNull { it.status == ToolStatus.AWAITING_APPROVAL }?.let { call ->
                             key(call.id) { ApprovalCard(call, onDecision = { onApproval(call, it) }) }
                         }

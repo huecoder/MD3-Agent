@@ -214,6 +214,7 @@
         <item quantity="other">%1$d actions</item>
     </plurals>
     <string name="chat_tool_group_with_failures">%1$s · %2$d failed</string>
+    <string name="chat_work_with_reasoning">Reasoning and %1$s</string>
     <string name="chat_tool_status_done">Done</string>
     <string name="chat_tool_status_error">Error</string>
     <string name="chat_tool_status_cancelled">Cancelled</string>

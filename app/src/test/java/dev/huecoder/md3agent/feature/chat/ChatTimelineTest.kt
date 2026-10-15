@@ -56,7 +56,7 @@ class ChatTimelineTest {
         val reply = timeline[1] as ChatItem.Reply
         assertEquals(messages[1].id, reply.id)
         val (tools, text) = reply.parts
-        assertEquals(ToolStatus.DONE, (tools as ReplyPart.Tools).calls.single().status)
+        assertEquals(ToolStatus.DONE, (tools as ReplyPart.Work).calls.single().status)
         assertEquals("Вот", (text as ReplyPart.Text).content)
         assertEquals("show_ui is rendered as UI, not as a tool step", 2, reply.parts.size)
         val end = reply.end!!
@@ -79,7 +79,28 @@ class ChatTimelineTest {
 
         val reply = ChatTimeline.build(messages, draft = null)[1] as ChatItem.Reply
 
-        assertEquals(listOf("s1", "r1"), (reply.parts[0] as ReplyPart.Tools).calls.map { it.id })
+        assertEquals(listOf("s1", "r1"), (reply.parts[0] as ReplyPart.Work).calls.map { it.id })
+        assertEquals(ReplyPart.Text("Готово", isStreaming = false), reply.parts[1])
+    }
+
+    @Test
+    fun `reasoning between tool rounds stays in the same work group`() {
+        val read = ToolCall("r1", "read_webpage", """{"url":"https://a.b"}""")
+        val messages = listOf(
+            row(MessageRole.USER, "найди"),
+            row(MessageRole.ASSISTANT, calls = listOf(search)).copy(reasoning = "ищу"),
+            row(MessageRole.TOOL, results, toolCallId = "s1"),
+            row(MessageRole.ASSISTANT, calls = listOf(read)).copy(reasoning = "читаю"),
+            row(MessageRole.TOOL, "page", toolCallId = "r1"),
+            row(MessageRole.ASSISTANT, "Готово").copy(reasoning = "итог"),
+        )
+
+        val reply = ChatTimeline.build(messages, draft = null)[1] as ChatItem.Reply
+
+        assertEquals(2, reply.parts.size)
+        val work = reply.parts[0] as ReplyPart.Work
+        assertEquals(listOf("ищу", null, "читаю", null, "итог"), work.steps.map { (it as? WorkStep.Thought)?.text })
+        assertEquals(listOf("s1", "r1"), work.calls.map { it.id })
         assertEquals(ReplyPart.Text("Готово", isStreaming = false), reply.parts[1])
     }
 
@@ -90,7 +111,7 @@ class ChatTimelineTest {
 
         val reply = ChatTimeline.build(messages, draft)[1] as ChatItem.Reply
 
-        assertEquals(ToolStatus.RUNNING, (reply.parts.single() as ReplyPart.Tools).calls.single().status)
+        assertEquals(ToolStatus.RUNNING, (reply.parts.single() as ReplyPart.Work).calls.single().status)
         assertTrue(reply.isActive)
         assertFalse(reply.isWaiting)
         assertNull(reply.end)
@@ -127,7 +148,7 @@ class ChatTimelineTest {
 
         assertFalse((timeline[1] as ChatItem.Reply).end!!.isLatest)
         val stopped = timeline[3] as ChatItem.Reply
-        assertEquals(ToolStatus.CANCELLED, (stopped.parts.single() as ReplyPart.Tools).calls.single().status)
+        assertEquals(ToolStatus.CANCELLED, (stopped.parts.single() as ReplyPart.Work).calls.single().status)
     }
 
     @Test
