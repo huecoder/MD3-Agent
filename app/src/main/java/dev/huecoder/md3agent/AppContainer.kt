@@ -38,6 +38,7 @@ import dev.huecoder.md3agent.mcp.auth.McpSignIn
 import dev.huecoder.md3agent.data.settings.McpOAuthSession
 import dev.huecoder.md3agent.llm.ModelCatalogClient
 import dev.huecoder.md3agent.llm.TranscriptionClient
+import dev.huecoder.md3agent.llm.VoiceListClient
 import dev.huecoder.md3agent.net.HttpClientProvider
 import dev.huecoder.md3agent.prompt.DeviceInfoProvider
 import dev.huecoder.md3agent.prompt.SystemPromptRenderer
@@ -104,6 +105,7 @@ class AppContainer(context: Context) {
 
     val completions = ChatCompletionClient(httpClients)
     val modelCatalogClient = ModelCatalogClient(httpClients)
+    val voiceList = VoiceListClient(httpClients)
     val modelCatalog = ModelCatalog(modelCatalogClient, File(appContext.filesDir, MODEL_CATALOG_DIR))
     val transcriptions = TranscriptionClient(httpClients)
     val systemPrompt = SystemPromptRenderer(DeviceInfoProvider(context))

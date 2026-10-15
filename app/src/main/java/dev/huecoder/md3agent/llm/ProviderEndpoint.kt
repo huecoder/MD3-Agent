@@ -24,6 +24,7 @@ class ProviderEndpoint(private val provider: ProviderProfile) {
                 builder.header("anthropic-version", ANTHROPIC_VERSION)
             }
             ApiFormat.GEMINI -> if (key.isNotEmpty()) builder.header("x-goog-api-key", key)
+            ApiFormat.ELEVENLABS -> if (key.isNotEmpty()) builder.header("xi-api-key", key)
         }
         provider.extraHeaders.filter { it.name.isNotBlank() }.forEach { builder.header(it.name.trim(), it.value) }
         return builder

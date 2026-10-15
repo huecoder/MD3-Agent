@@ -107,6 +107,8 @@
     <string name="provider_api_key">API-ключ (Bearer)</string>
     <string name="provider_section_model">Модель</string>
     <string name="provider_fetch_models">Загрузить модели</string>
+    <string name="provider_fetch_voices">Загрузить голоса</string>
+    <string name="provider_voices_fetch_failed">Не удалось получить список голосов</string>
     <string name="provider_make_active">Использовать по умолчанию</string>
     <string name="provider_make_active_summary">Новые чаты начнутся с этой модели</string>
     <string name="provider_section_headers">Дополнительные заголовки</string>
@@ -214,7 +216,7 @@
     <string name="settings_voice_speak_after_voice">после голосового ввода</string>
     <string name="settings_voice_speak_always">всегда</string>
     <string name="voice_settings_section_providers">Голосовые провайдеры</string>
-    <string name="voice_settings_providers_hint">Отдельно от провайдеров чата. Подойдёт любой OpenAI-совместимый сервер с /audio/transcriptions и /audio/speech.</string>
+    <string name="voice_settings_providers_hint">Отдельно от провайдеров чата. Подойдёт любой OpenAI-совместимый сервер с /audio/transcriptions и /audio/speech, а у Gemini и ElevenLabs свои форматы.</string>
     <string name="voice_settings_add_provider">Добавить голосовой провайдер</string>
     <string name="voice_settings_invoke">При вызове из системы</string>
     <string name="voice_settings_invoke_text">Клавиатура</string>
@@ -229,7 +231,7 @@
     <string name="voice_output_system">Системный</string>
     <string name="voice_output_provider">Провайдер</string>
     <string name="voice_settings_engine_hint_system">Использует движок синтеза речи на телефоне. Работает без интернета.</string>
-    <string name="voice_settings_engine_hint_provider">Использует /audio/speech провайдера озвучки, выбранного ниже.</string>
+    <string name="voice_settings_engine_hint_provider">Использует API синтеза речи у провайдера озвучки, выбранного ниже.</string>
     <string name="voice_settings_transcription_provider">Провайдер распознавания</string>
     <string name="voice_settings_speech_provider">Провайдер озвучки</string>
     <string name="voice_provider_role_transcription">Распознавание</string>
@@ -240,13 +242,14 @@
     <string name="voice_provider_copy_from_chat">Взять адрес и ключ у провайдера чата</string>
     <string name="provider_format">Формат API</string>
     <string name="provider_format_hint">OpenAI подходит и для совместимых серверов вроде OpenRouter, Ollama и LM Studio</string>
-    <string name="voice_provider_format_hint">У Anthropic нет голосового API, поэтому тут только OpenAI и Gemini</string>
+    <string name="voice_provider_format_hint">У Anthropic нет голосового API, поэтому тут только OpenAI, Gemini и ElevenLabs</string>
     <string name="voice_provider_section_models">Модели</string>
     <string name="voice_provider_transcription_model">Модель распознавания</string>
     <string name="voice_provider_speech_model">Модель озвучки</string>
     <string name="voice_provider_speech_voice">Голос</string>
     <string name="voice_provider_speech_voice_hint">alloy, nova, shimmer и т.д., зависит от провайдера.</string>
     <string name="voice_provider_speech_voice_hint_gemini">Kore, Puck, Charon, Aoede и т.д., список голосов есть в доке Gemini.</string>
+    <string name="voice_provider_speech_voice_hint_elevenlabs">ID голоса. Нажми «Загрузить голоса», чтобы выбрать из своей библиотеки ElevenLabs по имени.</string>
     <string name="chat_thinking">Думаю…</string>
     <string name="chat_speak">Прочитать вслух</string>
     <string name="chat_stop_speaking">Остановить озвучку</string>

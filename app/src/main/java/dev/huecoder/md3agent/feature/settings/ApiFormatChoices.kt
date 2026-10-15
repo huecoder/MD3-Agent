@@ -10,4 +10,5 @@ private val ApiFormat.label: Int
         ApiFormat.OPENAI -> R.string.api_format_openai
         ApiFormat.ANTHROPIC -> R.string.api_format_anthropic
         ApiFormat.GEMINI -> R.string.api_format_gemini
+        ApiFormat.ELEVENLABS -> R.string.api_format_elevenlabs
     }

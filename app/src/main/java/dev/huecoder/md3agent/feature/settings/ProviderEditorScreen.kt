@@ -69,7 +69,7 @@ fun ProviderEditorScreen(providerId: String?, onDone: () -> Unit) {
         ) {
             ChoiceRow(
                 title = stringResource(R.string.provider_format),
-                choices = apiFormatChoices(ApiFormat.entries),
+                choices = apiFormatChoices(ApiFormat.CHAT),
                 selected = current.format,
                 onSelect = { format -> viewModel.edit { it.withFormat(format) } },
                 hint = stringResource(R.string.provider_format_hint),

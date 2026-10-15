@@ -25,7 +25,7 @@ object ModelInfoParser {
 
     fun parse(entry: JsonObject): ModelInfo? {
         val geminiName = entry.string("name")?.takeIf { it.startsWith(GEMINI_MODEL_PREFIX) }
-        val id = entry.string("id") ?: geminiName?.removePrefix(GEMINI_MODEL_PREFIX) ?: return null
+        val id = entry.string("id") ?: entry.string("model_id") ?: geminiName?.removePrefix(GEMINI_MODEL_PREFIX) ?: return null
         val architecture = entry.obj("architecture")
         val capabilities = entry.obj("capabilities")
         val parameters = entry.strings("supported_parameters")

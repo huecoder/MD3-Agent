@@ -1,5 +1,6 @@
 package dev.huecoder.md3agent.feature.settings
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -42,11 +43,13 @@ import dev.huecoder.md3agent.ui.text.asString
 
 @Composable
 fun VoiceProviderEditorScreen(providerId: String?, onDone: () -> Unit) {
-    val viewModel = appViewModel(key = "voice-provider-$providerId") { VoiceProviderEditorViewModel(providerId, it.settings, it.modelCatalogClient) }
+    val viewModel = appViewModel(key = "voice-provider-$providerId") { VoiceProviderEditorViewModel(providerId, it.settings, it.modelCatalogClient, it.voiceList) }
     val form by viewModel.form.collectAsStateWithLifecycle()
     val isDirty by viewModel.isDirty.collectAsStateWithLifecycle()
     val chatProviders by viewModel.chatProviders.collectAsStateWithLifecycle()
     val fetch by viewModel.modelFetch.collectAsStateWithLifecycle()
+    val voices by viewModel.voices.collectAsStateWithLifecycle()
+    val voiceFetch by viewModel.voiceFetch.collectAsStateWithLifecycle()
 
     SettingsScaffold(
         title = stringResource(if (form?.isNew == false) R.string.voice_provider_title else R.string.voice_provider_title_new),
@@ -113,7 +116,7 @@ fun VoiceProviderEditorScreen(providerId: String?, onDone: () -> Unit) {
             SectionHeader(stringResource(R.string.voice_provider_section_models))
             ModelPicker(
                 selected = current.transcriptionModel,
-                models = current.models.matching(TRANSCRIPTION_HINTS),
+                models = if (current.format == ApiFormat.ELEVENLABS) ELEVENLABS_TRANSCRIPTION_MODELS else current.models.matching(TRANSCRIPTION_HINTS),
                 onSelect = { value -> viewModel.edit { it.copy(transcriptionModel = value) } },
                 label = stringResource(R.string.voice_provider_transcription_model),
                 modifier = Modifier.fillMaxWidth(),
@@ -125,27 +128,22 @@ fun VoiceProviderEditorScreen(providerId: String?, onDone: () -> Unit) {
                 label = stringResource(R.string.voice_provider_speech_model),
                 modifier = Modifier.fillMaxWidth(),
             )
-            FormField(
-                value = current.speechVoice,
-                onValueChange = { value -> viewModel.edit { it.copy(speechVoice = value) } },
+            VoicePicker(
+                voiceId = current.speechVoice,
+                voiceName = current.speechVoiceName,
+                voices = voices,
+                onChange = { id, name -> viewModel.edit { it.copy(speechVoice = id, speechVoiceName = name) } },
                 label = stringResource(R.string.voice_provider_speech_voice),
-                supportingText = stringResource(if (current.format == ApiFormat.GEMINI) R.string.voice_provider_speech_voice_hint_gemini else R.string.voice_provider_speech_voice_hint),
+                hint = stringResource(current.format.voiceHint),
                 modifier = Modifier.fillMaxWidth(),
             )
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                FilledTonalButton(
-                    onClick = viewModel::fetchModels,
-                    enabled = fetch != ModelFetchState.Loading && current.baseUrlError == null && current.baseUrl.isNotBlank(),
-                    shapes = ButtonDefaults.shapes(),
-                ) {
-                    Icon(MaterialSymbols.Rounded.Sync, contentDescription = null, modifier = Modifier.size(ButtonDefaults.IconSize))
-                    Text(stringResource(R.string.provider_fetch_models), Modifier.padding(start = ButtonDefaults.IconSpacing))
-                }
-                if (fetch == ModelFetchState.Loading) LoadingIndicator(Modifier.size(32.dp))
+            val canFetch = current.baseUrlError == null && current.baseUrl.isNotBlank()
+            if (current.format == ApiFormat.ELEVENLABS) {
+                FetchButton(R.string.provider_fetch_voices, enabled = canFetch, loading = voiceFetch == ModelFetchState.Loading, onClick = viewModel::fetchVoices)
+                FetchError(voiceFetch)
             }
-            (fetch as? ModelFetchState.Failed)?.let {
-                Text(it.message.asString(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-            }
+            FetchButton(R.string.provider_fetch_models, enabled = canFetch, loading = fetch == ModelFetchState.Loading, onClick = viewModel::fetchModels)
+            FetchError(fetch)
 
             SectionHeader(stringResource(R.string.provider_section_headers))
             HeaderEditor(
@@ -156,7 +154,33 @@ fun VoiceProviderEditorScreen(providerId: String?, onDone: () -> Unit) {
     }
 }
 
+@Composable
+private fun FetchButton(@StringRes label: Int, enabled: Boolean, loading: Boolean, onClick: () -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        FilledTonalButton(onClick = onClick, enabled = enabled && !loading, shapes = ButtonDefaults.shapes()) {
+            Icon(MaterialSymbols.Rounded.Sync, contentDescription = null, modifier = Modifier.size(ButtonDefaults.IconSize))
+            Text(stringResource(label), Modifier.padding(start = ButtonDefaults.IconSpacing))
+        }
+        if (loading) LoadingIndicator(Modifier.size(32.dp))
+    }
+}
+
+@Composable
+private fun FetchError(state: ModelFetchState) {
+    (state as? ModelFetchState.Failed)?.let {
+        Text(it.message.asString(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+    }
+}
+
+private val ApiFormat.voiceHint: Int
+    get() = when (this) {
+        ApiFormat.GEMINI -> R.string.voice_provider_speech_voice_hint_gemini
+        ApiFormat.ELEVENLABS -> R.string.voice_provider_speech_voice_hint_elevenlabs
+        else -> R.string.voice_provider_speech_voice_hint
+    }
+
 private fun List<String>.matching(hints: List<String>) = filter { model -> hints.any { model.contains(it, ignoreCase = true) } }.ifEmpty { this }
 
 private val TRANSCRIPTION_HINTS = listOf("whisper", "transcribe", "stt", "gemini")
 private val SPEECH_HINTS = listOf("tts", "speech")
+private val ELEVENLABS_TRANSCRIPTION_MODELS = listOf("scribe_v2", "scribe_v2_turbo", "scribe_v2_medical")

@@ -23,6 +23,7 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
 import java.io.IOException
@@ -109,7 +110,9 @@ class ProviderSpeechSynthesizer(
 
     override suspend fun prepare(text: String): PreparedSpeech = when (provider.format) {
         ApiFormat.GEMINI -> gemini(text)
-        else -> openAi(text)
+        ApiFormat.ELEVENLABS -> elevenLabs(text)
+        ApiFormat.OPENAI -> openAi(text)
+        ApiFormat.ANTHROPIC -> throw ProviderException.InvalidConfiguration("Anthropic has no speech API")
     }
 
     private suspend fun openAi(text: String): PreparedSpeech {
@@ -119,9 +122,20 @@ class ProviderSpeechSynthesizer(
             put("input", text)
             put("response_format", RESPONSE_FORMAT)
         }.toString().toRequestBody(JSON)
-        val request = endpoint.authorizedRequest(SPEECH_PATH).post(body).build()
-        return withTempFile(".$RESPONSE_FORMAT") { target -> PreparedSpeech.Audio(httpClients.current().fetchToFile(request, target)) }
+        return fetchAudio(endpoint.authorizedRequest(SPEECH_PATH).post(body).build())
     }
+
+    private suspend fun elevenLabs(text: String): PreparedSpeech {
+        val url = endpoint.url(ELEVENLABS_SPEECH_PATH).newBuilder().addPathSegment(provider.speechVoice).build()
+        val body = buildJsonObject {
+            put("text", text)
+            put("model_id", provider.speechModel)
+        }.toString().toRequestBody(JSON)
+        return fetchAudio(endpoint.authorizedRequest(url).post(body).build())
+    }
+
+    private suspend fun fetchAudio(request: Request): PreparedSpeech =
+        withTempFile(".$RESPONSE_FORMAT") { target -> PreparedSpeech.Audio(httpClients.current().fetchToFile(request, target)) }
 
     private suspend fun gemini(text: String): PreparedSpeech = withContext(Dispatchers.IO) {
         val body = buildJsonObject {
@@ -184,6 +198,7 @@ class ProviderSpeechSynthesizer(
 
     private companion object {
         const val SPEECH_PATH = "audio/speech"
+        const val ELEVENLABS_SPEECH_PATH = "text-to-speech"
         const val RESPONSE_FORMAT = "mp3"
         const val FILE_PREFIX = "speech"
         val JSON = "application/json".toMediaType()

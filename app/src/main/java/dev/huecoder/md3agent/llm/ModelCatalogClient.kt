@@ -20,7 +20,7 @@ class ModelCatalogClient(private val httpClients: HttpClientProvider) {
         val endpoint = ProviderEndpoint(provider)
         val url = endpoint.url(MODELS_PATH).newBuilder().apply {
             when (provider.format) {
-                ApiFormat.OPENAI -> Unit
+                ApiFormat.OPENAI, ApiFormat.ELEVENLABS -> Unit
                 ApiFormat.ANTHROPIC -> addQueryParameter("limit", PAGE_SIZE)
                 ApiFormat.GEMINI -> addQueryParameter("pageSize", PAGE_SIZE)
             }

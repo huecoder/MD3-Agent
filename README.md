@@ -118,7 +118,7 @@ Tools that come from MCP servers always start as Ask.
 - The model manages memories through tools, and you can add, edit and delete them in Settings.
 
 **Voice and assistant**
-- Dictation sends your recording to a transcription endpoint of your choice (OpenAI format or Gemini). Replies can be read aloud with the system voice or a provider voice.
+- Dictation sends your recording to a transcription endpoint of your choice (OpenAI format, Gemini or ElevenLabs). Replies can be read aloud with the system voice or a provider voice.
 - Set MD3 Agent as the default digital assistant to open a chat sheet over any app. It can read the text of the app underneath through `read_screen`.
 
 **Files, look and feel**

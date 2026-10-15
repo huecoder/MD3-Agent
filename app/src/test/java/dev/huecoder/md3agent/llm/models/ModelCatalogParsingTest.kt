@@ -86,4 +86,11 @@ class ModelCatalogParsingTest {
         assertEquals("claude-sonnet-4-5", claude.id)
         assertEquals("Claude Sonnet 4.5", claude.displayName)
     }
+
+    @Test
+    fun `elevenlabs models are listed by model_id`() {
+        val body = """[{"model_id":"eleven_multilingual_v2","name":"Eleven Multilingual v2"},{"model_id":"eleven_flash_v2_5","name":"Eleven Flash v2.5"}]"""
+        val ids = ModelInfoParser.parseList(Json.parseToJsonElement(body)).map { it.id }
+        assertEquals(listOf("eleven_flash_v2_5", "eleven_multilingual_v2"), ids)
+    }
 }

@@ -29,6 +29,7 @@ class TranscriptionClient(private val httpClients: HttpClientProvider) {
         when (provider.format) {
             ApiFormat.OPENAI -> openAi(provider, model, language, audio, mimeType)
             ApiFormat.GEMINI -> gemini(provider, model, language, audio, mimeType)
+            ApiFormat.ELEVENLABS -> elevenLabs(provider, model, language, audio, mimeType)
             ApiFormat.ANTHROPIC -> throw ProviderException.InvalidConfiguration("Anthropic has no speech recognition API")
         }
 
@@ -41,6 +42,19 @@ class TranscriptionClient(private val httpClients: HttpClientProvider) {
             .addFormDataPart("file", audio.name, audio.asRequestBody(mimeType.toMediaType()))
             .build()
         val request = ProviderEndpoint(provider).authorizedRequest(TRANSCRIPTIONS_PATH).post(body).build()
+        return textOf(httpClients.current().fetchText(request))
+    }
+
+    private suspend fun elevenLabs(provider: ProviderProfile, model: String, language: String, audio: File, mimeType: String): String {
+        val body = MultipartBody.Builder()
+            .setType(MultipartBody.FORM)
+            .addFormDataPart("model_id", model)
+            .addFormDataPart("tag_audio_events", "false")
+            .addFormDataPart("timestamps_granularity", "none")
+            .apply { if (language.isNotBlank()) addFormDataPart("language_code", language.trim()) }
+            .addFormDataPart("file", audio.name, audio.asRequestBody(mimeType.toMediaType()))
+            .build()
+        val request = ProviderEndpoint(provider).authorizedRequest(ELEVENLABS_TRANSCRIPTIONS_PATH).post(body).build()
         return textOf(httpClients.current().fetchText(request))
     }
 
@@ -75,6 +89,7 @@ class TranscriptionClient(private val httpClients: HttpClientProvider) {
 
     private companion object {
         const val TRANSCRIPTIONS_PATH = "audio/transcriptions"
+        const val ELEVENLABS_TRANSCRIPTIONS_PATH = "speech-to-text"
         const val ERROR_PREVIEW_CHARS = 200
         const val GEMINI_PROMPT = "Transcribe the speech in this audio word for word. Reply with the transcript only, without quotes or commentary. " +
             "If there is no speech, reply with an empty message."

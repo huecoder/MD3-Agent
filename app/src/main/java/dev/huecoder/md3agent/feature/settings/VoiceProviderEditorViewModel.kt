@@ -10,6 +10,8 @@ import dev.huecoder.md3agent.data.settings.SettingsRepository
 import dev.huecoder.md3agent.data.settings.VoiceProvider
 import dev.huecoder.md3agent.llm.ModelCatalogClient
 import dev.huecoder.md3agent.llm.ProviderException
+import dev.huecoder.md3agent.llm.SpeechVoice
+import dev.huecoder.md3agent.llm.VoiceListClient
 import dev.huecoder.md3agent.ui.text.UiText
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,17 +29,22 @@ data class VoiceProviderForm(
     val transcriptionModel: String = VoiceProvider.DEFAULT_TRANSCRIPTION_MODEL,
     val speechModel: String = VoiceProvider.DEFAULT_SPEECH_MODEL,
     val speechVoice: String = VoiceProvider.DEFAULT_SPEECH_VOICE,
+    val speechVoiceName: String = "",
     val models: List<String> = emptyList(),
     val format: ApiFormat = ApiFormat.OPENAI,
 ) {
-    fun withFormat(next: ApiFormat) = copy(
-        format = next,
-        baseUrl = next.adoptBaseUrl(baseUrl),
-        transcriptionModel = transcriptionModel.adopt(VoiceProvider.defaultTranscriptionModel(format), VoiceProvider.defaultTranscriptionModel(next)),
-        speechModel = speechModel.adopt(VoiceProvider.defaultSpeechModel(format), VoiceProvider.defaultSpeechModel(next)),
-        speechVoice = speechVoice.adopt(VoiceProvider.defaultSpeechVoice(format), VoiceProvider.defaultSpeechVoice(next)),
-        models = emptyList(),
-    )
+    fun withFormat(next: ApiFormat): VoiceProviderForm {
+        val voice = speechVoice.adopt(VoiceProvider.defaultSpeechVoice(format), VoiceProvider.defaultSpeechVoice(next))
+        return copy(
+            format = next,
+            baseUrl = next.adoptBaseUrl(baseUrl),
+            transcriptionModel = transcriptionModel.adopt(VoiceProvider.defaultTranscriptionModel(format), VoiceProvider.defaultTranscriptionModel(next)),
+            speechModel = speechModel.adopt(VoiceProvider.defaultSpeechModel(format), VoiceProvider.defaultSpeechModel(next)),
+            speechVoice = voice,
+            speechVoiceName = speechVoiceName.takeIf { voice == speechVoice }.orEmpty(),
+            models = emptyList(),
+        )
+    }
 
     private fun String.adopt(oldDefault: String, newDefault: String) = if (isBlank() || this == oldDefault) newDefault else this
 
@@ -63,6 +70,7 @@ data class VoiceProviderForm(
         transcriptionModel = transcriptionModel.trim(),
         speechModel = speechModel.trim().ifBlank { VoiceProvider.defaultSpeechModel(format) },
         speechVoice = speechVoice.trim().ifBlank { VoiceProvider.defaultSpeechVoice(format) },
+        speechVoiceName = speechVoiceName.trim(),
         format = format,
     )
 }
@@ -71,6 +79,7 @@ class VoiceProviderEditorViewModel(
     private val providerId: String?,
     private val settings: SettingsRepository,
     private val catalog: ModelCatalogClient,
+    private val voiceList: VoiceListClient,
 ) : ViewModel() {
     private val draft = FormDraft<VoiceProviderForm>(viewModelScope)
     val form: StateFlow<VoiceProviderForm?> = draft.value
@@ -82,6 +91,12 @@ class VoiceProviderEditorViewModel(
 
     private val _modelFetch = MutableStateFlow<ModelFetchState>(ModelFetchState.Idle)
     val modelFetch: StateFlow<ModelFetchState> = _modelFetch.asStateFlow()
+
+    private val _voices = MutableStateFlow<List<SpeechVoice>>(emptyList())
+    val voices: StateFlow<List<SpeechVoice>> = _voices.asStateFlow()
+
+    private val _voiceFetch = MutableStateFlow<ModelFetchState>(ModelFetchState.Idle)
+    val voiceFetch: StateFlow<ModelFetchState> = _voiceFetch.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -99,6 +114,7 @@ class VoiceProviderEditorViewModel(
                     transcriptionModel = it.transcriptionModel,
                     speechModel = it.speechModel,
                     speechVoice = it.speechVoice,
+                    speechVoiceName = it.speechVoiceName,
                     format = it.format,
                 )
             } ?: VoiceProviderForm(id = settings.newProviderId(), isNew = true))
@@ -117,6 +133,19 @@ class VoiceProviderEditorViewModel(
                 ModelFetchState.Idle
             } catch (e: ProviderException) {
                 ModelFetchState.Failed(e.message?.let(UiText::Raw) ?: UiText.Resource(R.string.provider_models_fetch_failed))
+            }
+        }
+    }
+
+    fun fetchVoices() {
+        val current = draft.current ?: return
+        _voiceFetch.value = ModelFetchState.Loading
+        viewModelScope.launch {
+            _voiceFetch.value = try {
+                _voices.value = voiceList.list(current.toProvider().asEndpointProfile())
+                ModelFetchState.Idle
+            } catch (e: ProviderException) {
+                ModelFetchState.Failed(e.message?.let(UiText::Raw) ?: UiText.Resource(R.string.provider_voices_fetch_failed))
             }
         }
     }

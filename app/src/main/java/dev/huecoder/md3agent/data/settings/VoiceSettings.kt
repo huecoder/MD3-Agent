@@ -12,6 +12,7 @@ data class VoiceProvider(
     val transcriptionModel: String = DEFAULT_TRANSCRIPTION_MODEL,
     val speechModel: String = DEFAULT_SPEECH_MODEL,
     val speechVoice: String = DEFAULT_SPEECH_VOICE,
+    val speechVoiceName: String = "",
     val format: ApiFormat = ApiFormat.OPENAI,
 ) {
     fun asEndpointProfile() =
@@ -22,11 +23,23 @@ data class VoiceProvider(
         const val DEFAULT_SPEECH_MODEL = "gpt-4o-mini-tts"
         const val DEFAULT_SPEECH_VOICE = "alloy"
 
-        fun defaultTranscriptionModel(format: ApiFormat) = if (format == ApiFormat.GEMINI) "gemini-2.5-flash" else DEFAULT_TRANSCRIPTION_MODEL
+        fun defaultTranscriptionModel(format: ApiFormat) = when (format) {
+            ApiFormat.GEMINI -> "gemini-2.5-flash"
+            ApiFormat.ELEVENLABS -> "scribe_v2"
+            else -> DEFAULT_TRANSCRIPTION_MODEL
+        }
 
-        fun defaultSpeechModel(format: ApiFormat) = if (format == ApiFormat.GEMINI) "gemini-2.5-flash-preview-tts" else DEFAULT_SPEECH_MODEL
+        fun defaultSpeechModel(format: ApiFormat) = when (format) {
+            ApiFormat.GEMINI -> "gemini-2.5-flash-preview-tts"
+            ApiFormat.ELEVENLABS -> "eleven_multilingual_v2"
+            else -> DEFAULT_SPEECH_MODEL
+        }
 
-        fun defaultSpeechVoice(format: ApiFormat) = if (format == ApiFormat.GEMINI) "Kore" else DEFAULT_SPEECH_VOICE
+        fun defaultSpeechVoice(format: ApiFormat) = when (format) {
+            ApiFormat.GEMINI -> "Kore"
+            ApiFormat.ELEVENLABS -> "21m00Tcm4TlvDq8ikWAM"
+            else -> DEFAULT_SPEECH_VOICE
+        }
     }
 }
 

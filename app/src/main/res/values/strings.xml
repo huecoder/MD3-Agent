@@ -110,12 +110,15 @@
     <string name="api_format_openai" translatable="false">OpenAI</string>
     <string name="api_format_anthropic" translatable="false">Anthropic</string>
     <string name="api_format_gemini" translatable="false">Gemini</string>
+    <string name="api_format_elevenlabs" translatable="false">ElevenLabs</string>
     <string name="provider_format">API format</string>
     <string name="provider_format_hint">OpenAI also covers compatible servers like OpenRouter, Ollama and LM Studio</string>
-    <string name="voice_provider_format_hint">Anthropic has no voice API, so only OpenAI and Gemini are here</string>
+    <string name="voice_provider_format_hint">Anthropic has no voice API, so only OpenAI, Gemini and ElevenLabs are here</string>
     <string name="provider_api_key">API key (Bearer)</string>
     <string name="provider_section_model">Model</string>
     <string name="provider_fetch_models">Load models</string>
+    <string name="provider_fetch_voices">Load voices</string>
+    <string name="provider_voices_fetch_failed">Couldn\'t load the voice list</string>
     <string name="provider_make_active">Use by default</string>
     <string name="provider_make_active_summary">New chats will start with this model</string>
     <string name="provider_section_headers">Extra headers</string>
@@ -223,7 +226,7 @@
     <string name="settings_voice_speak_after_voice">after voice input</string>
     <string name="settings_voice_speak_always">always</string>
     <string name="voice_settings_section_providers">Voice providers</string>
-    <string name="voice_settings_providers_hint">Kept apart from chat providers. Any OpenAI-compatible server with /audio/transcriptions and /audio/speech works.</string>
+    <string name="voice_settings_providers_hint">Kept apart from chat providers. Any OpenAI-compatible server with /audio/transcriptions and /audio/speech works, Gemini and ElevenLabs use their own formats.</string>
     <string name="voice_settings_add_provider">Add voice provider</string>
     <string name="voice_settings_invoke">When opened by the system</string>
     <string name="voice_settings_invoke_text">Keyboard</string>
@@ -238,7 +241,7 @@
     <string name="voice_output_system">System</string>
     <string name="voice_output_provider">Provider</string>
     <string name="voice_settings_engine_hint_system">Uses the text-to-speech engine installed on the phone. Works offline.</string>
-    <string name="voice_settings_engine_hint_provider">Uses /audio/speech of the speech provider picked below.</string>
+    <string name="voice_settings_engine_hint_provider">Uses the text-to-speech API of the speech provider picked below.</string>
     <string name="voice_settings_transcription_provider">Recognition provider</string>
     <string name="voice_settings_speech_provider">Speech provider</string>
     <string name="voice_provider_role_transcription">Recognition</string>
@@ -253,6 +256,7 @@
     <string name="voice_provider_speech_voice">Voice</string>
     <string name="voice_provider_speech_voice_hint">alloy, nova, shimmer and so on, depends on the provider.</string>
     <string name="voice_provider_speech_voice_hint_gemini">Kore, Puck, Charon, Aoede and so on, see the Gemini voice list.</string>
+    <string name="voice_provider_speech_voice_hint_elevenlabs">Voice ID. Tap Load voices to pick one from your ElevenLabs library by name.</string>
     <string name="chat_thinking">Thinking…</string>
     <string name="chat_speak">Read aloud</string>
     <string name="chat_stop_speaking">Stop reading</string>

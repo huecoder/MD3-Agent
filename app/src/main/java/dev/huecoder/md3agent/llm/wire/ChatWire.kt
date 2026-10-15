@@ -5,6 +5,7 @@ import dev.huecoder.md3agent.llm.ChatTurn
 import dev.huecoder.md3agent.llm.CompletionEvent
 import dev.huecoder.md3agent.llm.CompletionOptions
 import dev.huecoder.md3agent.llm.ProviderEndpoint
+import dev.huecoder.md3agent.llm.ProviderException
 import dev.huecoder.md3agent.llm.ToolSpec
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -31,6 +32,7 @@ interface ChatWire {
             ApiFormat.OPENAI -> OpenAiChatWire
             ApiFormat.ANTHROPIC -> AnthropicChatWire
             ApiFormat.GEMINI -> GeminiChatWire
+            ApiFormat.ELEVENLABS -> throw ProviderException.InvalidConfiguration("ElevenLabs has no chat API")
         }
     }
 }
