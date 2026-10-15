@@ -122,16 +122,16 @@ object ChatTimeline {
     private fun reply(rounds: List<MessageEntity>, results: Map<String?, MessageEntity>, draft: StreamingDraft?, isLatest: Boolean): ChatItem.Reply {
         val live = draft?.takeIf { d -> rounds.any { it.id == d.messageId } }
         val views = rounds.map { RoundView.of(it, live) }
-        val last = views.last()
         val isActive = draft != null && isLatest
         val usages = rounds.mapNotNull { row ->
             if (row.promptTokens != null && row.completionTokens != null) TokenUsage(row.promptTokens, row.completionTokens, row.cachedTokens ?: 0) else null
         } + listOfNotNull(live?.usage)
+        val parts = views.flatMap { it.parts(results, live?.takeIf { d -> d.messageId == it.row.id }) }.mergeAdjacentWork()
         return ChatItem.Reply(
             id = rounds.first().id,
-            parts = views.flatMap { it.parts(results, live?.takeIf { d -> d.messageId == it.row.id }) }.mergeAdjacentWork(),
+            parts = parts,
             isActive = isActive,
-            isWaiting = isActive && last.content.isEmpty() && last.reasoning.isEmpty() && last.calls.isEmpty(),
+            isWaiting = isActive && parts.isEmpty(),
             startedAt = rounds.first().createdAt,
             finishedAt = if (isActive) null else rounds.last().finishedAt,
             usage = usages.reduceOrNull(TokenUsage::plus),

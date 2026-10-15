@@ -119,6 +119,24 @@ class ChatTimelineTest {
     }
 
     @Test
+    fun `waiting shows only before the first part of the reply`() {
+        val first = row(MessageRole.USER, "найди")
+        val emptyRound = row(MessageRole.ASSISTANT)
+        val emptyDraft = StreamingDraft(emptyRound.id, "", "", emptyList(), runningCallIds = emptySet(), awaitingCallId = null, usage = null)
+        assertTrue((ChatTimeline.build(listOf(first, emptyRound), emptyDraft)[1] as ChatItem.Reply).isWaiting)
+
+        val workedRound = row(MessageRole.ASSISTANT, calls = listOf(search))
+        val result = row(MessageRole.TOOL, "найдено").copy(toolCallId = "s1")
+        val nextRound = row(MessageRole.ASSISTANT)
+        val nextDraft = StreamingDraft(nextRound.id, "", "", emptyList(), runningCallIds = emptySet(), awaitingCallId = null, usage = null)
+
+        val reply = ChatTimeline.build(listOf(first, workedRound, result, nextRound), nextDraft)[1] as ChatItem.Reply
+
+        assertTrue(reply.isActive)
+        assertFalse(reply.isWaiting)
+    }
+
+    @Test
     fun `usage is summed over rounds and duration spans the whole reply`() {
         val messages = listOf(
             row(MessageRole.USER, "найди"),
