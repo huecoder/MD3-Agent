@@ -53,6 +53,7 @@ import dev.huecoder.md3agent.tools.ShowDiagramTool
 import dev.huecoder.md3agent.tools.ShowUiTool
 import dev.huecoder.md3agent.tools.system.RunCommandTool
 import dev.huecoder.md3agent.tools.system.RunPythonTool
+import dev.huecoder.md3agent.system.shell.AccessStatus
 import dev.huecoder.md3agent.system.shell.ShellAccess
 import dev.huecoder.md3agent.tools.ToolRegistry
 import dev.huecoder.md3agent.data.reminders.ReminderRepository
@@ -119,7 +120,13 @@ class AppContainer(context: Context) {
     val library = FileLibrary(appContext.contentResolver, uploads, shellAccess.workspace, ChatSentFiles(database.messageDao(), attachments))
 
     val python = PythonRuntime(appContext)
-    val phoneControl = PhoneControl(appContext)
+    val phoneControl = PhoneControl(appContext) {
+        when {
+            shellAccess.shizuku.status() == AccessStatus.READY -> shellAccess.shizuku
+            shellAccess.root.status() == AccessStatus.READY -> shellAccess.root
+            else -> null
+        }
+    }
     val phoneSounds = PhoneUseSounds(appContext)
 
     val prompts = UserPrompts()

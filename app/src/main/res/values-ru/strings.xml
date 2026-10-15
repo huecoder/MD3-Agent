@@ -621,7 +621,6 @@
     <string name="phone_use_stop">Стоп</string>
     <string name="phone_use_collapse">Свернуть</string>
     <string name="phone_use_expand">Развернуть</string>
-    <string name="phone_use_drag">Переместить</string>
     <string name="phone_use_interrupt_title">Прервать агента?</string>
     <string name="phone_use_interrupt_body">Агент сейчас пользуется телефоном. Касания могут сбить его действия.</string>
     <string name="phone_use_interrupt_confirm">Остановить агента</string>

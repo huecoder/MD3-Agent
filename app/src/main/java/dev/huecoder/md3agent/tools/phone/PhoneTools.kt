@@ -4,14 +4,14 @@ import dev.huecoder.md3agent.data.attachments.AttachmentStore
 import dev.huecoder.md3agent.data.settings.ToolPermission
 import dev.huecoder.md3agent.data.settings.ToolSettings
 import dev.huecoder.md3agent.llm.ToolSpec
-import dev.huecoder.md3agent.system.control.ActionResult
 import dev.huecoder.md3agent.system.control.GlobalKey
-import dev.huecoder.md3agent.system.control.PhoneAction
+import dev.huecoder.md3agent.system.control.Observe
 import dev.huecoder.md3agent.system.control.PhoneControl
 import dev.huecoder.md3agent.system.control.PhoneSay
 import dev.huecoder.md3agent.system.control.ScreenRegion
 import dev.huecoder.md3agent.system.control.ScreenshotResult
 import dev.huecoder.md3agent.system.control.SwipeDirection
+import dev.huecoder.md3agent.system.control.Waiter
 import dev.huecoder.md3agent.tools.Tool
 import dev.huecoder.md3agent.tools.ToolContext
 import dev.huecoder.md3agent.tools.ToolArgumentException
@@ -22,9 +22,7 @@ import dev.huecoder.md3agent.tools.objectSchema
 import dev.huecoder.md3agent.tools.optionalBoolean
 import dev.huecoder.md3agent.tools.optionalInt
 import dev.huecoder.md3agent.tools.optionalString
-import dev.huecoder.md3agent.tools.requireString
 import dev.huecoder.md3agent.tools.stringProperty
-import kotlinx.coroutines.delay
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.JsonPrimitive
@@ -125,20 +123,49 @@ class PhoneScreenshotTool(control: PhoneControl, private val attachments: Attach
 class PhoneActionTool(control: PhoneControl) : PhoneTool(control) {
     override val spec = ToolSpec(
         name = NAME,
-        description = "Performs one action on the phone and returns the screen after it. Element numbers come from the latest " +
-            "${PhoneScreenTool.NAME} or ${NAME} result. Prefer element numbers over coordinates.",
-        parameters = objectSchema(required = listOf("action", SAY)) {
-            enumProperty("action", "What to do", ACTIONS)
-            sayProperty(required = true)
-            integerProperty("element", "Element number for tap, long_press, type and scroll", minimum = 1, maximum = MAX_ELEMENT)
-            integerProperty("x", "Screen x for tap_at", minimum = 0, maximum = MAX_COORDINATE)
-            integerProperty("y", "Screen y for tap_at", minimum = 0, maximum = MAX_COORDINATE)
-            stringProperty("text", "Text for type, replaces the field content")
+        description = "Performs actions on the phone and reports what changed. Pass one action with 'action', or a batch with 'steps' " +
+            "(up to ${PhoneRequestParser.MAX_STEPS}, each step takes the same fields as a single action plus its own say). " +
+            "Element numbers come from the latest ${PhoneScreenTool.NAME} or ${NAME} result; 'target' finds an element by its text, id or role instead. " +
+            "Prefer elements and targets over coordinates.",
+        parameters = objectSchema(required = emptyList()) {
+            enumProperty("action", "What to do", PhoneRequestParser.ACTIONS.split(", "))
+            sayProperty(required = false)
+            putJsonObject("steps") {
+                put("type", "array")
+                put("description", "Several actions in one call, each an object with the same fields as a single action plus its own say")
+                putJsonObject("items") { put("type", "object") }
+            }
+            enumProperty("observe", "What to attach after the actions: the full screen, only the changed elements, or nothing", Observe.entries.map { it.key })
+            enumProperty("on_error", "In a batch: stop on the first failed step or continue anyway", listOf("stop", "continue"))
+            integerProperty("element", "Element number for tap, long_press, double_tap, type and scroll", minimum = 1, maximum = MAX_ELEMENT)
+            putJsonObject("target") {
+                put("type", "object")
+                put(
+                    "description",
+                    "Element to act on, found by its text, view id or role instead of a number: " +
+                        "{text, id, role}, optional exact (default false) and index (counts from 1) narrow the match",
+                )
+            }
+            integerProperty("x", "Screen x for tap_at", minimum = 0, maximum = PhoneRequestParser.MAX_COORDINATE)
+            integerProperty("y", "Screen y for tap_at", minimum = 0, maximum = PhoneRequestParser.MAX_COORDINATE)
+            stringProperty("text", "Text for type (replaces the field content) and for wait_for with condition text_visible or text_gone")
             booleanProperty("submit", "Press enter after typing")
-            enumProperty("direction", "Direction for scroll (where the content goes) and swipe (where the finger goes)", SwipeDirection.entries.map { it.key })
+            enumProperty("direction", "Direction for scroll and scroll_to (where the content goes) and swipe (where the finger goes)", SwipeDirection.entries.map { it.key })
             enumProperty("key", "System button for press", GlobalKey.entries.map { it.key })
-            stringProperty("app", "App name or package for open_app")
-            integerProperty("ms", "Pause length for wait", minimum = 100, maximum = MAX_WAIT_MS)
+            stringProperty("app", "App name or package for open_app, or the app to wait for with wait_for condition app")
+            integerProperty("ms", "Pause length for wait", minimum = PhoneRequestParser.MIN_WAIT_MS, maximum = PhoneRequestParser.MAX_WAIT_MS)
+            integerProperty("max_swipes", "Swipe budget for scroll_to", minimum = 1, maximum = PhoneRequestParser.MAX_SWIPES)
+            integerProperty("timeout_ms", "How long wait_for waits before giving up", minimum = Waiter.MIN_TIMEOUT_MS.toInt(), maximum = Waiter.MAX_TIMEOUT_MS.toInt())
+            enumProperty("condition", "What wait_for waits for", listOf("text_visible", "text_gone", "app", "idle", "screen_changed"))
+            putJsonObject("path") {
+                put("type", "array")
+                put("description", "Points for drag, like [{\"x\":100,\"y\":200},{\"x\":300,\"y\":400}]")
+                putJsonObject("items") { put("type", "object") }
+            }
+            putJsonObject("from") { put("type", "object"); put("description", "Start point for swipe, like {\"x\":100,\"y\":200}") }
+            putJsonObject("to") { put("type", "object"); put("description", "End point for swipe") }
+            putJsonObject("distance") { put("type", "number"); put("description", "Swipe length as a fraction of the screen, default fits the gesture") }
+            integerProperty("duration_ms", "Gesture length for swipe and drag", minimum = PhoneRequestParser.MIN_DURATION_MS, maximum = PhoneRequestParser.MAX_DURATION_MS)
         },
     )
 
@@ -146,46 +173,14 @@ class PhoneActionTool(control: PhoneControl) : PhoneTool(control) {
 
     override suspend fun execute(arguments: JsonObject, settings: ToolSettings): ToolOutcome {
         if (!control.isReady()) return ToolOutcome.error(PhoneControl.NOT_CONNECTED)
-        val action = parse(arguments)
-        return when (val result = control.perform(action, arguments.sayOrNull())) {
-            is ActionResult.Failed -> ToolOutcome.error(result.reason)
-            is ActionResult.Done -> {
-                if (action !is PhoneAction.Wait) delay(SETTLE_MS)
-                val screen = control.screen()?.describe() ?: PhoneControl.NOT_CONNECTED
-                ToolOutcome(result.note + "\n\n" + screen)
-            }
-        }
+        val report = control.run(PhoneRequestParser.parse(arguments)) ?: return ToolOutcome.error(PhoneControl.NOT_CONNECTED)
+        val text = report.render()
+        return if (report.failed) ToolOutcome.error(text) else ToolOutcome(text)
     }
-
-    private fun parse(arguments: JsonObject): PhoneAction {
-        val element = arguments.optionalInt("element")
-        return when (val name = arguments.requireString("action")) {
-            "tap" -> PhoneAction.Tap(element ?: missing("element"))
-            "long_press" -> PhoneAction.LongPress(element ?: missing("element"))
-            "tap_at" -> PhoneAction.TapAt(arguments.optionalInt("x") ?: missing("x"), arguments.optionalInt("y") ?: missing("y"))
-            "type" -> PhoneAction.Type(element, arguments.requireString("text"), arguments.optionalBoolean("submit") ?: false)
-            "scroll" -> PhoneAction.Scroll(element, direction(arguments))
-            "swipe" -> PhoneAction.Swipe(direction(arguments))
-            "press" -> PhoneAction.Press(GlobalKey.of(arguments.optionalString("key")) ?: missing("key"))
-            "open_app" -> PhoneAction.OpenApp(arguments.requireString("app"))
-            "wait" -> PhoneAction.Wait((arguments.optionalInt("ms") ?: DEFAULT_WAIT_MS).coerceIn(MIN_WAIT_MS, MAX_WAIT_MS).toLong())
-            else -> throw ToolArgumentException("Unknown action '$name', use one of ${ACTIONS.joinToString()}")
-        }
-    }
-
-    private fun direction(arguments: JsonObject) = SwipeDirection.of(arguments.optionalString("direction")) ?: missing("direction")
-
-    private fun missing(name: String): Nothing = throw ToolArgumentException("This action needs '$name'")
 
     companion object {
         const val NAME = "phone_action"
-        private val ACTIONS = listOf("tap", "long_press", "tap_at", "type", "scroll", "swipe", "press", "open_app", "wait")
-        private const val SETTLE_MS = 700L
-        private const val DEFAULT_WAIT_MS = 1_500
-        private const val MIN_WAIT_MS = 100
-        private const val MAX_WAIT_MS = 10_000
         private const val MAX_ELEMENT = 500
-        private const val MAX_COORDINATE = 10_000
     }
 }
 

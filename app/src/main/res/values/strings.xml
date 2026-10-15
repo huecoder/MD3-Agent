@@ -620,7 +620,6 @@
     <string name="phone_use_stop">Stop</string>
     <string name="phone_use_collapse">Collapse</string>
     <string name="phone_use_expand">Expand</string>
-    <string name="phone_use_drag">Move</string>
     <string name="phone_use_interrupt_title">Interrupt the agent?</string>
     <string name="phone_use_interrupt_body">The agent is using the phone right now. Touching the screen can throw off what it is doing.</string>
     <string name="phone_use_interrupt_confirm">Stop the agent</string>

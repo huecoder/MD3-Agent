@@ -9,7 +9,7 @@ class ScreenTextTest {
     private val elements = listOf(
         testElement(1, "Settings", role = "Text", clickable = false, box = ScreenBox(100, 100, 300, 180)),
         testElement(2, "Wi-Fi", role = "Item", box = ScreenBox(0, 300, 1080, 400)),
-        testElement(3, "", role = "List", scrollable = true, scrollMoves = "↓↑", box = ScreenBox(0, 200, 1080, 2300)),
+        testElement(3, "", role = "List", clickable = false, scrollable = true, scrollMoves = "↓↑", box = ScreenBox(0, 200, 1080, 2300)),
         testElement(4, "Bluetooth", partial = true, box = ScreenBox(0, 2250, 1080, 2400)),
     )
 

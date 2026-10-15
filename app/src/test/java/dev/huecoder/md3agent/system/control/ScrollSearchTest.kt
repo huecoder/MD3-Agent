@@ -62,7 +62,7 @@ class ScrollSearchTest {
 
         val outcome = search(list).run(listOf(SwipeDirection.DOWN, SwipeDirection.UP), maxSwipes = 30)
 
-        assertEquals(SearchOutcome.Found(2 + 5 + 1 - 0), outcome.let { SearchOutcome.Found((it as SearchOutcome.Found).swipes).takeIf { found -> found.swipes in 8..9 } ?: it })
+        assertEquals(SearchOutcome.Found(3 + 7), outcome)
     }
 
     @Test
