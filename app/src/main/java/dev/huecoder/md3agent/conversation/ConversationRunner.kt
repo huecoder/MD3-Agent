@@ -23,9 +23,17 @@ import dev.huecoder.md3agent.llm.models.ReasoningEffort
 import dev.huecoder.md3agent.data.models.ModelCatalog
 import dev.huecoder.md3agent.data.settings.ModelSelection
 import dev.huecoder.md3agent.llm.CompletionEvent
+import dev.huecoder.md3agent.llm.ProviderException
+import dev.huecoder.md3agent.llm.ReasoningBlock
+import dev.huecoder.md3agent.llm.ReasoningTrace
 import dev.huecoder.md3agent.llm.ToolCall
 import dev.huecoder.md3agent.llm.ToolCallAccumulator
 import dev.huecoder.md3agent.llm.TokenUsage
+import dev.huecoder.md3agent.llm.ToolSpec
+import dev.huecoder.md3agent.llm.carriesReasoning
+import dev.huecoder.md3agent.llm.promptFingerprint
+import dev.huecoder.md3agent.llm.rejectsReplayedReasoning
+import dev.huecoder.md3agent.llm.withoutReasoning
 import dev.huecoder.md3agent.prompt.SystemPromptRenderer
 import dev.huecoder.md3agent.tools.ToolContext
 import dev.huecoder.md3agent.tools.ToolOutcome
@@ -37,6 +45,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.combine
@@ -150,15 +160,17 @@ class ConversationRunner(
         )
         val toolSpecs = if (traits.output == ModelOutput.IMAGE || info.toolUse == false) emptyList() else tools.specs(toolSettings)
         val turns = buildTurns(agent, toolSettings, chats.history(chatId))
+        val prompt = promptFingerprint(turns, toolSpecs)
         val message = chats.startAssistantMessage(chatId, model.modelId)
         val accumulator = ToolCallAccumulator()
         var draft = StreamingDraft(message.id, content = "", reasoning = "", toolCalls = emptyList(), runningCallIds = emptySet(), awaitingCallId = null, usage = null)
         publish(chatId, draft)
         try {
-            completions.stream(model.provider, model.modelId, turns, toolSpecs, options).collect { event ->
+            streamWithReplayFallback(model, turns, toolSpecs, options).collect { event ->
                 draft = when (event) {
                     is CompletionEvent.ContentDelta -> draft.copy(content = draft.content + event.text)
                     is CompletionEvent.ReasoningDelta -> draft.copy(reasoning = draft.reasoning + event.text)
+                    is CompletionEvent.ReasoningBlockDone -> draft.copy(reasoningBlocks = draft.reasoningBlocks + event.block)
                     is CompletionEvent.ImageOutput -> draft.copy(images = draft.images + event.url)
                     is CompletionEvent.ToolCallDelta -> draft.copy(toolCalls = accumulator.apply { add(event) }.calls())
                     is CompletionEvent.Finished -> draft
@@ -166,13 +178,13 @@ class ConversationRunner(
                 }
                 publish(chatId, draft)
             }
-            persist(message, draft, MessageStatus.COMPLETE, errorText = null)
+            persist(message, draft, MessageStatus.COMPLETE, errorText = null, trace = reasoningTrace(model, prompt, draft))
             return draft
         } catch (e: CancellationException) {
-            withContext(NonCancellable) { persist(message, draft, MessageStatus.CANCELLED, errorText = null) }
+            withContext(NonCancellable) { persist(message, draft, MessageStatus.CANCELLED, errorText = null, trace = reasoningTrace(model, prompt, draft)) }
             throw e
         } catch (e: Exception) {
-            persist(message, draft, MessageStatus.ERROR, errorText = e.message ?: e.javaClass.simpleName)
+            persist(message, draft, MessageStatus.ERROR, errorText = e.message ?: e.javaClass.simpleName, trace = null)
             return null
         }
     }
@@ -215,13 +227,23 @@ class ConversationRunner(
         return ResolvedModel(provider, active.modelId, active.reasoningEffort)
     }
 
-    private suspend fun persist(message: MessageEntity, draft: StreamingDraft, status: MessageStatus, errorText: String?) {
+    private fun streamWithReplayFallback(model: ResolvedModel, turns: List<ChatTurn>, toolSpecs: List<ToolSpec>, options: CompletionOptions): Flow<CompletionEvent> =
+        completions.stream(model.provider, model.modelId, turns, toolSpecs, options).catch { failure ->
+            if (failure !is ProviderException.Http || !failure.rejectsReplayedReasoning() || !turns.carriesReasoning()) throw failure
+            emitAll(completions.stream(model.provider, model.modelId, turns.withoutReasoning(), toolSpecs, options))
+        }
+
+    private fun reasoningTrace(model: ResolvedModel, prompt: String, draft: StreamingDraft): ReasoningTrace? =
+        draft.reasoningBlocks.takeIf { it.isNotEmpty() }?.let { ReasoningTrace(model.provider.format, model.modelId, prompt, it) }
+
+    private suspend fun persist(message: MessageEntity, draft: StreamingDraft, status: MessageStatus, errorText: String?, trace: ReasoningTrace?) {
         val images = if (draft.images.isEmpty()) emptyList() else generatedImages.store(draft.images)
         chats.save(
             message.copy(
                 attachmentsJson = Attachment.encode(images),
                 content = draft.content,
                 reasoning = draft.reasoning.ifEmpty { null },
+                reasoningTraceJson = trace?.let(TurnAssembler::encodeTrace),
                 status = status,
                 errorText = errorText,
                 toolCallsJson = TurnAssembler.encodeToolCalls(draft.toolCalls),
@@ -268,6 +290,7 @@ data class StreamingDraft(
     val awaitingCallId: String?,
     val usage: TokenUsage?,
     val images: List<String> = emptyList(),
+    val reasoningBlocks: List<ReasoningBlock> = emptyList(),
 )
 
 data class ResolvedModel(val provider: ProviderProfile, val modelId: String, val reasoningEffort: ReasoningEffort?)

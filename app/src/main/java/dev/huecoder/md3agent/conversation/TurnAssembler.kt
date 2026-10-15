@@ -7,6 +7,7 @@ import dev.huecoder.md3agent.data.db.MessageEntity
 import dev.huecoder.md3agent.data.db.MessageRole
 import dev.huecoder.md3agent.data.db.MessageStatus
 import dev.huecoder.md3agent.llm.ChatTurn
+import dev.huecoder.md3agent.llm.ReasoningTrace
 import dev.huecoder.md3agent.llm.ToolCall
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
@@ -20,6 +21,11 @@ object TurnAssembler {
 
     fun encodeToolCalls(calls: List<ToolCall>): String? = calls.takeIf { it.isNotEmpty() }?.let { json.encodeToString(toolCallList, it) }
 
+    fun encodeTrace(trace: ReasoningTrace): String = json.encodeToString(ReasoningTrace.serializer(), trace)
+
+    fun decodeTrace(raw: String?): ReasoningTrace? =
+        raw?.let { runCatching { json.decodeFromString(ReasoningTrace.serializer(), it) }.getOrNull() }
+
     fun assemble(
         systemPrompt: String,
         history: List<MessageEntity>,
@@ -29,6 +35,7 @@ object TurnAssembler {
         val keptCallIds = HashSet<String>()
         val turns = mutableListOf(ChatTurn(ChatTurn.Role.SYSTEM, systemPrompt))
         val toolImages = mutableListOf<String>()
+        val currentLoopStart = history.indexOfLast { it.role == MessageRole.USER } + 1
 
         fun flushToolImages() {
             if (toolImages.isEmpty()) return
@@ -36,7 +43,7 @@ object TurnAssembler {
             toolImages.clear()
         }
 
-        for (message in history) {
+        for ((position, message) in history.withIndex()) {
             if (message.role != MessageRole.TOOL) flushToolImages()
             when (message.role) {
                 MessageRole.USER -> if (message.status != MessageStatus.ERROR) {
@@ -46,7 +53,8 @@ object TurnAssembler {
                     val calls = decodeToolCalls(message.toolCallsJson).filter { it.id in answeredCallIds }
                     keptCallIds += calls.map { it.id }
                     val text = if (message.status == MessageStatus.ERROR) "" else message.content
-                    if (text.isNotBlank() || calls.isNotEmpty()) turns += ChatTurn(ChatTurn.Role.ASSISTANT, text, toolCalls = calls)
+                    val trace = decodeTrace(message.reasoningTraceJson).takeIf { calls.isNotEmpty() && position >= currentLoopStart }
+                    if (text.isNotBlank() || calls.isNotEmpty()) turns += ChatTurn(ChatTurn.Role.ASSISTANT, text, toolCalls = calls, reasoning = trace)
                 }
                 MessageRole.TOOL -> if (message.toolCallId in keptCallIds) {
                     turns += ChatTurn(ChatTurn.Role.TOOL, message.content, toolCallId = message.toolCallId)

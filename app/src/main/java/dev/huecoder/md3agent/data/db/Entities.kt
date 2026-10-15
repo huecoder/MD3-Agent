@@ -79,6 +79,7 @@ data class MessageEntity(
     val completionTokens: Int? = null,
     val cachedTokens: Int? = null,
     val contextNote: String? = null,
+    val reasoningTraceJson: String? = null,
 )
 
 enum class MemoryTier { INSTANT, LONG_TERM }

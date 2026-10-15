@@ -45,7 +45,7 @@ The project is at version 0.8, so expect some rough edges. Bug reports are welco
 - Custom base URL and any number of extra headers for every provider.
 - Live model list from the provider, cached on the device, with search and filters for vision, reasoning and image output.
 - Streaming in all three formats, including tool calls and token usage.
-- Reasoning effort per chat, with the model's thinking shown in a collapsible block.
+- Reasoning effort per chat, with the model's thinking shown in a collapsible block. Signed thinking blocks from Anthropic, thought signatures from Gemini and `reasoning_details` from OpenAI-format servers are kept and sent back while the model works through tool calls.
 - Prompt caching for Claude models and image output for models that can draw.
 
 **Chats**

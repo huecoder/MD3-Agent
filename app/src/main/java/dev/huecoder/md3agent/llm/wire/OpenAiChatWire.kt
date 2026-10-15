@@ -1,11 +1,15 @@
 package dev.huecoder.md3agent.llm.wire
 
+import dev.huecoder.md3agent.data.settings.ApiFormat
 import dev.huecoder.md3agent.llm.ChatTurn
 import dev.huecoder.md3agent.llm.CompletionEvent
 import dev.huecoder.md3agent.llm.ProviderEndpoint
+import dev.huecoder.md3agent.llm.ReasoningBlock
+import dev.huecoder.md3agent.llm.ReasoningTrace
 import dev.huecoder.md3agent.llm.TokenUsage
 import dev.huecoder.md3agent.llm.models.ModelOutput
 import dev.huecoder.md3agent.llm.models.ReasoningControl
+import dev.huecoder.md3agent.llm.promptFingerprint
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
@@ -45,6 +49,9 @@ object OpenAiChatWire : ChatWire {
         val events = mutableListOf<CompletionEvent>()
         delta?.nonEmptyText("reasoning_content", "reasoning")?.let { events += CompletionEvent.ReasoningDelta(it) }
         delta?.nonEmptyText("content")?.let { events += CompletionEvent.ContentDelta(it) }
+        (delta?.get("reasoning_details") as? JsonArray)?.forEach { detail ->
+            (detail as? JsonObject)?.let { events += CompletionEvent.ReasoningBlockDone(ReasoningBlock(it)) }
+        }
         (delta?.get("content") as? JsonArray)?.forEach { part -> (part as? JsonObject)?.let { events += contentPartEvents(it) } }
         (delta?.get("images") as? JsonArray)?.forEach { part -> (part as? JsonObject)?.let { events += contentPartEvents(it) } }
         (delta?.get("tool_calls") as? JsonArray)?.forEachIndexed { position, element ->
@@ -107,7 +114,11 @@ object OpenAiChatWire : ChatWire {
             ModelOutput.TEXT_AND_IMAGE -> putJsonArray("modalities") { add("image"); add("text") }
         }
         putJsonObject("stream_options") { put("include_usage", true) }
-        putJsonArray("messages") { chat.turns.forEach { add(message(it, options.explicitCaching && it.cacheBreakpoint)) } }
+        val fingerprint = promptFingerprint(chat.turns, chat.tools)
+        val replay = chat.turns.mapNotNull { it.reasoning }.all { it.matches(ApiFormat.OPENAI, chat.model, fingerprint) }
+        putJsonArray("messages") {
+            chat.turns.forEach { add(message(it, options.explicitCaching && it.cacheBreakpoint, it.reasoning.takeIf { replay })) }
+        }
         if (chat.tools.isNotEmpty()) {
             putJsonArray("tools") {
                 chat.tools.forEach { tool ->
@@ -124,7 +135,7 @@ object OpenAiChatWire : ChatWire {
         }
     }
 
-    private fun message(turn: ChatTurn, markCache: Boolean): JsonObject = buildJsonObject {
+    private fun message(turn: ChatTurn, markCache: Boolean, trace: ReasoningTrace?): JsonObject = buildJsonObject {
         put("role", turn.role.wireName)
         when {
             turn.imageUrls.isNotEmpty() || (markCache && turn.content.isNotEmpty()) -> putJsonArray("content") {
@@ -160,6 +171,7 @@ object OpenAiChatWire : ChatWire {
                 }
             }
         }
+        trace?.let { replayed -> putJsonArray("reasoning_details") { replayed.blocks.forEach { add(it.json) } } }
         turn.toolCallId?.let { put("tool_call_id", it) }
     }
 }

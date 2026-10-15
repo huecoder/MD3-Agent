@@ -139,7 +139,7 @@ object GeminiChatWire : ChatWire {
                     put("name", call.name)
                     put("args", argumentsObject(call.arguments))
                 }
-                put("thoughtSignature", SKIP_SIGNATURE)
+                put("thoughtSignature", call.signature ?: SKIP_SIGNATURE)
             }
         }
         return parts
@@ -166,6 +166,7 @@ object GeminiChatWire : ChatWire {
                         id = call.text("id") ?: "call_${UUID.randomUUID()}",
                         name = call.text("name"),
                         arguments = call.obj("args")?.toString() ?: "{}",
+                        signature = part.text("thoughtSignature"),
                     ),
                 )
             }

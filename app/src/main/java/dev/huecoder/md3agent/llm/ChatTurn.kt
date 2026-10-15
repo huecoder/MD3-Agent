@@ -13,12 +13,13 @@ data class ChatTurn(
     val toolCalls: List<ToolCall> = emptyList(),
     val toolCallId: String? = null,
     val cacheBreakpoint: Boolean = false,
+    val reasoning: ReasoningTrace? = null,
 ) {
     enum class Role(val wireName: String) { SYSTEM("system"), USER("user"), ASSISTANT("assistant"), TOOL("tool") }
 }
 
 @Serializable
-data class ToolCall(val id: String, val name: String, val arguments: String)
+data class ToolCall(val id: String, val name: String, val arguments: String, val signature: String? = null)
 
 data class CompletionOptions(
     val reasoningEffort: ReasoningEffort? = null,
@@ -33,7 +34,8 @@ sealed interface CompletionEvent {
     data class ContentDelta(val text: String) : CompletionEvent
     data class ReasoningDelta(val text: String) : CompletionEvent
     data class ImageOutput(val url: String) : CompletionEvent
-    data class ToolCallDelta(val index: Int, val id: String?, val name: String?, val arguments: String?) : CompletionEvent
+    data class ReasoningBlockDone(val block: ReasoningBlock) : CompletionEvent
+    data class ToolCallDelta(val index: Int, val id: String?, val name: String?, val arguments: String?, val signature: String? = null) : CompletionEvent
     data class Finished(val reason: String?) : CompletionEvent
     data class Usage(val usage: TokenUsage) : CompletionEvent
 }

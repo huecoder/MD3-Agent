@@ -1,10 +1,14 @@
 package dev.huecoder.md3agent.llm.wire
 
+import dev.huecoder.md3agent.data.settings.ApiFormat
 import dev.huecoder.md3agent.llm.ChatTurn
 import dev.huecoder.md3agent.llm.CompletionEvent
 import dev.huecoder.md3agent.llm.ProviderEndpoint
+import dev.huecoder.md3agent.llm.ReasoningBlock
+import dev.huecoder.md3agent.llm.ReasoningTrace
 import dev.huecoder.md3agent.llm.TokenUsage
 import dev.huecoder.md3agent.llm.models.ReasoningEffort
+import dev.huecoder.md3agent.llm.promptFingerprint
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
@@ -21,6 +25,8 @@ object AnthropicChatWire : ChatWire {
     private const val OUTPUT_TOKENS = 8_000
     private const val ROLE_USER = "user"
     private const val ROLE_ASSISTANT = "assistant"
+    private const val THINKING = "thinking"
+    private const val REDACTED_THINKING = "redacted_thinking"
 
     override fun request(endpoint: ProviderEndpoint, chat: ChatRequest): Request = endpoint
         .authorizedRequest(MESSAGES_PATH)
@@ -33,7 +39,8 @@ object AnthropicChatWire : ChatWire {
     private class Message(val role: String, val blocks: MutableList<JsonObject>)
 
     private fun body(chat: ChatRequest): JsonObject = buildJsonObject {
-        val budget = chat.options.reasoningEffort?.let(::thinkingBudget)?.takeUnless { midToolLoop(chat.turns) }
+        val replay = canReplay(chat)
+        val budget = chat.options.reasoningEffort?.let(::thinkingBudget)?.takeUnless { midToolLoop(chat.turns) && !continuesThinking(chat.turns, replay) }
         put("model", chat.model)
         put("stream", true)
         put("max_tokens", OUTPUT_TOKENS + (budget ?: 0))
@@ -48,7 +55,7 @@ object AnthropicChatWire : ChatWire {
                 }
             }
         }
-        put("messages", JsonArray(messages(chat.turns).map { message ->
+        put("messages", JsonArray(messages(chat.turns, replay).map { message ->
             buildJsonObject {
                 put("role", message.role)
                 put("content", JsonArray(message.blocks))
@@ -67,10 +74,15 @@ object AnthropicChatWire : ChatWire {
         }
     }
 
-    private fun messages(turns: List<ChatTurn>): List<Message> {
+    private fun canReplay(chat: ChatRequest): Boolean {
+        val fingerprint = promptFingerprint(chat.turns, chat.tools)
+        return chat.turns.mapNotNull { it.reasoning }.all { it.matches(ApiFormat.ANTHROPIC, chat.model, fingerprint) }
+    }
+
+    private fun messages(turns: List<ChatTurn>, replay: Boolean): List<Message> {
         val messages = mutableListOf<Message>()
         turns.filter { it.role != ChatTurn.Role.SYSTEM }.forEach { turn ->
-            val blocks = blocksOf(turn).ifEmpty { return@forEach }
+            val blocks = blocksOf(turn, turn.reasoning.takeIf { replay }).ifEmpty { return@forEach }
             if (turn.cacheBreakpoint) blocks[blocks.lastIndex] = blocks.last().withCacheControl()
             val role = if (turn.role == ChatTurn.Role.ASSISTANT) ROLE_ASSISTANT else ROLE_USER
             val previous = messages.lastOrNull()
@@ -79,7 +91,7 @@ object AnthropicChatWire : ChatWire {
         return messages
     }
 
-    private fun blocksOf(turn: ChatTurn): MutableList<JsonObject> {
+    private fun blocksOf(turn: ChatTurn, trace: ReasoningTrace?): MutableList<JsonObject> {
         val blocks = mutableListOf<JsonObject>()
         if (turn.role == ChatTurn.Role.TOOL) {
             blocks += buildJsonObject {
@@ -89,9 +101,11 @@ object AnthropicChatWire : ChatWire {
             }
             return blocks
         }
+        trace?.let { blocks += it.leading() }
         if (turn.content.isNotBlank()) blocks += buildJsonObject { put("type", "text"); put("text", turn.content) }
         turn.imageUrls.forEach { blocks += imageBlock(it) }
         turn.toolCalls.forEach { call ->
+            trace?.let { blocks += it.before(call.id) }
             blocks += buildJsonObject {
                 put("type", "tool_use")
                 put("id", call.id)
@@ -120,6 +134,9 @@ object AnthropicChatWire : ChatWire {
     private fun midToolLoop(turns: List<ChatTurn>): Boolean =
         turns.lastOrNull { it.role == ChatTurn.Role.ASSISTANT }?.toolCalls?.isNotEmpty() == true
 
+    private fun continuesThinking(turns: List<ChatTurn>, replay: Boolean): Boolean =
+        replay && turns.lastOrNull { it.role == ChatTurn.Role.ASSISTANT }?.reasoning?.leading()?.isNotEmpty() == true
+
     private fun thinkingBudget(effort: ReasoningEffort): Int? = when (effort) {
         ReasoningEffort.NONE -> null
         ReasoningEffort.MINIMAL -> 1_024
@@ -135,10 +152,25 @@ object AnthropicChatWire : ChatWire {
 
     private val cacheControl = buildJsonObject { put("type", "ephemeral") }
 
+    private class OpenBlock(val type: String, var text: String, var signature: String, val data: String) {
+        fun finish(): JsonObject = buildJsonObject {
+            put("type", type)
+            if (type == REDACTED_THINKING) {
+                put("data", data)
+            } else {
+                put("thinking", text)
+                put("signature", signature)
+            }
+        }
+    }
+
     private class AnthropicStream : ChatStream {
         private var inputTokens = 0
         private var cacheReadTokens = 0
         private var cacheWriteTokens = 0
+        private val open = HashMap<Int, OpenBlock>()
+        private val late = mutableListOf<JsonObject>()
+        private var bodyStarted = false
 
         override fun events(chunk: JsonObject): List<CompletionEvent> = when (chunk.text("type")) {
             "message_start" -> {
@@ -147,6 +179,7 @@ object AnthropicChatWire : ChatWire {
             }
             "content_block_start" -> blockStart(chunk.int("index") ?: 0, chunk.obj("content_block"))
             "content_block_delta" -> blockDelta(chunk.int("index") ?: 0, chunk.obj("delta"))
+            "content_block_stop" -> blockStop(chunk.int("index") ?: 0)
             "message_delta" -> messageDelta(chunk)
             else -> emptyList()
         }
@@ -157,16 +190,45 @@ object AnthropicChatWire : ChatWire {
             usage.int("cache_creation_input_tokens")?.let { cacheWriteTokens = it }
         }
 
-        private fun blockStart(index: Int, block: JsonObject?): List<CompletionEvent> = when (block?.text("type")) {
-            "tool_use" -> listOf(CompletionEvent.ToolCallDelta(index, block.text("id"), block.text("name"), arguments = null))
-            "text" -> listOfNotNull(block.text("text")?.takeIf { it.isNotEmpty() }?.let(CompletionEvent::ContentDelta))
-            else -> emptyList()
+        private fun blockStart(index: Int, block: JsonObject?): List<CompletionEvent> {
+            if (block == null) return emptyList()
+            return when (val type = block.text("type").orEmpty()) {
+                "tool_use" -> {
+                    bodyStarted = true
+                    val id = block.text("id")
+                    val anchored = late.map { CompletionEvent.ReasoningBlockDone(ReasoningBlock(it, anchor = id)) }
+                    late.clear()
+                    anchored + CompletionEvent.ToolCallDelta(index, id, block.text("name"), arguments = null)
+                }
+                "text" -> {
+                    bodyStarted = true
+                    listOfNotNull(block.text("text")?.takeIf { it.isNotEmpty() }?.let(CompletionEvent::ContentDelta))
+                }
+                THINKING, REDACTED_THINKING -> {
+                    open[index] = OpenBlock(type, block.text("thinking").orEmpty(), block.text("signature").orEmpty(), block.text("data").orEmpty())
+                    emptyList()
+                }
+                else -> emptyList()
+            }
+        }
+
+        private fun blockStop(index: Int): List<CompletionEvent> {
+            val finished = open.remove(index)?.finish() ?: return emptyList()
+            if (bodyStarted) {
+                late += finished
+                return emptyList()
+            }
+            return listOf(CompletionEvent.ReasoningBlockDone(ReasoningBlock(finished)))
         }
 
         private fun blockDelta(index: Int, delta: JsonObject?): List<CompletionEvent> = listOfNotNull(
             when (delta?.text("type")) {
                 "text_delta" -> delta.text("text")?.let(CompletionEvent::ContentDelta)
-                "thinking_delta" -> delta.text("thinking")?.let(CompletionEvent::ReasoningDelta)
+                "thinking_delta" -> delta.text("thinking")?.also { text -> open[index]?.let { it.text += text } }?.let(CompletionEvent::ReasoningDelta)
+                "signature_delta" -> {
+                    delta.text("signature")?.let { part -> open[index]?.let { it.signature += part } }
+                    null
+                }
                 "input_json_delta" -> delta.text("partial_json")?.let { CompletionEvent.ToolCallDelta(index, id = null, name = null, arguments = it) }
                 else -> null
             },
