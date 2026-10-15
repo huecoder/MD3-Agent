@@ -209,7 +209,9 @@ fun MessageList(
     avatarHandoff: AvatarHandoff? = null,
 ) {
     val handoffTargetId = if (avatarHandoff?.isActive == true) messages.firstOrNull { it is ChatItem.Reply }?.id else null
+    val newestId = messages.lastOrNull()?.id
     val listState = rememberLazyListState()
+    val anchor = rememberScrollAnchor(listState)
     val flash = remember { Animatable(0f) }
     var flashing by remember { mutableStateOf<String?>(null) }
     val flashColor = MaterialTheme.colorScheme.primaryContainer
@@ -233,15 +235,20 @@ fun MessageList(
         verticalArrangement = Arrangement.spacedBy(20.dp, Alignment.Bottom),
     ) {
         items(messages.asReversed(), key = { it.id }) { item ->
-            val placed = Modifier.animateItem(placementSpec = null).then(
-                if (item.id == flashing) {
-                    Modifier.drawBehind {
-                        drawRoundRect(flashColor.copy(alpha = flash.value), cornerRadius = CornerRadius(FOCUS_CORNER.toPx()))
-                    }
-                } else {
-                    Modifier
-                },
-            )
+            val keepingPlace = remember(anchor, item.id) { anchor.keepingPlace(item.id) }
+            val placed = Modifier
+                .animateItem(placementSpec = null)
+                .then(anchor.shifted)
+                .then(if (item.id == newestId) keepingPlace else Modifier)
+                .then(
+                    if (item.id == flashing) {
+                        Modifier.drawBehind {
+                            drawRoundRect(flashColor.copy(alpha = flash.value), cornerRadius = CornerRadius(FOCUS_CORNER.toPx()))
+                        }
+                    } else {
+                        Modifier
+                    },
+                )
             when (item) {
                 is ChatItem.User -> UserMessage(item, placed)
                 is ChatItem.Reply -> AssistantReply(
