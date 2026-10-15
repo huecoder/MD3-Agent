@@ -51,6 +51,56 @@ class KnockoutStageTest {
         assertTrue("beaten $beaten calm $calm", beaten < calm)
     }
 
+    @Test
+    fun `a layout change in flight sends the bot home at once`() = runTest {
+        val stage = knockoutStage()
+        var interruptedAt = 0L
+        withContext(frameClock {}) {
+            val flight = launch { stage.play(home, radius, hit = Offset(-1f, 0f), power = 1f, pixelsPerMeter) {} }
+            delay(INTERRUPT_AFTER_MS)
+            interruptedAt = currentTime
+            stage.setArea(Rect(0f, 0f, 1080f, 1300f))
+            flight.join()
+        }
+        assertTrue("took ${currentTime - interruptedAt}ms to give up", currentTime - interruptedAt <= 2 * FRAME_MS)
+        assertBackHome(stage)
+    }
+
+    @Test
+    fun `leaving the app in flight sends the bot home at once`() = runTest {
+        val stage = knockoutStage()
+        var interruptedAt = 0L
+        withContext(frameClock {}) {
+            val flight = launch { stage.play(home, radius, hit = Offset(-1f, 0f), power = 1f, pixelsPerMeter) {} }
+            delay(INTERRUPT_AFTER_MS)
+            interruptedAt = currentTime
+            stage.abort()
+            flight.join()
+        }
+        assertTrue("took ${currentTime - interruptedAt}ms to give up", currentTime - interruptedAt <= 2 * FRAME_MS)
+        assertBackHome(stage)
+    }
+
+    @Test
+    fun `the same layout reported again does not interrupt the flight`() = runTest {
+        val stage = knockoutStage()
+        withContext(frameClock {}) {
+            val flight = launch { stage.play(home, radius, hit = Offset(-1f, 0f), power = 1f, pixelsPerMeter) {} }
+            delay(INTERRUPT_AFTER_MS)
+            stage.setArea(area)
+            flight.join()
+        }
+        assertTrue("flew the whole way, ${currentTime}ms", currentTime > MIN_FULL_FLIGHT_MS)
+    }
+
+    private fun assertBackHome(stage: KnockoutStage) {
+        assertEquals(Offset.Zero, stage.offset)
+        assertEquals(0f, stage.spin)
+        assertEquals(Orientation.Identity, stage.orientation)
+        assertFalse(stage.isPlaying)
+        assertFalse(stage.isDazed)
+    }
+
     private suspend fun TestScope.timeOnScreen(midairHits: Int): Long {
         val stage = knockoutStage()
         val startedAt = currentTime
@@ -84,6 +134,8 @@ class KnockoutStageTest {
     private companion object {
         const val FRAME_MS = 16L
         const val HIT_GAP_MS = 120L
+        const val INTERRUPT_AFTER_MS = 400L
+        const val MIN_FULL_FLIGHT_MS = 2_000L
         const val NANOS_PER_MILLI = 1_000_000L
     }
 }

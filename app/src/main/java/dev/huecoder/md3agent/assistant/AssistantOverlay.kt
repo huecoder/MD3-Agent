@@ -40,6 +40,7 @@ import dev.huecoder.md3agent.feature.chat.ChatViewModel
 import dev.huecoder.md3agent.feature.chat.EmptyConversation
 import dev.huecoder.md3agent.feature.chat.MessageList
 import dev.huecoder.md3agent.feature.chat.PromptPanel
+import dev.huecoder.md3agent.feature.chat.SendEntrance
 import dev.huecoder.md3agent.feature.chat.lightbox.LightboxHost
 import dev.huecoder.md3agent.feature.chat.appendDictated
 import dev.huecoder.md3agent.feature.chat.rememberDictationControls
@@ -72,6 +73,7 @@ fun AssistantOverlay(activation: Int, onDismiss: () -> Unit, onOpenInApp: (chatI
     )
     val focusRequester = remember { FocusRequester() }
     val sheet = rememberAssistantSheetState(activation)
+    val sendEntrance = remember(activation) { SendEntrance() }
 
     LaunchedEffect(activation) {
         snapshotFlow { sheet.value }.first { it != SheetValue.Hidden }
@@ -111,6 +113,7 @@ fun AssistantOverlay(activation: Int, onDismiss: () -> Unit, onOpenInApp: (chatI
                         onSend = viewModel::send,
                         onApproval = viewModel::respondToApproval,
                         bottomPadding = 8.dp,
+                        sendEntrance = sendEntrance,
                     )
                 }
             }
@@ -125,6 +128,7 @@ fun AssistantOverlay(activation: Int, onDismiss: () -> Unit, onOpenInApp: (chatI
                 isStreaming = state.isStreaming,
                 canSend = state.canSend(input),
                 onSend = {
+                    sendEntrance.arm()
                     viewModel.send(input)
                     input = ""
                 },

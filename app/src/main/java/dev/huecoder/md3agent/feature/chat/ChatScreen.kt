@@ -44,6 +44,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.data.settings.TypingStyle
@@ -82,6 +84,8 @@ fun ChatScreen(chatId: String?, onBack: () -> Unit, focusMessageId: String? = nu
     val typingAttention = remember { TypingAttention() }
     val knockout = remember { KnockoutStage() }
     val handoff = remember { AvatarHandoff() }
+    val sendEntrance = remember { SendEntrance() }
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { knockout.abort() }
     val hasMessages = state.messages.isNotEmpty()
     val density = LocalDensity.current
     var composerHeight by remember { mutableStateOf(ComposerClearance) }
@@ -149,10 +153,12 @@ fun ChatScreen(chatId: String?, onBack: () -> Unit, focusMessageId: String? = nu
                             onToggleSpeech = viewModel::toggleSpeech,
                             onSend = viewModel::send,
                             onApproval = viewModel::respondToApproval,
+                            bottomPadding = composerHeight + COMPOSER_GAP,
                             scrollButtonPadding = composerHeight,
                             focusItemId = state.focusItemId,
                             onFocusShown = viewModel::focusShown,
                             avatarHandoff = handoff,
+                            sendEntrance = sendEntrance,
                         )
                     }
                     if (isEmpty || handoff.isActive) {
@@ -182,6 +188,7 @@ fun ChatScreen(chatId: String?, onBack: () -> Unit, focusMessageId: String? = nu
                             isStreaming = state.isStreaming,
                             canSend = state.canSend(input),
                             onSend = {
+                                sendEntrance.arm()
                                 viewModel.send(input)
                                 updateInput("")
                             },
@@ -190,6 +197,7 @@ fun ChatScreen(chatId: String?, onBack: () -> Unit, focusMessageId: String? = nu
                             isImporting = state.isImporting,
                             onAttach = { pickFiles.launch(PICKABLE_MIME_TYPES) },
                             onRemoveAttachment = viewModel::removeAttachment,
+                            onPasteImages = viewModel::attach,
                             dictation = dictation,
                             modifier = composerModifier,
                             onLetterTyped = typingAttention::onLetter,
@@ -217,9 +225,11 @@ fun MessageList(
     focusItemId: String? = null,
     onFocusShown: () -> Unit = {},
     avatarHandoff: AvatarHandoff? = null,
+    sendEntrance: SendEntrance? = null,
 ) {
     val handoffTargetId = if (avatarHandoff?.isActive == true) messages.firstOrNull { it is ChatItem.Reply }?.id else null
     val newestId = messages.lastOrNull()?.id
+    val newestUserId = messages.lastOrNull { it is ChatItem.User }?.id
     val listState = rememberLazyListState()
     val anchor = rememberScrollAnchor(listState)
     val atBottom by remember(anchor) { derivedStateOf { anchor.isAtBottom } }
@@ -263,7 +273,7 @@ fun MessageList(
                         },
                     )
                 when (item) {
-                    is ChatItem.User -> UserMessage(item, placed)
+                    is ChatItem.User -> UserMessage(item, placed.sentEntrance(sendEntrance, item.id == newestUserId, item.id))
                     is ChatItem.Reply -> AssistantReply(
                         item,
                         showUsage = showUsage,
@@ -324,6 +334,7 @@ private fun DictationControls.listeningLevel(): Float? =
 private const val FOCUS_FLASH_MS = 1_600
 private val FOCUS_CORNER = 20.dp
 private val SCROLL_BUTTON_MARGIN = 12.dp
+private val COMPOSER_GAP = 8.dp
 
 private const val GREETING_OBSTACLE = "greeting"
 private const val COMPOSER_OBSTACLE = "composer"

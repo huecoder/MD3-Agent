@@ -20,6 +20,7 @@ import dev.huecoder.md3agent.ui.physics.PhysicsWorld
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import org.dyn4j.dynamics.Body
 import kotlin.math.PI
 import kotlin.math.abs
@@ -40,6 +41,7 @@ class KnockoutStage {
     private var flight: Flight? = null
     private var tumble = Vec3.Zero
     private var knockedLoose = false
+    private var aborted = false
 
     var offset: Offset by mutableStateOf(Offset.Zero)
         private set
@@ -57,30 +59,41 @@ class KnockoutStage {
     }
 
     fun setArea(bounds: Rect) {
+        if (isPlaying && bounds != area) aborted = true
         area = bounds
+    }
+
+    fun abort() {
+        if (isPlaying) aborted = true
     }
 
     suspend fun play(home: Offset, radius: Float, hit: Offset, power: Float, pixelsPerMeter: Float, onImpact: (Float) -> Unit) {
         if (isPlaying || area == Rect.Zero) return
         isPlaying = true
         isDazed = true
+        aborted = false
         try {
-            val world = PhysicsWorld(pixelsPerMeter)
-            world.onImpact { impact -> if (impact.speed > MIN_IMPACT_SPEED * pixelsPerMeter) onImpact(impact.strength(pixelsPerMeter)) }
-            val bot = world.addBall(home, radius * COLLIDER_SHRINK, Material.Bouncy)
-            flight = Flight(world, bot, pixelsPerMeter)
-            tumble = spinFrom(hit, LAUNCH_TUMBLE)
-            rollAway(world, bot, home, radius, hit, launchBoost(power), pixelsPerMeter)
-            flight = null
-            delay(OFFSCREEN_PAUSE_MS)
-            isDazed = false
-            orientation = Orientation.Identity
-            dropIn(world, bot, home, radius)
-            settle()
+            withTimeoutOrNull(MAX_FLIGHT_MS) {
+                val world = PhysicsWorld(pixelsPerMeter)
+                world.onImpact { impact -> if (impact.speed > MIN_IMPACT_SPEED * pixelsPerMeter) onImpact(impact.strength(pixelsPerMeter)) }
+                val bot = world.addBall(home, radius * COLLIDER_SHRINK, Material.Bouncy)
+                flight = Flight(world, bot, pixelsPerMeter)
+                tumble = spinFrom(hit, LAUNCH_TUMBLE)
+                rollAway(world, bot, home, radius, hit, launchBoost(power), pixelsPerMeter)
+                flight = null
+                if (aborted) return@withTimeoutOrNull
+                delay(OFFSCREEN_PAUSE_MS)
+                isDazed = false
+                orientation = Orientation.Identity
+                dropIn(world, bot, home, radius)
+                if (aborted) return@withTimeoutOrNull
+                settle()
+            }
         } finally {
             flight = null
             tumble = Vec3.Zero
             knockedLoose = false
+            aborted = false
             orientation = Orientation.Identity
             offset = Offset.Zero
             spin = 0f
@@ -122,7 +135,7 @@ class KnockoutStage {
                 walls.forEach(world::remove)
                 wallsDropped = true
             }
-            !isOffscreen(position, radius)
+            !isOffscreen(position, radius) && !aborted
         }
         if (!wallsDropped) walls.forEach(world::remove)
     }
@@ -141,7 +154,7 @@ class KnockoutStage {
             follow(world, bot, home)
             val calm = world.velocity(bot).getDistance() < radius * CALM_SPEED_RADII && abs(bot.angularVelocity) < CALM_SPIN
             calmMs = if (calm) calmMs + (seconds * MILLIS_PER_SECOND).toLong() else 0L
-            calmMs < CALM_HOLD_MS && elapsedMs < DROP_TIMEOUT_MS
+            calmMs < CALM_HOLD_MS && elapsedMs < DROP_TIMEOUT_MS && !aborted
         }
         world.remove(pedestal)
     }
@@ -241,6 +254,7 @@ class KnockoutStage {
         const val CALM_SPIN = 0.6
         const val CALM_HOLD_MS = 350L
         const val DROP_TIMEOUT_MS = 4_000L
+        const val MAX_FLIGHT_MS = 30_000L
         const val RIGHTING_STIFFNESS = 60.0
         const val RIGHTING_DAMPING = 5.0
         const val FULL_TURN = 360f
