@@ -67,4 +67,11 @@ data class VoiceSettings(
 
     val speechProvider: VoiceProvider?
         get() = providers.firstOrNull { it.id == speechProviderId } ?: transcriptionProvider
+
+    fun speechProviderFor(choice: AgentVoice): VoiceProvider? {
+        val provider = providers.firstOrNull { it.id == choice.providerId }
+            ?: speechProvider.takeIf { speechOutput == SpeechOutput.PROVIDER }
+            ?: return null
+        return if (choice.voiceId.isBlank()) provider else provider.copy(speechVoice = choice.voiceId, speechVoiceName = choice.voiceName)
+    }
 }

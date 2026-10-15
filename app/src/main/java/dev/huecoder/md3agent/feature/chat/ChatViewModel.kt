@@ -21,6 +21,7 @@ import dev.huecoder.md3agent.data.db.ChatEntity
 import dev.huecoder.md3agent.data.db.MessageEntity
 import dev.huecoder.md3agent.data.db.selection
 import dev.huecoder.md3agent.data.settings.AgentProfile
+import dev.huecoder.md3agent.data.settings.AgentSettings
 import dev.huecoder.md3agent.data.models.ModelCatalog
 import dev.huecoder.md3agent.data.settings.ModelSelection
 import dev.huecoder.md3agent.llm.models.ModelFamily
@@ -87,7 +88,7 @@ class ChatViewModel(
     private val settings: SettingsRepository,
     private val catalog: ModelCatalog,
     private val appScope: CoroutineScope,
-    synthesizers: (VoiceSettings) -> SpeechSynthesizer,
+    synthesizers: (VoiceSettings, AgentProfile) -> SpeechSynthesizer,
 ) : ViewModel() {
     private val chatId = MutableStateFlow(initialChatId)
     private val pendingFocus = MutableStateFlow(focusMessageId)
@@ -100,7 +101,8 @@ class ChatViewModel(
 
     private val appSettings = settings.settings
     private val voice = appSettings.map { it.voice }.stateIn(viewModelScope, SharingStarted.Eagerly, VoiceSettings())
-    private val speaker = ReplySpeaker(viewModelScope) { synthesizers(voice.value) }
+    private val agents = appSettings.map { it.agents }.stateIn(viewModelScope, SharingStarted.Eagerly, AgentSettings())
+    private val speaker = ReplySpeaker(viewModelScope) { synthesizers(voice.value, agents.value.forChat(state.value.agentId)) }
     private val narration = ReplyNarration(speaker)
     private var inputFromVoice = false
 

@@ -12,3 +12,10 @@ private val ApiFormat.label: Int
         ApiFormat.GEMINI -> R.string.api_format_gemini
         ApiFormat.ELEVENLABS -> R.string.api_format_elevenlabs
     }
+
+internal val ApiFormat.voiceHint: Int
+    get() = when (this) {
+        ApiFormat.GEMINI -> R.string.voice_provider_speech_voice_hint_gemini
+        ApiFormat.ELEVENLABS -> R.string.voice_provider_speech_voice_hint_elevenlabs
+        else -> R.string.voice_provider_speech_voice_hint
+    }

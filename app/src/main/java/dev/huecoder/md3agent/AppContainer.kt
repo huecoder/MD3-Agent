@@ -72,7 +72,7 @@ import dev.huecoder.md3agent.tools.web.PageFetcher
 import dev.huecoder.md3agent.tools.web.ReadWebpageTool
 import dev.huecoder.md3agent.tools.web.WebSearchTool
 import dev.huecoder.md3agent.tools.web.WebSearcher
-import dev.huecoder.md3agent.data.settings.SpeechOutput
+import dev.huecoder.md3agent.data.settings.AgentProfile
 import dev.huecoder.md3agent.data.settings.VoiceSettings
 import dev.huecoder.md3agent.voice.ProviderSpeechSynthesizer
 import dev.huecoder.md3agent.voice.SpeechSynthesizer
@@ -166,9 +166,9 @@ class AppContainer(context: Context) {
 
     fun newVoiceRecorder() = VoiceRecorder(appContext)
 
-    fun newSpeechSynthesizer(voice: VoiceSettings): SpeechSynthesizer {
-        val provider = voice.speechProvider
-        return if (voice.speechOutput == SpeechOutput.PROVIDER && provider != null) {
+    fun newSpeechSynthesizer(voice: VoiceSettings, agent: AgentProfile): SpeechSynthesizer {
+        val provider = voice.speechProviderFor(agent.voice)
+        return if (provider != null) {
             ProviderSpeechSynthesizer(httpClients, provider, appContext.cacheDir)
         } else {
             SystemSpeechSynthesizer(appContext, voice.language)

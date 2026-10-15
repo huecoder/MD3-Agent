@@ -57,7 +57,7 @@ The project is at version 0.8, so expect some rough edges. Bug reports are welco
 - Markdown with highlighted code, charts and flow diagrams drawn in the chat, quick-reply chips, and source pills with favicons.
 
 **Agents**
-- Make as many agents as you like. Each one has a name, a system prompt, an avatar shape and color (28 shapes, 12 colors), and its own tool permissions. One agent is the default for new chats and every chat remembers its own.
+- Make as many agents as you like. Each one has a name, a system prompt, an avatar shape and color (28 shapes, 12 colors), its own tool permissions and, if you add a voice provider, its own voice. One agent is the default for new chats and every chat remembers its own.
 - Prompts accept placeholders: `{agent_name}`, `{date}`, `{time}`, `{weekday}`, `{timezone}`, `{device}`, `{android}`, `{battery}` and `{locale}`.
 - The avatar is a small animated character. It morphs through the agent's shapes while it works, blinks, follows what you type and reacts when poked. A hidden playground lets you throw the shapes around with real physics.
 

@@ -1,6 +1,5 @@
 package dev.huecoder.md3agent.feature.settings
 
-import androidx.annotation.StringRes
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -8,22 +7,17 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -31,7 +25,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Delete
-import com.composables.icons.materialsymbols.rounded.Sync
 import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.data.settings.ApiFormat
 import dev.huecoder.md3agent.ui.components.FormField
@@ -153,31 +146,6 @@ fun VoiceProviderEditorScreen(providerId: String?, onDone: () -> Unit) {
         }
     }
 }
-
-@Composable
-private fun FetchButton(@StringRes label: Int, enabled: Boolean, loading: Boolean, onClick: () -> Unit) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        FilledTonalButton(onClick = onClick, enabled = enabled && !loading, shapes = ButtonDefaults.shapes()) {
-            Icon(MaterialSymbols.Rounded.Sync, contentDescription = null, modifier = Modifier.size(ButtonDefaults.IconSize))
-            Text(stringResource(label), Modifier.padding(start = ButtonDefaults.IconSpacing))
-        }
-        if (loading) LoadingIndicator(Modifier.size(32.dp))
-    }
-}
-
-@Composable
-private fun FetchError(state: ModelFetchState) {
-    (state as? ModelFetchState.Failed)?.let {
-        Text(it.message.asString(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-    }
-}
-
-private val ApiFormat.voiceHint: Int
-    get() = when (this) {
-        ApiFormat.GEMINI -> R.string.voice_provider_speech_voice_hint_gemini
-        ApiFormat.ELEVENLABS -> R.string.voice_provider_speech_voice_hint_elevenlabs
-        else -> R.string.voice_provider_speech_voice_hint
-    }
 
 private fun List<String>.matching(hints: List<String>) = filter { model -> hints.any { model.contains(it, ignoreCase = true) } }.ifEmpty { this }
 

@@ -47,6 +47,13 @@
     <string name="agent_variables_hint">Переменные подставляются при каждом запросе. Тап вставит её в позицию курсора.</string>
     <string name="agent_preview_prompt">Показать результат</string>
     <string name="agent_reset_prompt">Сбросить промпт</string>
+    <string name="agent_section_voice">Голос</string>
+    <string name="agent_voice_hint">Голос, которым этот агент читает ответы вслух. Оставьте по умолчанию, чтобы использовать голос из настроек Голоса.</string>
+    <string name="agent_voice_provider">Голосовой провайдер</string>
+    <string name="agent_voice_default_provider">По умолчанию</string>
+    <string name="agent_voice_voice">Голос</string>
+    <string name="agent_voice_no_providers">Добавьте голосовой провайдер в Настройки, Голос, чтобы у агента был свой голос.</string>
+    <string name="agent_voice_system">Провайдер озвучки не выбран, поэтому ответы читает системный голос. Выберите голосовой провайдер выше, чтобы это изменить.</string>
     <string name="tools_web_search_title">Поиск в интернете</string>
     <string name="tools_web_search_summary">Ищет и показывает источники пиллами</string>
     <string name="tools_read_webpage_title">Чтение страниц</string>

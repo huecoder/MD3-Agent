@@ -11,6 +11,13 @@ enum class AgentShape {
 }
 
 @Serializable
+data class AgentVoice(
+    val providerId: String? = null,
+    val voiceId: String = "",
+    val voiceName: String = "",
+)
+
+@Serializable
 data class AgentProfile(
     val id: String = MAIN_AGENT_ID,
     val name: String = DEFAULT_AGENT_NAME,
@@ -19,6 +26,7 @@ data class AgentProfile(
     val tint: ChatTint = ChatTint.THEME,
     val workingShapes: List<AgentShape> = DEFAULT_WORKING_SHAPES,
     val toolPermissions: Map<String, ToolPermission> = emptyMap(),
+    val voice: AgentVoice = AgentVoice(),
 ) {
     fun tools(base: ToolSettings): ToolSettings = base.copy(permissions = base.permissions + toolPermissions)
 

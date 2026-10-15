@@ -48,6 +48,13 @@
     <string name="agent_variables_hint">Variables are filled in on every request. Tap one to insert it at the cursor.</string>
     <string name="agent_preview_prompt">Show result</string>
     <string name="agent_reset_prompt">Reset prompt</string>
+    <string name="agent_section_voice">Voice</string>
+    <string name="agent_voice_hint">The voice this agent reads replies with. Leave it on default to use the voice from Voice settings.</string>
+    <string name="agent_voice_provider">Voice provider</string>
+    <string name="agent_voice_default_provider">Default</string>
+    <string name="agent_voice_voice">Voice</string>
+    <string name="agent_voice_no_providers">Add a voice provider in Settings, Voice, to give this agent its own voice.</string>
+    <string name="agent_voice_system">No speech provider is selected, so the system voice reads replies. Pick a voice provider above to change that.</string>
     <string name="tools_web_search_title">Web search</string>
     <string name="tools_web_search_summary">Searches and shows sources as pills</string>
     <string name="tools_read_webpage_title">Reading pages</string>

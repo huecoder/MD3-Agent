@@ -38,6 +38,7 @@ import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.data.settings.AgentProfile
 import dev.huecoder.md3agent.data.settings.AgentShape
 import dev.huecoder.md3agent.data.settings.ToolSettings
+import dev.huecoder.md3agent.data.settings.VoiceSettings
 import dev.huecoder.md3agent.ui.avatar.AgentLook
 import dev.huecoder.md3agent.ui.components.AgentAvatar
 import dev.huecoder.md3agent.ui.components.FormField
@@ -49,7 +50,14 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.UUID
 
-private class AgentDraft(val saved: AgentProfile, val isNew: Boolean, val canDelete: Boolean, val nextNumber: Int, val baseTools: ToolSettings)
+private class AgentDraft(
+    val saved: AgentProfile,
+    val isNew: Boolean,
+    val canDelete: Boolean,
+    val nextNumber: Int,
+    val baseTools: ToolSettings,
+    val voice: VoiceSettings,
+)
 
 @Composable
 fun AgentEditorScreen(agentId: String?, onDone: () -> Unit) {
@@ -64,7 +72,14 @@ fun AgentEditorScreen(agentId: String?, onDone: () -> Unit) {
         val existing = current.agents.find(agentId)
         val start = existing ?: AgentProfile(id = UUID.randomUUID().toString(), name = "")
         val count = current.agents.agents.size
-        loaded = AgentDraft(start, isNew = existing == null, canDelete = existing != null && count > 1, nextNumber = count + 1, baseTools = current.tools)
+        loaded = AgentDraft(
+            start,
+            isNew = existing == null,
+            canDelete = existing != null && count > 1,
+            nextNumber = count + 1,
+            baseTools = current.tools,
+            voice = current.voice,
+        )
         agent = start
         prompt = TextFieldValue(start.systemPromptTemplate)
     }
@@ -105,6 +120,8 @@ fun AgentEditorScreen(agentId: String?, onDone: () -> Unit) {
             SectionHeader(stringResource(R.string.agent_working_shapes))
             HintText(stringResource(R.string.agent_working_hint))
             AgentShapePicker(selected = { it in agent.workingShapes }, tint = agent.tint, onToggle = { agent = agent.toggleWorking(it) })
+            SectionHeader(stringResource(R.string.agent_section_voice))
+            AgentVoiceSection(state.voice, agent.voice, container.voiceList, onChange = { agent = agent.copy(voice = it) })
             SectionHeader(stringResource(R.string.agent_system_prompt))
             PromptEditor(container, draft, prompt, onPromptChange = { prompt = it })
             SectionHeader(stringResource(R.string.agent_section_tools))
@@ -179,7 +196,7 @@ private fun AgentTools(container: AppContainer, agent: AgentProfile, baseTools: 
 }
 
 @Composable
-private fun HintText(text: String) {
+internal fun HintText(text: String) {
     Text(text, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 }
 
