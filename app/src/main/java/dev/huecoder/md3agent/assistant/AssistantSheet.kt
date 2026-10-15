@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -30,10 +31,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,6 +50,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
@@ -89,7 +93,22 @@ fun AssistantSheet(state: AssistantSheetState, onDismissed: () -> Unit, content:
         onDismissed()
     }
 
-    BoxWithConstraints(Modifier.fillMaxSize()) {
+    val view = LocalView.current
+    val imeVisible = WindowInsets.ime.getBottom(density) > 0
+    var frameTick by remember { mutableLongStateOf(0L) }
+    val windowLocation = remember { IntArray(2) }
+    LaunchedEffect(view, imeVisible) {
+        do {
+            withFrameNanos { frameTick = it }
+        } while (imeVisible || windowLocation[1] != 0)
+    }
+    val systemPan = {
+        frameTick
+        view.getLocationInWindow(windowLocation)
+        -windowLocation[1]
+    }
+
+    BoxWithConstraints(Modifier.fillMaxSize().graphicsLayer { translationY = systemPan().toFloat() }) {
         val windowHeight = constraints.maxHeight.toFloat()
         BoxWithConstraints(Modifier.fillMaxSize().imePadding()) {
             val fullHeight = constraints.maxHeight.toFloat()

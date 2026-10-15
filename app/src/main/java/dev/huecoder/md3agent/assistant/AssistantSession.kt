@@ -62,7 +62,7 @@ class AssistantSession(context: Context) :
             WindowCompat.setDecorFitsSystemWindows(sessionWindow, false)
             sessionWindow.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT)
             sessionWindow.setGravity(Gravity.FILL)
-            sessionWindow.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+            sessionWindow.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING)
         }
         window.window?.decorView?.let { decor ->
             decor.setViewTreeLifecycleOwner(this)
