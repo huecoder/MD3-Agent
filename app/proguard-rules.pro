@@ -1,2 +1,4 @@
 -dontwarn org.slf4j.**
 -keep class dev.huecoder.md3agent.system.shell.ShellUserService { <init>(); }
+-keep class org.scilab.forge.jlatexmath.** { *; }
+-keep class ru.noties.jlatexmath.** { *; }

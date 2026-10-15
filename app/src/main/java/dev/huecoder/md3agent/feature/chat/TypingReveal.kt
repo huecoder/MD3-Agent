@@ -20,6 +20,8 @@ import com.mikepenz.markdown.model.parseMarkdown
 import dev.huecoder.md3agent.data.settings.TypingMode
 import dev.huecoder.md3agent.data.settings.TypingStyle
 import dev.huecoder.md3agent.ui.components.MarkdownContent
+import dev.huecoder.md3agent.ui.components.PlainAnnotator
+import dev.huecoder.md3agent.ui.math.rememberMathContent
 import kotlinx.coroutines.flow.first
 import org.intellij.markdown.MarkdownTokenTypes
 import kotlin.math.ceil
@@ -33,11 +35,13 @@ fun ReplyText(text: String, isStreaming: Boolean, style: TypingStyle, modifier: 
     }
     val tail = style.fadeTailChars
     val cuts = remember { GraphemeCuts() }
-    val frontier = rememberRevealFrontier(text, style.charsPerSecond, tail, isRunning = !isStopped)
-    val shown = if (isStopped) text else text.substring(0, cuts.floor(text, ceil(frontier).toInt()))
+    val math = rememberMathContent(text)
+    val revealed = math.markdown
+    val frontier = rememberRevealFrontier(revealed, style.charsPerSecond, tail, isRunning = !isStopped)
+    val shown = if (isStopped) revealed else revealed.substring(0, cuts.floor(revealed, ceil(frontier).toInt()))
     val parsed = remember(shown) { parseMarkdown(shown) }
     val annotator = if (tail == 0 || isStopped) PlainAnnotator else fadeAnnotator(frontier, tail, MaterialTheme.colorScheme.onSurface, cuts)
-    MarkdownContent(parsed, annotator, modifier)
+    MarkdownContent(parsed, annotator, math, modifier)
 }
 
 @Composable
@@ -86,8 +90,6 @@ private fun fadeAnnotator(frontier: Float, tail: Int, color: Color, cuts: Graphe
 
 private val TypingStyle.fadeTailChars: Int
     get() = if (mode == TypingMode.FADE) (charsPerSecond * FADE_SECONDS).toInt().coerceAtLeast(MIN_FADE_TAIL) else 0
-
-private val PlainAnnotator: MarkdownAnnotator = markdownAnnotator()
 
 private const val NANOS_PER_SECOND = 1_000_000_000f
 private const val MAX_LAG_SECONDS = 1.5f

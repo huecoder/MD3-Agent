@@ -18,33 +18,42 @@ import com.mikepenz.markdown.m3.markdownTypography
 import com.mikepenz.markdown.model.MarkdownAnnotator
 import com.mikepenz.markdown.model.MarkdownColors
 import com.mikepenz.markdown.model.MarkdownTypography
+import com.mikepenz.markdown.model.markdownAnnotator
 import com.mikepenz.markdown.model.State
 import com.mikepenz.markdown.model.rememberMarkdownState
+import dev.huecoder.md3agent.ui.math.MathContent
+import dev.huecoder.md3agent.ui.math.rememberMathContent
 
 @Composable
 fun MarkdownContent(text: String, modifier: Modifier = Modifier) {
+    val math = rememberMathContent(text)
     Markdown(
-        markdownState = rememberMarkdownState(text, retainState = true),
-        modifier = modifier.fillMaxWidth(),
+        markdownState = rememberMarkdownState(math.markdown, retainState = true),
+        modifier = modifier.fillMaxWidth().then(math.measure),
         colors = appMarkdownColors(),
         typography = appMarkdownTypography(),
+        annotator = math.annotator(PlainAnnotator),
+        inlineContent = math.inlineContent,
         components = appMarkdownComponents,
         imageTransformer = Coil3ImageTransformerImpl,
     )
 }
 
 @Composable
-fun MarkdownContent(parsed: State, annotator: MarkdownAnnotator, modifier: Modifier = Modifier) {
+fun MarkdownContent(parsed: State, annotator: MarkdownAnnotator, math: MathContent, modifier: Modifier = Modifier) {
     Markdown(
         state = parsed,
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().then(math.measure),
         colors = appMarkdownColors(),
         typography = appMarkdownTypography(),
-        annotator = annotator,
+        annotator = math.annotator(annotator),
+        inlineContent = math.inlineContent,
         components = appMarkdownComponents,
         imageTransformer = Coil3ImageTransformerImpl,
     )
 }
+
+val PlainAnnotator: MarkdownAnnotator = markdownAnnotator()
 
 private val appMarkdownComponents: MarkdownComponents = markdownComponents(codeFence = highlightedCodeFence, codeBlock = highlightedCodeBlock)
 
