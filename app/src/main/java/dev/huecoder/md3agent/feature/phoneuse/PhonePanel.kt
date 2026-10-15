@@ -6,7 +6,6 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
@@ -148,17 +147,24 @@ private fun PanelHeader(state: ChatUiState, collapsed: Boolean, status: String?,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .windowDrag(actions.onDrag, actions.onDragEnd)
             .padding(start = 14.dp, end = 6.dp, top = 6.dp, bottom = 6.dp),
     ) {
-        AgentAvatar(isWorking = state.isStreaming, size = HEADER_AVATAR)
-        Text(
-            status ?: stringResource(R.string.phone_use_working),
-            style = MaterialTheme.typography.labelLarge,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f),
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier
+                .weight(1f)
+                .windowDrag(actions.onDrag, actions.onDragEnd),
+        ) {
+            AgentAvatar(isWorking = state.isStreaming, size = HEADER_AVATAR)
+            Text(
+                status ?: stringResource(R.string.phone_use_working),
+                style = MaterialTheme.typography.labelLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+        }
         IconButton(onClick = actions.onMinimize, shapes = IconButtonDefaults.shapes()) {
             Icon(MaterialSymbols.Rounded.Close_fullscreen, contentDescription = stringResource(R.string.phone_use_minimize))
         }
@@ -206,8 +212,7 @@ fun PhoneBubble(isWorking: Boolean, actions: BubbleActions, modifier: Modifier =
         shadowElevation = BUBBLE_ELEVATION,
         modifier = modifier
             .size(BUBBLE_SIZE)
-            .pointerInput(Unit) { detectTapGestures(onTap = { actions.onOpen() }) }
-            .windowDrag(actions.onDrag, actions.onDragEnd),
+            .windowDrag(actions.onDrag, actions.onDragEnd, onTap = actions.onOpen),
     ) {
         Box(contentAlignment = Alignment.Center) {
             if (isWorking) {
