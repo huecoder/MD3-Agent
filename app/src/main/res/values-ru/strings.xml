@@ -169,6 +169,7 @@
     <string name="chat_meta_duration_minutes">%1$d мин %2$02d с</string>
     <string name="chat_copy">Копировать</string>
     <string name="chat_regenerate">Сгенерировать заново</string>
+    <string name="chat_scroll_to_bottom">Прокрутить вниз</string>
     <string name="chat_attach_file">Прикрепить файл</string>
     <string name="chat_input_placeholder">Спроси что-нибудь</string>
     <string name="chat_send">Отправить</string>

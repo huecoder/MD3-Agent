@@ -27,15 +27,19 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
@@ -58,6 +62,7 @@ import dev.huecoder.md3agent.ui.avatar.ProvideAgentLook
 import dev.huecoder.md3agent.ui.avatar.TypingAttention
 import dev.huecoder.md3agent.ui.avatar.knockoutArea
 import dev.huecoder.md3agent.ui.avatar.knockoutObstacle
+import kotlinx.coroutines.launch
 
 @Composable
 fun ChatScreen(chatId: String?, onBack: () -> Unit, focusMessageId: String? = null) {
@@ -78,6 +83,8 @@ fun ChatScreen(chatId: String?, onBack: () -> Unit, focusMessageId: String? = nu
     val knockout = remember { KnockoutStage() }
     val handoff = remember { AvatarHandoff() }
     val hasMessages = state.messages.isNotEmpty()
+    val density = LocalDensity.current
+    var composerHeight by remember { mutableStateOf(ComposerClearance) }
     LaunchedEffect(hasMessages) {
         if (chatId == null && hasMessages && !knockout.isPlaying) handoff.play()
     }
@@ -142,6 +149,7 @@ fun ChatScreen(chatId: String?, onBack: () -> Unit, focusMessageId: String? = nu
                             onToggleSpeech = viewModel::toggleSpeech,
                             onSend = viewModel::send,
                             onApproval = viewModel::respondToApproval,
+                            scrollButtonPadding = composerHeight,
                             focusItemId = state.focusItemId,
                             onFocusShown = viewModel::focusShown,
                             avatarHandoff = handoff,
@@ -159,6 +167,7 @@ fun ChatScreen(chatId: String?, onBack: () -> Unit, focusMessageId: String? = nu
                     }
                     val composerModifier = Modifier
                         .align(Alignment.BottomCenter)
+                        .onSizeChanged { composerHeight = with(density) { it.height.toDp() } }
                         .knockoutObstacle(knockout, COMPOSER_OBSTACLE)
                         .background(MaterialTheme.colorScheme.surface)
                         .navigationBarsPadding()
@@ -204,6 +213,7 @@ fun MessageList(
     onApproval: (ToolCallUi, ApprovalDecision) -> Unit,
     modifier: Modifier = Modifier.fillMaxSize(),
     bottomPadding: Dp = ComposerClearance,
+    scrollButtonPadding: Dp = bottomPadding,
     focusItemId: String? = null,
     onFocusShown: () -> Unit = {},
     avatarHandoff: AvatarHandoff? = null,
@@ -212,6 +222,8 @@ fun MessageList(
     val newestId = messages.lastOrNull()?.id
     val listState = rememberLazyListState()
     val anchor = rememberScrollAnchor(listState)
+    val atBottom by remember(anchor) { derivedStateOf { anchor.isAtBottom } }
+    val scope = rememberCoroutineScope()
     val flash = remember { Animatable(0f) }
     var flashing by remember { mutableStateOf<String?>(null) }
     val flashColor = MaterialTheme.colorScheme.primaryContainer
@@ -227,44 +239,51 @@ fun MessageList(
         }
         onFocusShown()
     }
-    LazyColumn(
-        state = listState,
-        reverseLayout = true,
-        modifier = modifier,
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = bottomPadding),
-        verticalArrangement = Arrangement.spacedBy(20.dp, Alignment.Bottom),
-    ) {
-        items(messages.asReversed(), key = { it.id }) { item ->
-            val keepingPlace = remember(anchor, item.id) { anchor.keepingPlace(item.id) }
-            val placed = Modifier
-                .animateItem(placementSpec = null)
-                .then(anchor.shifted)
-                .then(if (item.id == newestId) keepingPlace else Modifier)
-                .then(
-                    if (item.id == flashing) {
-                        Modifier.drawBehind {
-                            drawRoundRect(flashColor.copy(alpha = flash.value), cornerRadius = CornerRadius(FOCUS_CORNER.toPx()))
-                        }
-                    } else {
-                        Modifier
-                    },
-                )
-            when (item) {
-                is ChatItem.User -> UserMessage(item, placed)
-                is ChatItem.Reply -> AssistantReply(
-                    item,
-                    showUsage = showUsage,
-                    typing = typing,
-                    isSpeaking = item.id == speakingId,
-                    onRegenerate = { onRegenerate(item) },
-                    onToggleSpeech = { onToggleSpeech(item) },
-                    onSend = onSend,
-                    onApproval = onApproval,
-                    modifier = placed,
-                    avatarHandoff = avatarHandoff.takeIf { item.id == handoffTargetId },
-                )
+    Box(modifier) {
+        LazyColumn(
+            state = listState,
+            reverseLayout = true,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = bottomPadding),
+            verticalArrangement = Arrangement.spacedBy(20.dp, Alignment.Bottom),
+        ) {
+            items(messages.asReversed(), key = { it.id }) { item ->
+                val keepingPlace = remember(anchor, item.id) { anchor.keepingPlace(item.id) }
+                val placed = Modifier
+                    .animateItem(placementSpec = null)
+                    .then(anchor.shifted)
+                    .then(if (item.id == newestId) keepingPlace else Modifier)
+                    .then(
+                        if (item.id == flashing) {
+                            Modifier.drawBehind {
+                                drawRoundRect(flashColor.copy(alpha = flash.value), cornerRadius = CornerRadius(FOCUS_CORNER.toPx()))
+                            }
+                        } else {
+                            Modifier
+                        },
+                    )
+                when (item) {
+                    is ChatItem.User -> UserMessage(item, placed)
+                    is ChatItem.Reply -> AssistantReply(
+                        item,
+                        showUsage = showUsage,
+                        typing = typing,
+                        isSpeaking = item.id == speakingId,
+                        onRegenerate = { onRegenerate(item) },
+                        onToggleSpeech = { onToggleSpeech(item) },
+                        onSend = onSend,
+                        onApproval = onApproval,
+                        modifier = placed,
+                        avatarHandoff = avatarHandoff.takeIf { item.id == handoffTargetId },
+                    )
+                }
             }
         }
+        ScrollToBottomButton(
+            visible = !atBottom,
+            onClick = { scope.launch { listState.animateScrollToItem(0) } },
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = scrollButtonPadding + SCROLL_BUTTON_MARGIN),
+        )
     }
 }
 
@@ -304,6 +323,7 @@ private fun DictationControls.listeningLevel(): Float? =
 
 private const val FOCUS_FLASH_MS = 1_600
 private val FOCUS_CORNER = 20.dp
+private val SCROLL_BUTTON_MARGIN = 12.dp
 
 private const val GREETING_OBSTACLE = "greeting"
 private const val COMPOSER_OBSTACLE = "composer"

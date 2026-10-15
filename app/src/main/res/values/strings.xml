@@ -180,6 +180,7 @@
     <string name="chat_meta_tokens_thousands" translatable="false">%1$.1fk</string>
     <string name="chat_copy">Copy</string>
     <string name="chat_regenerate">Regenerate</string>
+    <string name="chat_scroll_to_bottom">Scroll to bottom</string>
     <string name="chat_attach_file">Attach file</string>
     <string name="chat_input_placeholder">Ask anything</string>
     <string name="chat_send">Send</string>
