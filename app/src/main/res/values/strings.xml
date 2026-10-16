@@ -122,12 +122,9 @@
     <string name="provider_format_hint">OpenAI also covers compatible servers like OpenRouter, Ollama and LM Studio</string>
     <string name="voice_provider_format_hint">Anthropic has no voice API, so only OpenAI, Gemini and ElevenLabs are here</string>
     <string name="provider_api_key">API key (Bearer)</string>
-    <string name="provider_section_model">Model</string>
     <string name="provider_fetch_models">Load models</string>
     <string name="provider_fetch_voices">Load voices</string>
     <string name="provider_voices_fetch_failed">Couldn\'t load the voice list</string>
-    <string name="provider_make_active">Use by default</string>
-    <string name="provider_make_active_summary">New chats will start with this model</string>
     <string name="provider_section_headers">Extra headers</string>
     <string name="provider_secret_hide">Hide</string>
     <string name="provider_secret_show">Show</string>
@@ -166,9 +163,9 @@
     <string name="home_empty_title">Nothing here yet</string>
     <string name="home_empty_body">Start a new chat and it will show up here.</string>
     <string name="home_setup_title">Connect a model</string>
-    <string name="home_setup_body">Add any OpenAI-compatible endpoint: address, key and model.</string>
+    <string name="home_setup_body">Add any OpenAI-compatible endpoint: address and key.</string>
     <string name="home_setup_open_settings">Open settings</string>
-    <string name="chat_error_no_model">Add a provider and choose a model in settings first</string>
+    <string name="chat_error_no_model">Pick a model first using the button at the top</string>
     <string name="chat_attachment_too_large">The file is larger than %1$d MB</string>
     <string name="chat_attachment_failed">Couldn\'t attach the file</string>
     <string name="chat_attachment_image_unreadable">Couldn\'t read the image</string>
@@ -536,6 +533,7 @@
     <string name="settings_models">Models</string>
     <string name="settings_models_summary">%1$s via %2$s</string>
     <string name="settings_models_summary_none">Add a provider to start chatting</string>
+    <string name="settings_models_summary_pick">Pick a model at the top of a chat</string>
     <string name="settings_section_general">General</string>
     <string name="settings_about">About</string>
     <string name="settings_about_summary">Version %1$s, updates, source code</string>

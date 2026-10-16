@@ -112,12 +112,9 @@
     <string name="provider_delete">Удалить</string>
     <string name="provider_name">Название</string>
     <string name="provider_api_key">API-ключ (Bearer)</string>
-    <string name="provider_section_model">Модель</string>
     <string name="provider_fetch_models">Загрузить модели</string>
     <string name="provider_fetch_voices">Загрузить голоса</string>
     <string name="provider_voices_fetch_failed">Не удалось получить список голосов</string>
-    <string name="provider_make_active">Использовать по умолчанию</string>
-    <string name="provider_make_active_summary">Новые чаты начнутся с этой модели</string>
     <string name="provider_section_headers">Дополнительные заголовки</string>
     <string name="provider_secret_hide">Скрыть</string>
     <string name="provider_secret_show">Показать</string>
@@ -156,9 +153,9 @@
     <string name="home_empty_title">Пока пусто</string>
     <string name="home_empty_body">Начни новый чат, и он появится здесь.</string>
     <string name="home_setup_title">Подключи модель</string>
-    <string name="home_setup_body">Добавь любой OpenAI-совместимый эндпоинт: адрес, ключ и модель.</string>
+    <string name="home_setup_body">Добавь любой OpenAI-совместимый эндпоинт: адрес и ключ.</string>
     <string name="home_setup_open_settings">Открыть настройки</string>
-    <string name="chat_error_no_model">Сначала добавь провайдера и выбери модель в настройках</string>
+    <string name="chat_error_no_model">Сначала выбери модель кнопкой вверху</string>
     <string name="chat_attachment_too_large">Файл больше %1$d МБ</string>
     <string name="chat_attachment_failed">Не удалось прикрепить файл</string>
     <string name="chat_attachment_image_unreadable">Не удалось прочитать картинку</string>
@@ -537,6 +534,7 @@
     <string name="settings_models">Модели</string>
     <string name="settings_models_summary">%1$s через %2$s</string>
     <string name="settings_models_summary_none">Добавь провайдера чтобы начать</string>
+    <string name="settings_models_summary_pick">Выбери модель вверху чата</string>
     <string name="settings_section_general">Основное</string>
     <string name="settings_about">О приложении</string>
     <string name="settings_about_summary">Версия %1$s, обновления, исходники</string>

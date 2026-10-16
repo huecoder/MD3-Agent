@@ -217,7 +217,8 @@ private fun mcpSummary(settings: AppSettings): String {
 
 @Composable
 private fun modelsSummary(settings: AppSettings): String {
-    val selection = settings.activeSelection ?: return stringResource(R.string.settings_models_summary_none)
+    val selection = settings.activeSelection
+        ?: return stringResource(if (settings.providers.isEmpty()) R.string.settings_models_summary_none else R.string.settings_models_summary_pick)
     val provider = settings.provider(selection.providerId)?.name.orEmpty()
     return stringResource(R.string.settings_models_summary, selection.modelId, provider)
 }

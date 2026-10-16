@@ -3,6 +3,8 @@ package dev.huecoder.md3agent.data.settings
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
@@ -10,6 +12,7 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -46,7 +49,7 @@ class SettingsRepositoryTest {
 
     private fun TestScope.repository(store: DataStore<Preferences> = store()) = SettingsRepository(store, cipher, backgroundScope)
 
-    private val provider = ProviderProfile(id = "p1", name = "Local", baseUrl = "http://localhost", apiKey = "secret", defaultModel = "m")
+    private val provider = ProviderProfile(id = "p1", name = "Local", baseUrl = "http://localhost", apiKey = "secret")
 
     @Test
     fun `many subscribers cost one decryption per stored blob`() = runTest {
@@ -140,7 +143,42 @@ class SettingsRepositoryTest {
         assertEquals(before, repository.settings.first())
     }
 
+    @Test
+    fun `a provider saved with a model list by an older build still loads`() = runTest {
+        val store = store()
+        store.edit { it[stringPreferencesKey(PROVIDERS_KEY)] = cipher.encrypt(PROVIDERS_WITH_MODEL_LIST) }
+
+        assertEquals(listOf(provider), repository(store).current().providers)
+    }
+
+    @Test
+    fun `a provider alone selects no model`() = runTest {
+        val repository = repository()
+        repository.upsertProvider(provider)
+
+        assertNull(repository.current().activeSelection)
+
+        repository.setActiveSelection(ModelSelection("p1", "m"))
+        assertEquals(ModelSelection("p1", "m"), repository.current().activeSelection)
+    }
+
+    @Test
+    fun `deleting the active provider leaves no selection`() = runTest {
+        val repository = repository()
+        repository.upsertProvider(provider)
+        repository.upsertProvider(provider.copy(id = "p2", name = "Other"))
+        repository.setActiveSelection(ModelSelection("p1", "m"))
+
+        repository.deleteProvider("p1")
+
+        assertNull(repository.current().activeSelection)
+        assertEquals(listOf("p2"), repository.current().providers.map { it.id })
+    }
+
     private companion object {
         const val SUBSCRIBERS = 20
+        const val PROVIDERS_KEY = "providers_encrypted"
+        const val PROVIDERS_WITH_MODEL_LIST =
+            """[{"id":"p1","name":"Local","baseUrl":"http://localhost","apiKey":"secret","models":["m","n"],"defaultModel":"m"}]"""
     }
 }

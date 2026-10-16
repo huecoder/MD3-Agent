@@ -71,8 +71,7 @@ class ModelPickerViewModel(
 
     private val allRows = provider.filterNotNull().flatMapLatest { profile ->
         catalog.observe(profile.id).map { cached ->
-            val infos = cached?.models?.takeIf { it.isNotEmpty() } ?: profile.models.map(::ModelInfo)
-            infos.map { ModelRow(it, it.family, it.traits) }
+            cached?.models.orEmpty().map { ModelRow(it, it.family, it.traits) }
         }
     }.flowOn(Dispatchers.Default)
 

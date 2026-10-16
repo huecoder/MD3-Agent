@@ -2,24 +2,16 @@ package dev.huecoder.md3agent.feature.settings
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LoadingIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -28,10 +20,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Delete
-import com.composables.icons.materialsymbols.rounded.Sync
 import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.data.settings.ApiFormat
-import dev.huecoder.md3agent.ui.components.LabeledSwitch
 import dev.huecoder.md3agent.ui.components.SectionHeader
 import dev.huecoder.md3agent.ui.components.FormField
 import dev.huecoder.md3agent.ui.components.SaveAction
@@ -44,7 +34,6 @@ fun ProviderEditorScreen(providerId: String?, onDone: () -> Unit) {
     val viewModel = appViewModel(key = "provider-$providerId") { ProviderEditorViewModel(providerId, it.settings, it.modelCatalog) }
     val form by viewModel.form.collectAsStateWithLifecycle()
     val isDirty by viewModel.isDirty.collectAsStateWithLifecycle()
-    val fetch by viewModel.modelFetch.collectAsStateWithLifecycle()
 
     SettingsScaffold(
         title = stringResource(if (form?.isNew == false) R.string.provider_title else R.string.provider_title_new),
@@ -94,33 +83,6 @@ fun ProviderEditorScreen(providerId: String?, onDone: () -> Unit) {
                 value = current.apiKey,
                 onValueChange = { value -> viewModel.edit { it.copy(apiKey = value) } },
                 label = stringResource(R.string.provider_api_key),
-            )
-
-            SectionHeader(stringResource(R.string.provider_section_model))
-            ModelPicker(
-                selected = current.defaultModel,
-                models = current.models,
-                onSelect = { value -> viewModel.edit { it.copy(defaultModel = value) } },
-            )
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                FilledTonalButton(
-                    onClick = viewModel::fetchModels,
-                    enabled = fetch != ModelFetchState.Loading && current.baseUrlError == null && current.baseUrl.isNotBlank(),
-                    shapes = ButtonDefaults.shapes(),
-                ) {
-                    Icon(MaterialSymbols.Rounded.Sync, contentDescription = null, modifier = Modifier.size(ButtonDefaults.IconSize))
-                    Text(stringResource(R.string.provider_fetch_models), Modifier.padding(start = ButtonDefaults.IconSpacing))
-                }
-                if (fetch == ModelFetchState.Loading) LoadingIndicator(Modifier.size(32.dp))
-            }
-            (fetch as? ModelFetchState.Failed)?.let {
-                Text(it.message.asString(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-            }
-            LabeledSwitch(
-                title = stringResource(R.string.provider_make_active),
-                summary = stringResource(R.string.provider_make_active_summary),
-                checked = current.makeActive,
-                onCheckedChange = { value -> viewModel.edit { it.copy(makeActive = value) } },
             )
 
             SectionHeader(stringResource(R.string.provider_section_headers))

@@ -10,8 +10,6 @@ data class ProviderProfile(
     val baseUrl: String,
     val apiKey: String = "",
     val extraHeaders: List<HeaderEntry> = emptyList(),
-    val models: List<String> = emptyList(),
-    val defaultModel: String = "",
     val format: ApiFormat = ApiFormat.OPENAI,
 )
 

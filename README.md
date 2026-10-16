@@ -131,7 +131,7 @@ Tools that come from MCP servers always start as Ask.
 
 1. Download `md3-agent-<version>.apk` from the [latest release](https://github.com/huecoder/MD3-Agent/releases/latest). It needs Android 10 or newer on a 64-bit ARM phone (arm64-v8a).
 2. Open the file and allow installs from that app when Android asks.
-3. In Settings, open Models and add a provider: choose the API format, paste the base URL (it is prefilled for OpenAI, Anthropic and Gemini) and your key, then pick a model.
+3. In Settings, open Models and add a provider: choose the API format, paste the base URL (it is prefilled for OpenAI, Anthropic and Gemini) and your key. Then pick a model with the button at the top of a new chat.
 
 If Play Protect stops the install, see [Troubleshooting](#troubleshooting).
 

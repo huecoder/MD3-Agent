@@ -18,7 +18,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Sync
+import dev.huecoder.md3agent.ui.text.UiText
 import dev.huecoder.md3agent.ui.text.asString
+
+sealed interface ModelFetchState {
+    data object Idle : ModelFetchState
+    data object Loading : ModelFetchState
+    data class Failed(val message: UiText) : ModelFetchState
+}
 
 @Composable
 internal fun FetchButton(@StringRes label: Int, enabled: Boolean, loading: Boolean, onClick: () -> Unit) {

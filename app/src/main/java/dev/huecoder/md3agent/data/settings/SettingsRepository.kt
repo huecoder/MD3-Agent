@@ -125,7 +125,7 @@ class SettingsRepository(
         val selection = if (activeProvider != null && activeModel != null && providers.any { it.id == activeProvider }) {
             ModelSelection(activeProvider, activeModel, prefs[Keys.ACTIVE_REASONING]?.let(ReasoningEffort::fromWire))
         } else {
-            providers.firstOrNull { it.defaultModel.isNotBlank() }?.let { ModelSelection(it.id, it.defaultModel) }
+            null
         }
         return AppSettings(
             providers = providers,

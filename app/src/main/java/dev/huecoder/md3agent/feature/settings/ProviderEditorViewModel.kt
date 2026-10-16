@@ -5,15 +5,11 @@ import androidx.lifecycle.viewModelScope
 import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.data.settings.ApiFormat
 import dev.huecoder.md3agent.data.settings.HeaderEntry
-import dev.huecoder.md3agent.data.settings.ModelSelection
 import dev.huecoder.md3agent.data.settings.ProviderProfile
 import dev.huecoder.md3agent.data.settings.SettingsRepository
 import dev.huecoder.md3agent.data.models.ModelCatalog
-import dev.huecoder.md3agent.llm.ProviderException
 import dev.huecoder.md3agent.ui.text.UiText
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
@@ -24,9 +20,6 @@ data class ProviderForm(
     val baseUrl: String = "",
     val apiKey: String = "",
     val headers: List<HeaderEntry> = emptyList(),
-    val models: List<String> = emptyList(),
-    val defaultModel: String = "",
-    val makeActive: Boolean = true,
     val format: ApiFormat = ApiFormat.OPENAI,
 ) {
     fun withFormat(next: ApiFormat) = copy(format = next, baseUrl = next.adoptBaseUrl(baseUrl))
@@ -35,7 +28,7 @@ data class ProviderForm(
         get() = if (baseUrl.isBlank() || baseUrl.trim().toHttpUrlOrNull() != null) null else UiText.Resource(R.string.provider_base_url_invalid)
 
     val canSave: Boolean
-        get() = name.isNotBlank() && baseUrl.isNotBlank() && baseUrlError == null && defaultModel.isNotBlank()
+        get() = name.isNotBlank() && baseUrl.isNotBlank() && baseUrlError == null
 
     fun toProfile() = ProviderProfile(
         id = id,
@@ -43,16 +36,8 @@ data class ProviderForm(
         baseUrl = baseUrl.trim(),
         apiKey = apiKey.trim(),
         extraHeaders = headers.filter { it.name.isNotBlank() },
-        models = models,
-        defaultModel = defaultModel.trim(),
         format = format,
     )
-}
-
-sealed interface ModelFetchState {
-    data object Idle : ModelFetchState
-    data object Loading : ModelFetchState
-    data class Failed(val message: UiText) : ModelFetchState
 }
 
 class ProviderEditorViewModel(
@@ -65,13 +50,9 @@ class ProviderEditorViewModel(
 
     val isDirty: StateFlow<Boolean> = draft.isDirty
 
-    private val _modelFetch = MutableStateFlow<ModelFetchState>(ModelFetchState.Idle)
-    val modelFetch: StateFlow<ModelFetchState> = _modelFetch.asStateFlow()
-
     init {
         viewModelScope.launch {
-            val current = settings.current()
-            val existing = current.provider(providerId)
+            val existing = settings.current().provider(providerId)
             draft.load(if (existing == null) {
                 ProviderForm(id = settings.newProviderId(), isNew = true)
             } else {
@@ -82,9 +63,6 @@ class ProviderEditorViewModel(
                     baseUrl = existing.baseUrl,
                     apiKey = existing.apiKey,
                     headers = existing.extraHeaders,
-                    models = existing.models,
-                    defaultModel = existing.defaultModel,
-                    makeActive = current.activeSelection?.providerId == existing.id,
                     format = existing.format,
                 )
             })
@@ -93,26 +71,10 @@ class ProviderEditorViewModel(
 
     fun edit(transform: (ProviderForm) -> ProviderForm) = draft.edit(transform)
 
-    fun fetchModels() {
-        val current = draft.current ?: return
-        _modelFetch.value = ModelFetchState.Loading
-        viewModelScope.launch {
-            _modelFetch.value = try {
-                val models = catalog.refresh(current.toProfile()).map { it.id }
-                edit { form -> form.copy(models = models, defaultModel = form.defaultModel.ifBlank { models.firstOrNull().orEmpty() }) }
-                ModelFetchState.Idle
-            } catch (e: ProviderException) {
-                ModelFetchState.Failed(e.message?.let(UiText::Raw) ?: UiText.Resource(R.string.provider_models_fetch_failed))
-            }
-        }
-    }
-
     fun save(onSaved: () -> Unit) {
         val current = draft.current?.takeIf { it.canSave } ?: return
         viewModelScope.launch {
-            val profile = current.toProfile()
-            settings.upsertProvider(profile)
-            if (current.makeActive) settings.setActiveSelection(ModelSelection(profile.id, profile.defaultModel))
+            settings.upsertProvider(current.toProfile())
             draft.markSaved()
             onSaved()
         }
