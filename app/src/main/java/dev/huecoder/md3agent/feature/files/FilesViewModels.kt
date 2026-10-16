@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.huecoder.md3agent.R
+import dev.huecoder.md3agent.data.files.EntryKind
 import dev.huecoder.md3agent.data.files.FileLibrary
 import dev.huecoder.md3agent.data.files.InvalidFileNameException
 import dev.huecoder.md3agent.data.files.LibraryEntry
@@ -20,9 +21,57 @@ import java.io.IOException
 class MediaViewModel(private val library: FileLibrary) : ViewModel() {
     private val _media = MutableStateFlow<List<ViewableFile>?>(null)
     val media: StateFlow<List<ViewableFile>?> = _media.asStateFlow()
+    private val _selection = MutableStateFlow<Set<String>>(emptySet())
+    val selection: StateFlow<Set<String>> = _selection.asStateFlow()
+    private val _errors = MutableStateFlow<UiText?>(null)
+    val errors: StateFlow<UiText?> = _errors.asStateFlow()
+    private val range = RangeSelect()
+
+    val selectedFiles: List<ViewableFile> get() = _media.value.orEmpty().filter { it.file.path in _selection.value }
 
     fun refresh() {
-        viewModelScope.launch { _media.value = library.media() }
+        viewModelScope.launch {
+            val images = library.media()
+            _media.value = images
+            _selection.update { selected -> selected.intersect(images.map { it.file.path }.toSet()) }
+        }
+    }
+
+    fun toggle(image: ViewableFile) {
+        val path = image.file.path
+        _selection.update { if (path in it) it - path else it + path }
+    }
+
+    fun selectAll() {
+        _selection.value = _media.value.orEmpty().map { it.file.path }.toSet()
+    }
+
+    fun selectRange(anchor: String, current: String) {
+        val ordered = _media.value.orEmpty().map { it.file.path }
+        _selection.update { range.extend(it, ordered, anchor, current) }
+    }
+
+    fun endRange() = range.end()
+
+    fun clearSelection() {
+        _selection.value = emptySet()
+    }
+
+    fun deleteSelected() {
+        val doomed = selectedFiles
+        clearSelection()
+        viewModelScope.launch {
+            try {
+                library.deleteMedia(doomed)
+            } catch (e: IOException) {
+                _errors.value = UiText.Resource(R.string.files_error_delete)
+            }
+            refresh()
+        }
+    }
+
+    fun consumeError() {
+        _errors.value = null
     }
 }
 
@@ -32,7 +81,12 @@ data class FolderUiState(
     val isLoaded: Boolean = false,
 ) {
     val isSelecting: Boolean get() = selection.isNotEmpty()
-    val selectedEntries: List<LibraryEntry> get() = entries.filter { it.name in selection }
+    val selectedEntries: List<LibraryEntry> get() = entries.filter { it.key in selection }
+    val selectableKeys: List<String> get() = entries.filter { it.kind != EntryKind.CHAT_FILES }.map { it.key }
+    val canDelete: Boolean get() = isSelecting && selectedEntries.none { it.isReadOnly }
+    val canRename: Boolean get() = selectedEntries.singleOrNull()?.isReadOnly == false
+    val canShare: Boolean get() = isSelecting && selectedEntries.all { it.kind == EntryKind.FILE && it.file != null }
+    val sharedFiles: List<ViewableFile> get() = selectedEntries.mapNotNull { it.file }
 }
 
 class FolderViewModel(private val library: FileLibrary, val location: LibraryLocation) : ViewModel() {
@@ -40,18 +94,26 @@ class FolderViewModel(private val library: FileLibrary, val location: LibraryLoc
     val state: StateFlow<FolderUiState> = _state.asStateFlow()
     private val _errors = MutableStateFlow<UiText?>(null)
     val errors: StateFlow<UiText?> = _errors.asStateFlow()
+    private val range = RangeSelect()
 
     fun refresh() {
         viewModelScope.launch {
             val entries = library.list(location)
-            _state.update { current -> current.copy(entries = entries, selection = current.selection.intersect(entries.map { it.name }.toSet()), isLoaded = true) }
+            _state.update { current -> current.copy(entries = entries, selection = current.selection.intersect(entries.map { it.key }.toSet()), isLoaded = true) }
         }
     }
 
     fun toggle(entry: LibraryEntry) {
-        if (entry.isReadOnly) return
-        _state.update { it.copy(selection = if (entry.name in it.selection) it.selection - entry.name else it.selection + entry.name) }
+        if (entry.kind == EntryKind.CHAT_FILES) return
+        _state.update { it.copy(selection = if (entry.key in it.selection) it.selection - entry.key else it.selection + entry.key) }
     }
+
+    fun selectAll() = _state.update { it.copy(selection = it.selectableKeys.toSet()) }
+
+    fun selectRange(anchor: String, current: String) =
+        _state.update { it.copy(selection = range.extend(it.selection, it.selectableKeys, anchor, current)) }
+
+    fun endRange() = range.end()
 
     fun clearSelection() = _state.update { it.copy(selection = emptySet()) }
 

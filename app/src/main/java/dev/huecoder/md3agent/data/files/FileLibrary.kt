@@ -28,7 +28,9 @@ data class LibraryEntry(
     val sizeBytes: Long,
     val modifiedAt: Long,
     val isReadOnly: Boolean,
-)
+) {
+    val key: String get() = file?.file?.path ?: "$kind:$name"
+}
 
 class InvalidFileNameException(name: String) : IllegalArgumentException("\"$name\" is not a valid file name")
 
@@ -59,17 +61,27 @@ class FileLibrary(
     }
 
     suspend fun media(): List<ViewableFile> = withContext(Dispatchers.IO) {
-        val folders = listOf(uploads, workspace).flatMap { root ->
-            root.walkTopDown().maxDepth(MAX_MEDIA_DEPTH).onEnter { !it.name.startsWith(HIDDEN_PREFIX) || it == root }
-                .filter { it.isFile && mimeTypeOf(it.name).startsWith(IMAGE_PREFIX) }
-                .map { MediaCandidate(ViewableFile(it, it.name, mimeTypeOf(it.name)), it.lastModified()) }
-                .toList()
-        }
-        val chats = sentFiles.all().filter { it.file.isImage }.map { MediaCandidate(it.file, it.sentAt) }
-        (folders + chats)
+        mediaCandidates()
             .sortedByDescending { it.modifiedAt }
             .distinctBy { contentHash(it.file.file) ?: it.file.file.path }
             .map { it.file }
+    }
+
+    suspend fun deleteMedia(targets: Collection<ViewableFile>) = withContext(Dispatchers.IO) {
+        val paths = targets.map { it.file.path }.toSet()
+        val hashes = targets.mapNotNull { contentHash(it.file) }.toSet()
+        val failures = mediaCandidates()
+            .map { it.file.file }
+            .filter { file -> file.path in paths || contentHash(file) in hashes }
+            .mapNotNull { file ->
+                try {
+                    file.deleteTree()
+                    null
+                } catch (e: IOException) {
+                    e
+                }
+            }
+        failures.firstOrNull()?.let { throw it }
     }
 
     suspend fun upload(uri: Uri, into: LibraryLocation): File = withContext(Dispatchers.IO) {
@@ -106,6 +118,17 @@ class FileLibrary(
             }
         }
         failures.firstOrNull()?.let { throw it }
+    }
+
+    private suspend fun mediaCandidates(): List<MediaCandidate> {
+        val folders = listOf(uploads, workspace).flatMap { root ->
+            root.walkTopDown().maxDepth(MAX_MEDIA_DEPTH).onEnter { !it.name.startsWith(HIDDEN_PREFIX) || it == root }
+                .filter { it.isFile && mimeTypeOf(it.name).startsWith(IMAGE_PREFIX) }
+                .map { MediaCandidate(ViewableFile(it, it.name, mimeTypeOf(it.name)), it.lastModified()) }
+                .toList()
+        }
+        val chats = sentFiles.all().filter { it.file.isImage && it.file.file.isFile }.map { MediaCandidate(it.file, it.sentAt) }
+        return folders + chats
     }
 
     private suspend fun chatFiles(root: LibraryRoot): List<LibraryEntry> = sentFiles.all()

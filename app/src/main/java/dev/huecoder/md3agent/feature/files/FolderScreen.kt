@@ -11,12 +11,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FloatingActionButtonMenu
 import androidx.compose.material3.FloatingActionButtonMenuItem
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedListItem
@@ -28,13 +27,15 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -51,6 +52,8 @@ import com.composables.icons.materialsymbols.rounded.Description
 import com.composables.icons.materialsymbols.rounded.Edit
 import com.composables.icons.materialsymbols.rounded.Folder
 import com.composables.icons.materialsymbols.rounded.Forum
+import com.composables.icons.materialsymbols.rounded.Select_all
+import com.composables.icons.materialsymbols.rounded.Share
 import com.composables.icons.materialsymbols.rounded.Upload_file
 import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.data.attachments.ByteSize
@@ -61,12 +64,14 @@ import dev.huecoder.md3agent.data.files.LibraryRoot
 import dev.huecoder.md3agent.feature.chat.lightbox.LightboxHost
 import dev.huecoder.md3agent.feature.chat.lightbox.LocalLightbox
 import dev.huecoder.md3agent.feature.home.NameDialog
+import dev.huecoder.md3agent.feature.home.dragToSelect
 import dev.huecoder.md3agent.feature.home.RelativeTime
 import dev.huecoder.md3agent.ui.components.SettingsScaffold
 import dev.huecoder.md3agent.ui.components.ShapeBadge
 import dev.huecoder.md3agent.ui.components.appViewModel
 import dev.huecoder.md3agent.ui.components.groupedListColors
 import dev.huecoder.md3agent.ui.files.openFile
+import dev.huecoder.md3agent.ui.files.shareFiles
 import dev.huecoder.md3agent.ui.haptics.clickHaptics
 import dev.huecoder.md3agent.ui.text.resolve
 import java.util.Locale
@@ -103,7 +108,7 @@ fun FolderScreen(location: LibraryLocation, onOpen: (LibraryLocation) -> Unit, o
     BackHandler(enabled = state.isSelecting, onBack = viewModel::clearSelection)
 
     val title = when {
-        state.isSelecting -> state.selection.size.toString()
+        state.isSelecting -> pluralStringResource(R.plurals.home_selected, state.selection.size, state.selection.size)
         location.fromChats -> stringResource(R.string.files_from_chats)
         location.segments.isNotEmpty() -> location.segments.last()
         else -> stringResource(location.root.title)
@@ -114,8 +119,10 @@ fun FolderScreen(location: LibraryLocation, onOpen: (LibraryLocation) -> Unit, o
             onBack = if (state.isSelecting) viewModel::clearSelection else onBack,
             actions = {
                 if (state.isSelecting) {
-                    state.selectedEntries.singleOrNull()?.let { only -> BarAction(MaterialSymbols.Rounded.Edit, R.string.files_rename) { dialog = FolderDialog.Rename(only) } }
-                    BarAction(MaterialSymbols.Rounded.Delete, R.string.files_delete) { dialog = FolderDialog.Delete }
+                    BarAction(MaterialSymbols.Rounded.Select_all, R.string.home_select_all, viewModel::selectAll)
+                    if (state.canShare) BarAction(MaterialSymbols.Rounded.Share, R.string.files_share) { context.shareFiles(state.sharedFiles) }
+                    if (state.canRename) state.selectedEntries.single().let { only -> BarAction(MaterialSymbols.Rounded.Edit, R.string.files_rename) { dialog = FolderDialog.Rename(only) } }
+                    if (state.canDelete) BarAction(MaterialSymbols.Rounded.Delete, R.string.files_delete) { dialog = FolderDialog.Delete }
                 }
             },
             floatingActionButton = {
@@ -145,6 +152,7 @@ fun FolderScreen(location: LibraryLocation, onOpen: (LibraryLocation) -> Unit, o
             EntryList(
                 entries = state.entries,
                 selection = state.selection,
+                selectableKeys = state.selectableKeys,
                 isLoaded = state.isLoaded,
                 padding = padding,
                 onClick = { entry ->
@@ -156,6 +164,8 @@ fun FolderScreen(location: LibraryLocation, onOpen: (LibraryLocation) -> Unit, o
                     }
                 },
                 onLongClick = viewModel::toggle,
+                onSelectRange = viewModel::selectRange,
+                onRangeEnd = viewModel::endRange,
             )
         }
     }
@@ -194,19 +204,28 @@ fun FolderScreen(location: LibraryLocation, onOpen: (LibraryLocation) -> Unit, o
 }
 
 @Composable
-private fun EntryList(
+internal fun EntryList(
     entries: List<LibraryEntry>,
     selection: Set<String>,
+    selectableKeys: List<String>,
     isLoaded: Boolean,
     padding: PaddingValues,
     onClick: (LibraryEntry) -> Unit,
     onLongClick: (LibraryEntry) -> Unit,
+    onSelectRange: (anchor: String, current: String) -> Unit,
+    onRangeEnd: () -> Unit,
 ) {
     val lightbox = LocalLightbox.current
     val images = entries.mapNotNull { it.file?.takeIf { file -> file.isImage } }
     val locale = LocalConfiguration.current.locales[0]
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+    val isEntry by rememberUpdatedState<(Any) -> Boolean> { key -> key in selectableKeys }
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        state = listState,
+        modifier = Modifier
+            .fillMaxSize()
+            .dragToSelect(listState, scope, isSelectable = { isEntry(it) }, onRange = onSelectRange, onEnd = onRangeEnd),
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = padding.calculateTopPadding(), bottom = FAB_CLEARANCE),
         verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
     ) {
@@ -220,8 +239,8 @@ private fun EntryList(
                 )
             }
         }
-        itemsIndexed(entries, key = { _, entry -> "${entry.kind}-${entry.name}-${entry.file?.file?.path}" }) { index, entry ->
-            val selected = entry.name in selection
+        itemsIndexed(entries, key = { _, entry -> entry.key }) { index, entry ->
+            val selected = entry.key in selection
             SegmentedListItem(
                 onClick = {
                     val image = entry.file?.takeIf { it.isImage && selection.isEmpty() }
@@ -266,11 +285,6 @@ private fun LibraryEntry.details(locale: Locale): String? = when (kind) {
     EntryKind.CHAT_FILES -> null
     EntryKind.FOLDER -> RelativeTime.format(modifiedAt, locale)
     EntryKind.FILE -> "${ByteSize.describe(sizeBytes)} · ${RelativeTime.format(modifiedAt, locale)}"
-}
-
-@Composable
-private fun BarAction(icon: ImageVector, label: Int, onClick: () -> Unit) {
-    IconButton(onClick = onClick, shapes = IconButtonDefaults.shapes()) { Icon(icon, contentDescription = stringResource(label)) }
 }
 
 val LibraryRoot.title: Int

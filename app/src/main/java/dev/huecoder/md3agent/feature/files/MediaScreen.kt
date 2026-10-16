@@ -1,65 +1,96 @@
 package dev.huecoder.md3agent.feature.files
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.itemsIndexed
+import android.widget.Toast
+import androidx.activity.compose.BackHandler
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil3.compose.AsyncImage
+import com.composables.icons.materialsymbols.MaterialSymbols
+import com.composables.icons.materialsymbols.rounded.Delete
+import com.composables.icons.materialsymbols.rounded.Select_all
+import com.composables.icons.materialsymbols.rounded.Share
 import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.feature.chat.lightbox.LightboxHost
 import dev.huecoder.md3agent.feature.chat.lightbox.LocalLightbox
 import dev.huecoder.md3agent.ui.components.SettingsScaffold
 import dev.huecoder.md3agent.ui.components.appViewModel
+import dev.huecoder.md3agent.ui.files.shareFiles
+import dev.huecoder.md3agent.ui.haptics.clickHaptics
+import dev.huecoder.md3agent.ui.text.resolve
 
 @Composable
 fun MediaScreen(onBack: () -> Unit) {
     val viewModel = appViewModel(key = "files-media") { MediaViewModel(it.library) }
     val media by viewModel.media.collectAsStateWithLifecycle()
+    val selection by viewModel.selection.collectAsStateWithLifecycle()
+    val error by viewModel.errors.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    var confirmingDelete by remember { mutableStateOf(false) }
+    val selecting = selection.isNotEmpty()
+
     LifecycleResumeEffect(viewModel) {
         viewModel.refresh()
         onPauseOrDispose { }
     }
-    LightboxHost {
-        SettingsScaffold(stringResource(R.string.files_media), onBack) { padding ->
-            val lightbox = LocalLightbox.current
-            val images = media.orEmpty()
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(CELL_SIZE),
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = padding.calculateTopPadding(), bottom = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(GAP),
-                verticalArrangement = Arrangement.spacedBy(GAP),
-            ) {
-                itemsIndexed(images, key = { _, image -> image.file.path }) { index, image ->
-                    AsyncImage(
-                        model = image.file,
-                        contentDescription = image.name,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .aspectRatio(1f)
-                            .clip(MaterialTheme.shapes.medium)
-                            .clickable { lightbox?.show(images, index) }
-                            .animateItem(),
-                    )
-                }
-            }
+    LaunchedEffect(error) {
+        error?.let {
+            Toast.makeText(context, it.resolve(context), Toast.LENGTH_SHORT).show()
+            viewModel.consumeError()
         }
     }
-}
+    BackHandler(enabled = selecting, onBack = viewModel::clearSelection)
 
-private val CELL_SIZE = 108.dp
-private val GAP = 4.dp
+    LightboxHost {
+        SettingsScaffold(
+            title = if (selecting) pluralStringResource(R.plurals.home_selected, selection.size, selection.size) else stringResource(R.string.files_media),
+            onBack = if (selecting) viewModel::clearSelection else onBack,
+            actions = {
+                if (selecting) {
+                    BarAction(MaterialSymbols.Rounded.Select_all, R.string.home_select_all, viewModel::selectAll)
+                    BarAction(MaterialSymbols.Rounded.Share, R.string.files_share) { context.shareFiles(viewModel.selectedFiles) }
+                    BarAction(MaterialSymbols.Rounded.Delete, R.string.files_delete) { confirmingDelete = true }
+                }
+            },
+        ) { padding ->
+            val lightbox = LocalLightbox.current
+            val images = media.orEmpty()
+            MediaGrid(
+                images = images,
+                selection = selection,
+                topPadding = padding.calculateTopPadding(),
+                onOpen = { index -> lightbox?.show(images, index) },
+                onToggle = viewModel::toggle,
+                onSelectRange = viewModel::selectRange,
+                onRangeEnd = viewModel::endRange,
+            )
+        }
+    }
+
+    if (confirmingDelete) {
+        AlertDialog(
+            modifier = Modifier.clickHaptics(),
+            onDismissRequest = { confirmingDelete = false },
+            title = { Text(stringResource(R.string.files_delete_title, selection.size)) },
+            text = { Text(stringResource(R.string.files_media_delete_body)) },
+            confirmButton = {
+                TextButton(onClick = { viewModel.deleteSelected(); confirmingDelete = false }) {
+                    Text(stringResource(R.string.files_delete), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = { TextButton(onClick = { confirmingDelete = false }) { Text(stringResource(R.string.home_delete_chat_cancel)) } },
+        )
+    }
+}

@@ -736,9 +736,12 @@
     <string name="files_delete">Удалить</string>
     <string name="files_delete_title">Удалить объекты: %1$d?</string>
     <string name="files_delete_body">Папки удаляются вместе со всем содержимым. Это нельзя отменить.</string>
+    <string name="files_media_delete_body">Картинки удалятся безвозвратно, вместе с копиями в чатах и папках.</string>
+    <string name="files_share">Поделиться</string>
     <string name="files_error_upload">Не удалось загрузить файл</string>
     <string name="files_error_folder">Не удалось создать папку</string>
     <string name="files_error_rename">Не удалось переименовать</string>
     <string name="files_error_delete">Не удалось удалить</string>
+    <string name="files_error_share">Не удалось поделиться файлами</string>
     <string name="files_error_name">Такое название не подходит</string>
 </resources>

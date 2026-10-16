@@ -43,11 +43,13 @@ import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Close
 import com.composables.icons.materialsymbols.rounded.Download
 import com.composables.icons.materialsymbols.rounded.Open_in_new
+import com.composables.icons.materialsymbols.rounded.Share
 import dev.huecoder.md3agent.App
 import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.data.files.RemoteImages
 import dev.huecoder.md3agent.data.files.ViewableFile
 import dev.huecoder.md3agent.ui.files.openFile
+import dev.huecoder.md3agent.ui.files.shareFiles
 import kotlinx.coroutines.launch
 import java.io.IOException
 
@@ -106,6 +108,12 @@ private fun ImageLightbox(images: List<ViewableFile>, startIndex: Int, onDismiss
                         modifier = Modifier.weight(1f),
                     )
                     if (current.canExport) {
+                        ChromeButton(MaterialSymbols.Rounded.Share, stringResource(R.string.files_share)) {
+                            scope.launch {
+                                val local = stored(context, current)
+                                if (local != null) context.shareFiles(listOf(local)) else Toast.makeText(context, R.string.lightbox_load_failed, Toast.LENGTH_SHORT).show()
+                            }
+                        }
                         ChromeButton(MaterialSymbols.Rounded.Open_in_new, stringResource(R.string.lightbox_open)) {
                             scope.launch {
                                 val local = stored(context, current)

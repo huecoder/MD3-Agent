@@ -3,6 +3,7 @@ package dev.huecoder.md3agent.data.files
 import android.content.ContentResolver
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -45,6 +46,64 @@ class FileLibraryTest {
 
         assertEquals(3, names.size)
         assertTrue("dog.jpg" in names && "bird.png" in names)
+    }
+
+    @Test
+    fun `media skips chat pictures whose file is gone`() = runTest {
+        sent = listOf(sentFile("a.png", "a", byUser = true, at = 1), sentFile("b.png", "b", byUser = false, at = 2))
+        File(attachments, "1-a.png").delete()
+
+        assertEquals(listOf("b.png"), library.media().map { it.name })
+    }
+
+    @Test
+    fun `deleting a picture removes every copy of it and nothing else`() = runTest {
+        File(uploads, "cat.png").withBytes("cat")
+        File(workspace, "plots/cat-copy.png").withBytes("cat")
+        File(workspace, "dog.png").withBytes("dog")
+        File(workspace, "notes.txt").withBytes("cat")
+        sent = listOf(sentFile("cat.png", "cat", byUser = true, at = 1))
+        val cat = library.media().first { it.name.startsWith("cat") }
+
+        library.deleteMedia(listOf(cat))
+
+        assertEquals(listOf("dog.png"), library.media().map { it.name })
+        assertFalse(File(uploads, "cat.png").exists())
+        assertFalse(File(workspace, "plots/cat-copy.png").exists())
+        assertFalse(File(attachments, "1-cat.png").exists())
+        assertTrue(File(workspace, "notes.txt").exists())
+    }
+
+    @Test
+    fun `several pictures are deleted in one go`() = runTest {
+        File(uploads, "a.png").withBytes("a")
+        File(uploads, "b.png").withBytes("b")
+        File(uploads, "c.png").withBytes("c")
+        val shown = library.media()
+
+        library.deleteMedia(shown.filter { it.name != "c.png" })
+
+        assertEquals(listOf("c.png"), library.media().map { it.name })
+    }
+
+    @Test
+    fun `deleting a picture that is already gone is not an error`() = runTest {
+        File(uploads, "gone.png").withBytes("x")
+        val shown = library.media()
+        File(uploads, "gone.png").delete()
+
+        library.deleteMedia(shown)
+
+        assertTrue(library.media().isEmpty())
+    }
+
+    @Test
+    fun `entries are keyed by file so chat files with the same name stay apart`() = runTest {
+        sent = listOf(sentFile("shot.png", "a", byUser = true, at = 1), sentFile("shot.png", "b", byUser = true, at = 2))
+
+        val entries = library.list(LibraryLocation(LibraryRoot.MINE, fromChats = true))
+
+        assertEquals(2, entries.map { it.key }.toSet().size)
     }
 
     @Test
