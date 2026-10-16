@@ -16,7 +16,7 @@ class ModelCatalogClient(private val httpClients: HttpClientProvider) {
 
     suspend fun listModels(provider: ProviderProfile): List<String> = listModelInfo(provider).map { it.id }
 
-    suspend fun listModelInfo(provider: ProviderProfile): List<ModelInfo> = withContext(Dispatchers.IO) {
+    suspend fun listModelInfo(provider: ProviderProfile, withDetails: Boolean = false): List<ModelInfo> = withContext(Dispatchers.IO) {
         val endpoint = ProviderEndpoint(provider)
         val url = endpoint.url(MODELS_PATH).newBuilder().apply {
             when (provider.format) {
@@ -32,7 +32,7 @@ class ModelCatalogClient(private val httpClients: HttpClientProvider) {
                 if (!response.isSuccessful) {
                     throw ProviderException.Http(response.code, "HTTP ${response.code}: ${body.take(ERROR_PREVIEW_CHARS)}")
                 }
-                ModelInfoParser.parseList(json.parseToJsonElement(body))
+                ModelInfoParser.parseList(json.parseToJsonElement(body), withDetails)
             }
         } catch (e: IOException) {
             throw ProviderException.Network(e)

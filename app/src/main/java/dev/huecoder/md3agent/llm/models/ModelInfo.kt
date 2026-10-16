@@ -39,6 +39,7 @@ data class ModelInfo(
     val reasoningEfforts: List<ReasoningEffort> = emptyList(),
     val reasoningControl: ReasoningControl? = null,
     val toolUse: Boolean? = null,
+    val details: ModelDetails? = null,
 ) {
     val family: ModelFamily? get() = ModelFamily.detect(id)
 
@@ -46,6 +47,19 @@ data class ModelInfo(
 
     val traits: ModelTraits get() = ModelTraits.of(this)
 }
+
+@Serializable
+data class ModelDetails(
+    val description: String? = null,
+    val outputTokenLimit: Int? = null,
+    val methods: List<String> = emptyList(),
+    val owner: String? = null,
+    val createdAt: Long? = null,
+    val languages: List<String> = emptyList(),
+    val maxInputCharacters: Int? = null,
+    val costFactor: Double? = null,
+    val canSpeak: Boolean? = null,
+)
 
 data class ModelTraits(
     val vision: Boolean,

@@ -110,7 +110,7 @@ class ElevenLabsTest {
 
         val voices = VoiceListClient(httpClients).list(profile())
 
-        assertEquals(listOf(SpeechVoice("a", "adam"), SpeechVoice("b", "Rachel")), voices)
+        assertEquals(listOf(SpeechVoice("a", "adam"), SpeechVoice("b", "Rachel", traits = listOf("Premade"))), voices)
         val request = server.takeRequest()
         assertEquals("/v1/voices", request.url.encodedPath)
         assertEquals("key-1", request.headers["xi-api-key"])
@@ -156,7 +156,68 @@ class ElevenLabsTest {
     }
 
     @Test
-    fun `other formats have no voice list`() = runTest {
-        assertTrue(VoiceListClient(httpClients).list(profile().copy(format = ApiFormat.OPENAI)).isEmpty())
+    fun `a voice carries its labels description and preview link`() = runTest {
+        server.enqueue(
+            MockResponse.Builder().body(
+                """{"voices":[{"voice_id":"v1","name":"Jon","category":"premade","description":"Warm and calm",
+                    "labels":{"accent":"american","gender":"male","age":"middle_aged","use_case":"conversational","language":"en","mood":"calm"},
+                    "preview_url":"https://cdn.example/jon.mp3"}]}""",
+            ).build(),
+        )
+
+        val voice = VoiceListClient(httpClients).list(profile()).single()
+
+        assertEquals("Warm and calm", voice.description)
+        assertEquals("https://cdn.example/jon.mp3", voice.previewUrl)
+        assertEquals(listOf("Premade", "Male", "Middle aged", "American", "Conversational", "EN", "Calm"), voice.traits)
+    }
+
+    @Test
+    fun `gemini voices come from the prebuilt list with their traits and no preview`() = runTest {
+        server.enqueue(
+            MockResponse.Builder().body(
+                """{"voices":[
+                    {"id":"Puck","display_name":"Puck","language_code":"en-US","accent":"American","gender":"male","pitch":"medium","persona":"Upbeat","context":"Conversational","description":"Playful"},
+                    {"id":"Kore","displayName":"Kore","gender":"female"}
+                ]}""",
+            ).build(),
+        )
+
+        val voices = VoiceListClient(httpClients).list(profile().copy(format = ApiFormat.GEMINI, baseUrl = server.url("/v1beta").toString()))
+
+        assertEquals(listOf("Kore", "Puck"), voices.map { it.id })
+        val puck = voices.last()
+        assertEquals(listOf("Male", "Medium pitch", "American", "en-US", "Upbeat", "Conversational"), puck.traits)
+        assertEquals("Playful", puck.description)
+        assertEquals(null, puck.previewUrl)
+        val request = server.takeRequest()
+        assertEquals("/v1beta/voices", request.url.encodedPath)
+        assertEquals("prebuilt", request.url.queryParameter("type"))
+        assertEquals("key-1", request.headers["x-goog-api-key"])
+    }
+
+    @Test
+    fun `gemini voices are read page by page`() = runTest {
+        server.enqueue(MockResponse.Builder().body("""{"voices":[{"id":"A"}],"next_page_token":"t2"}""").build())
+        server.enqueue(MockResponse.Builder().body("""{"voices":[{"id":"B"}]}""").build())
+
+        val voices = VoiceListClient(httpClients).list(profile().copy(format = ApiFormat.GEMINI, baseUrl = server.url("/v1beta").toString()))
+
+        assertEquals(listOf("A", "B"), voices.map { it.id })
+        server.takeRequest()
+        assertEquals("t2", server.takeRequest().url.queryParameter("page_token"))
+    }
+
+    @Test
+    fun `openai voices are the built in names without a request`() = runTest {
+        val voices = VoiceListClient(httpClients).list(profile().copy(format = ApiFormat.OPENAI))
+
+        assertTrue(voices.any { it.id == "marin" && it.name == "Marin" })
+        assertEquals(0, server.requestCount)
+    }
+
+    @Test
+    fun `anthropic has no voice list`() = runTest {
+        assertTrue(VoiceListClient(httpClients).list(profile().copy(format = ApiFormat.ANTHROPIC)).isEmpty())
     }
 }

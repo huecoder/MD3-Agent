@@ -6,24 +6,27 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.longOrNull
 
 object ModelInfoParser {
     private const val IMAGE = "image"
     private const val TEXT = "text"
     private const val MODALITY_ARROW = "->"
     private const val GEMINI_MODEL_PREFIX = "models/"
+    private const val DESCRIPTION_LIMIT = 400
 
-    fun parseList(root: JsonElement): List<ModelInfo> {
+    fun parseList(root: JsonElement, withDetails: Boolean = false): List<ModelInfo> {
         val entries = when (root) {
             is JsonArray -> root
             is JsonObject -> (root["data"] ?: root["models"]) as? JsonArray
             else -> null
         } ?: throw IllegalArgumentException("No model list in the response")
-        return entries.mapNotNull { (it as? JsonObject)?.let(::parse) }.distinctBy { it.id }.sortedBy { it.id }
+        return entries.mapNotNull { (it as? JsonObject)?.let { entry -> parse(entry, withDetails) } }.distinctBy { it.id }.sortedBy { it.id }
     }
 
-    fun parse(entry: JsonObject): ModelInfo? {
+    fun parse(entry: JsonObject, withDetails: Boolean = false): ModelInfo? {
         val geminiName = entry.string("name")?.takeIf { it.startsWith(GEMINI_MODEL_PREFIX) }
         val id = entry.string("id") ?: entry.string("model_id") ?: geminiName?.removePrefix(GEMINI_MODEL_PREFIX) ?: return null
         val architecture = entry.obj("architecture")
@@ -56,7 +59,25 @@ object ModelInfoParser {
                 else -> null
             },
             toolUse = parameters?.contains("tools") ?: capabilities?.flag("function_calling", "tools") ?: entry.flag("supports_tools"),
+            details = if (withDetails) detailsOf(entry) else null,
         )
+    }
+
+    private fun detailsOf(entry: JsonObject): ModelDetails? {
+        val details = ModelDetails(
+            description = entry.string("description")?.take(DESCRIPTION_LIMIT),
+            outputTokenLimit = entry.int("outputTokenLimit"),
+            methods = (entry["supportedGenerationMethods"] as? JsonArray)?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }.orEmpty(),
+            owner = entry.string("owned_by"),
+            createdAt = (entry["created"] as? JsonPrimitive)?.longOrNull,
+            languages = (entry["languages"] as? JsonArray)?.mapNotNull { language ->
+                (language as? JsonObject)?.string("name") ?: (language as? JsonPrimitive)?.contentOrNull
+            }.orEmpty(),
+            maxInputCharacters = entry.int("maximum_text_length_per_request"),
+            costFactor = (entry["token_cost_factor"] as? JsonPrimitive)?.doubleOrNull,
+            canSpeak = entry.flag("can_do_text_to_speech"),
+        )
+        return details.takeUnless { it == ModelDetails() }
     }
 
     private fun outputOf(modalities: List<String>): ModelOutput? {

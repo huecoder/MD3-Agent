@@ -93,4 +93,31 @@ class ModelCatalogParsingTest {
         val ids = ModelInfoParser.parseList(Json.parseToJsonElement(body)).map { it.id }
         assertEquals(listOf("eleven_flash_v2_5", "eleven_multilingual_v2"), ids)
     }
+
+    @Test
+    fun `details are read only on request`() {
+        val body = """{"models":[{"name":"models/gemini-embedding-001","displayName":"Gemini Embedding","description":"Text embeddings",
+            "inputTokenLimit":2048,"outputTokenLimit":1,"supportedGenerationMethods":["embedContent","countTokens"]}]}"""
+        val plain = ModelInfoParser.parseList(Json.parseToJsonElement(body)).single()
+        val detailed = ModelInfoParser.parseList(Json.parseToJsonElement(body), withDetails = true).single()
+
+        assertEquals(null, plain.details)
+        assertEquals("Text embeddings", detailed.details?.description)
+        assertEquals(listOf("embedContent", "countTokens"), detailed.details?.methods)
+        assertEquals(1, detailed.details?.outputTokenLimit)
+        assertEquals(2048, detailed.contextLength)
+    }
+
+    @Test
+    fun `elevenlabs model details name languages limits and cost`() {
+        val body = """[{"model_id":"eleven_turbo_v2_5","name":"Eleven Turbo v2.5","description":"Fast","can_do_text_to_speech":true,
+            "token_cost_factor":0.5,"maximum_text_length_per_request":40000,"languages":[{"language_id":"en","name":"English"},{"language_id":"ru","name":"Russian"}]}]"""
+        val info = ModelInfoParser.parseList(Json.parseToJsonElement(body), withDetails = true).single()
+
+        assertEquals("Eleven Turbo v2.5", info.displayName)
+        assertEquals(listOf("English", "Russian"), info.details?.languages)
+        assertEquals(40000, info.details?.maxInputCharacters)
+        assertEquals(0.5, info.details?.costFactor)
+        assertEquals(true, info.details?.canSpeak)
+    }
 }
