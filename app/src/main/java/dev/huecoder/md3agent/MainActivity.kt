@@ -1,5 +1,6 @@
 package dev.huecoder.md3agent
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -48,5 +49,10 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         const val EXTRA_CHAT_ID = "dev.huecoder.md3agent.extra.CHAT_ID"
+
+        fun chatIntent(context: Context, chatId: String?): Intent =
+            Intent(context, MainActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                .apply { chatId?.let { putExtra(EXTRA_CHAT_ID, it) } }
     }
 }

@@ -34,6 +34,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import dev.huecoder.md3agent.AppContainer
+import dev.huecoder.md3agent.MainActivity
 import dev.huecoder.md3agent.data.settings.AppSettings
 import dev.huecoder.md3agent.data.settings.PanelSpot
 import dev.huecoder.md3agent.data.settings.PhonePanelState
@@ -81,6 +82,7 @@ class PhoneUseOverlay(private val service: AccessibilityService, private val con
             combine(session.chatId, session.settings, container.visibility.isVisible) { chat, settings, appVisible ->
                 chat?.takeIf { settings.overlay && !appVisible }
             }.distinctUntilChanged().collect { chat ->
+                if (chat == null) returnToChat()
                 unmount()
                 chat?.let { mount(it, container.settings.phonePanel.first()) }
             }
@@ -110,13 +112,18 @@ class PhoneUseOverlay(private val service: AccessibilityService, private val con
         session.setOnScreen(true)
     }
 
+    private fun returnToChat() {
+        val finished = shell?.chatId?.takeIf { session.chatId.value == null } ?: return
+        service.startActivity(MainActivity.chatIntent(service, finished))
+    }
+
     private fun unmount() {
         session.setOnScreen(false)
         shell?.close()
         shell = null
     }
 
-    private inner class Shell(chatId: String, initialPanel: PhonePanelState) {
+    private inner class Shell(val chatId: String, initialPanel: PhonePanelState) {
         private val shellScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
         private val store = ViewModelStore()
         private val viewModel = ViewModelProvider(
