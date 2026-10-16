@@ -1,7 +1,9 @@
 package dev.huecoder.md3agent.ui.components
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
@@ -57,8 +59,9 @@ fun SettingsScaffold(
         },
         bottomBar = { save?.let { StickySaveBar(it) } },
         floatingActionButton = floatingActionButton,
-        content = content,
-    )
+    ) { padding ->
+        Box(Modifier.fillMaxSize().bottomEdgeFade()) { content(padding) }
+    }
     if (confirmingLeave && save != null) {
         UnsavedChangesDialog(
             canSave = save.canSave,

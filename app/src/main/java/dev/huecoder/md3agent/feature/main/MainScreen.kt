@@ -32,6 +32,7 @@ import dev.huecoder.md3agent.App
 import dev.huecoder.md3agent.feature.home.HomeScreen
 import dev.huecoder.md3agent.feature.settings.SettingsDestinations
 import dev.huecoder.md3agent.feature.settings.SettingsScreen
+import dev.huecoder.md3agent.ui.components.bottomEdgeFade
 import dev.huecoder.md3agent.ui.haptics.rememberHaptics
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.map
@@ -69,7 +70,7 @@ fun MainScreen(
     BackHandler(enabled = tab != MainTab.CHATS) { open(MainTab.CHATS) }
 
     Box(Modifier.fillMaxSize().nestedScroll(collapseOnScroll)) {
-        HorizontalPager(state = pager, key = { MainTab.entries[it] }, modifier = Modifier.fillMaxSize()) { page ->
+        HorizontalPager(state = pager, key = { MainTab.entries[it] }, modifier = Modifier.fillMaxSize().bottomEdgeFade()) { page ->
             when (MainTab.entries[page]) {
                 MainTab.CHATS -> HomeScreen(onOpenChat = onOpenChat, onOpenMessage = onOpenMessage, onOpenSettings = { open(MainTab.SETTINGS) })
                 MainTab.FILES -> FilesScreen(onOpenFolder = onOpenFolder, onOpenMedia = onOpenMedia)
