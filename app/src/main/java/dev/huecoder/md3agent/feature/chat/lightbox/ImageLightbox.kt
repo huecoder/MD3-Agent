@@ -1,5 +1,6 @@
 package dev.huecoder.md3agent.feature.chat.lightbox
 
+import android.content.Context
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -44,6 +45,7 @@ import com.composables.icons.materialsymbols.rounded.Download
 import com.composables.icons.materialsymbols.rounded.Open_in_new
 import dev.huecoder.md3agent.App
 import dev.huecoder.md3agent.R
+import dev.huecoder.md3agent.data.files.RemoteImages
 import dev.huecoder.md3agent.data.files.ViewableFile
 import dev.huecoder.md3agent.ui.files.openFile
 import kotlinx.coroutines.launch
@@ -79,7 +81,7 @@ private fun ImageLightbox(images: List<ViewableFile>, startIndex: Int, onDismiss
             HorizontalPager(state = pager, beyondViewportPageCount = 1, pageSpacing = PAGE_SPACING, modifier = Modifier.fillMaxSize()) { page ->
                 val zoom = rememberZoomState()
                 AsyncImage(
-                    model = images[page].file,
+                    model = images[page].url ?: images[page].file,
                     contentDescription = images[page].name,
                     contentScale = ContentScale.Fit,
                     modifier = Modifier.fillMaxSize().zoomable(zoom, onTap = { chromeVisible = !chromeVisible }),
@@ -103,16 +105,28 @@ private fun ImageLightbox(images: List<ViewableFile>, startIndex: Int, onDismiss
                         maxLines = 1,
                         modifier = Modifier.weight(1f),
                     )
-                    ChromeButton(MaterialSymbols.Rounded.Open_in_new, stringResource(R.string.lightbox_open)) { context.openFile(current) }
-                    ChromeButton(MaterialSymbols.Rounded.Download, stringResource(R.string.lightbox_download)) {
-                        scope.launch {
-                            val message = try {
-                                store.exportToDownloads(current)
-                                R.string.lightbox_saved
-                            } catch (e: IOException) {
-                                R.string.lightbox_save_failed
+                    if (current.canExport) {
+                        ChromeButton(MaterialSymbols.Rounded.Open_in_new, stringResource(R.string.lightbox_open)) {
+                            scope.launch {
+                                val local = stored(context, current)
+                                if (local != null) context.openFile(local) else Toast.makeText(context, R.string.lightbox_load_failed, Toast.LENGTH_SHORT).show()
                             }
-                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                        }
+                        ChromeButton(MaterialSymbols.Rounded.Download, stringResource(R.string.lightbox_download)) {
+                            scope.launch {
+                                val message = try {
+                                    val local = stored(context, current)
+                                    if (local == null) {
+                                        R.string.lightbox_load_failed
+                                    } else {
+                                        store.exportToDownloads(local)
+                                        R.string.lightbox_saved
+                                    }
+                                } catch (e: IOException) {
+                                    R.string.lightbox_save_failed
+                                }
+                                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                            }
                         }
                     }
                 }
@@ -120,6 +134,13 @@ private fun ImageLightbox(images: List<ViewableFile>, startIndex: Int, onDismiss
         }
     }
 }
+
+private suspend fun stored(context: Context, target: ViewableFile): ViewableFile? =
+    try {
+        RemoteImages.materialize((context.applicationContext as App).container.httpClients.current(), target)
+    } catch (e: IOException) {
+        null
+    }
 
 @Composable
 private fun ChromeButton(icon: ImageVector, label: String, onClick: () -> Unit) {

@@ -393,6 +393,8 @@
     <string name="lightbox_download">Сохранить в загрузки</string>
     <string name="lightbox_saved">Сохранено в Загрузки/MD3 Agent</string>
     <string name="lightbox_save_failed">Не получилось сохранить картинку</string>
+    <string name="lightbox_load_failed">Не получилось загрузить картинку</string>
+    <string name="picture_unavailable">Картинка не загрузилась</string>
     <string name="picker_tab_model">Модель</string>
     <string name="picker_tab_agents">Агенты</string>
     <string name="model_search">Поиск по имени, компании или id</string>

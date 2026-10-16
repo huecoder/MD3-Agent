@@ -398,6 +398,8 @@
     <string name="lightbox_download">Save to Downloads</string>
     <string name="lightbox_saved">Saved to Downloads/MD3 Agent</string>
     <string name="lightbox_save_failed">Couldn\'t save the image</string>
+    <string name="lightbox_load_failed">Couldn\'t load the image</string>
+    <string name="picture_unavailable">Picture not loaded</string>
     <string name="picker_tab_model">Model</string>
     <string name="picker_tab_agents">Agents</string>
     <string name="model_search">Search by name, company or id</string>

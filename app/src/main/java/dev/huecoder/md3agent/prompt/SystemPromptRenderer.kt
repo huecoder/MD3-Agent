@@ -19,6 +19,7 @@ class SystemPromptRenderer(
         }
         return buildString {
             append(prompt)
+            append("\n\n").append(DISPLAY_NOTES)
             if (instantMemories.isNotEmpty()) {
                 append("\n\n").append(MEMORY_HEADER)
                 instantMemories.forEach { append("\n- [").append(it.id).append("] ").append(it.title).append(": ").append(it.content) }
@@ -54,6 +55,15 @@ class SystemPromptRenderer(
     }
 
     private companion object {
+        val DISPLAY_NOTES = listOf(
+            "How your replies are displayed:",
+            "- Replies are rendered as markdown. To show a picture, put it alone on a line as ![short description](https://direct-link-to-the-image-file). " +
+                "Use only direct image links that a tool returned, never made-up ones. Pictures get rounded corners and open full screen when tapped.",
+            "- Position and size go into the title: ![description](url \"right 50%\"). Position: left (default), center or right. " +
+                "Width: small, medium, large, full or a percentage like 50%. A title with any other word is an ordinary title and its options are ignored.",
+            "- Pictures on neighbouring lines with no blank line between them form one group: two to four show as an album grid, more as a side-scrolling slider. " +
+                "Add album or slider to the first title to force one, and leave a blank line between pictures to keep them separate.",
+        ).joinToString("\n")
         const val MEMORY_HEADER = "Instant memory, what you know about the user (ids in brackets):"
         const val ACCESS_HEADER = "Device access available to you right now:"
         val PLACEHOLDER = Regex("""\{([a-z_]+)\}""")

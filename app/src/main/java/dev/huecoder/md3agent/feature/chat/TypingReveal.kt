@@ -19,9 +19,8 @@ import com.mikepenz.markdown.model.markdownAnnotator
 import com.mikepenz.markdown.model.parseMarkdown
 import dev.huecoder.md3agent.data.settings.TypingMode
 import dev.huecoder.md3agent.data.settings.TypingStyle
-import dev.huecoder.md3agent.ui.components.MarkdownContent
-import dev.huecoder.md3agent.ui.components.PlainAnnotator
 import dev.huecoder.md3agent.ui.math.rememberMathContent
+import dev.huecoder.md3agent.ui.pictures.MarkdownBlocks
 import kotlinx.coroutines.flow.first
 import org.intellij.markdown.MarkdownTokenTypes
 import kotlin.math.ceil
@@ -39,9 +38,13 @@ fun ReplyText(text: String, isStreaming: Boolean, style: TypingStyle, modifier: 
     val revealed = math.markdown
     val frontier = rememberRevealFrontier(revealed, style.charsPerSecond, tail, isRunning = !isStopped)
     val shown = if (isStopped) revealed else revealed.substring(0, cuts.floor(revealed, ceil(frontier).toInt()))
-    val parsed = remember(shown) { parseMarkdown(shown) }
-    val annotator = if (tail == 0 || isStopped) PlainAnnotator else fadeAnnotator(frontier, tail, MaterialTheme.colorScheme.onSurface, cuts)
-    MarkdownContent(parsed, annotator, math, modifier)
+    val blocks = remember(shown) { MarkdownBlocks.split(shown) }
+    val color = MaterialTheme.colorScheme.onSurface
+    MarkdownBlocksContent(blocks, math, modifier) { block ->
+        val parsed = remember(block.markdown) { parseMarkdown(block.markdown) }
+        val annotator = if (tail == 0 || isStopped) PlainAnnotator else fadeAnnotator(frontier - block.start, tail, color, cuts)
+        MarkdownContent(parsed, annotator, math)
+    }
 }
 
 @Composable
