@@ -29,36 +29,38 @@ internal fun SettingCard(
     modifier: Modifier = Modifier,
     summary: String? = null,
     summaryMaxLines: Int = Int.MAX_VALUE,
+    summaryColor: Color? = null,
     shape: Shape = MaterialTheme.shapes.extraLarge,
     badgeContainer: Color = MaterialTheme.colorScheme.primaryContainer,
     badgeContent: Color = MaterialTheme.colorScheme.onPrimaryContainer,
     selected: Boolean = false,
+    indentBelow: Boolean = true,
     onClick: (() -> Unit)? = null,
     trailing: (@Composable () -> Unit)? = null,
     below: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     val colors = MaterialTheme.colorScheme
     val container by animateColorAsState(if (selected) colors.secondaryContainer else colors.surfaceContainer, label = "setting-card")
-    val summaryColor = if (selected) colors.onSecondaryContainer.copy(alpha = SELECTED_SUMMARY_ALPHA) else colors.onSurfaceVariant
+    val summaryTint = summaryColor ?: if (selected) colors.onSecondaryContainer.copy(alpha = SELECTED_SUMMARY_ALPHA) else colors.onSurfaceVariant
+    val belowContent: (@Composable () -> Unit)? = below?.let { block -> { Column(Modifier.fillMaxWidth().padding(top = BELOW_GAP), content = block) } }
     val content: @Composable () -> Unit = {
-        Row(
-            modifier = Modifier.padding(horizontal = CARD_PADDING, vertical = CARD_PADDING_VERTICAL),
-            horizontalArrangement = Arrangement.spacedBy(CONTENT_GAP),
-            verticalAlignment = Alignment.Top,
-        ) {
-            ShapeBadge(icon, size = BADGE_SIZE, containerColor = badgeContainer, contentColor = badgeContent)
-            Column(Modifier.weight(1f)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().heightIn(min = BADGE_SIZE),
-                    horizontalArrangement = Arrangement.spacedBy(TRAILING_GAP),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(title, style = MaterialTheme.typography.titleMediumEmphasized, modifier = Modifier.weight(1f))
-                    trailing?.invoke()
+        Column(Modifier.padding(horizontal = CARD_PADDING, vertical = CARD_PADDING_VERTICAL)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(CONTENT_GAP), verticalAlignment = Alignment.Top) {
+                ShapeBadge(icon, size = BADGE_SIZE, containerColor = badgeContainer, contentColor = badgeContent)
+                Column(Modifier.weight(1f)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().heightIn(min = BADGE_SIZE),
+                        horizontalArrangement = Arrangement.spacedBy(TRAILING_GAP),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(title, style = MaterialTheme.typography.titleMediumEmphasized, modifier = Modifier.weight(1f))
+                        trailing?.invoke()
+                    }
+                    summary?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = summaryTint, maxLines = summaryMaxLines, overflow = TextOverflow.Ellipsis) }
+                    if (indentBelow) belowContent?.invoke()
                 }
-                summary?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = summaryColor, maxLines = summaryMaxLines, overflow = TextOverflow.Ellipsis) }
-                below?.let { Column(Modifier.padding(top = BELOW_GAP), content = it) }
             }
+            if (!indentBelow) belowContent?.invoke()
         }
     }
     if (onClick != null) {

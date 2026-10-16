@@ -2,7 +2,6 @@ package dev.huecoder.md3agent.feature.settings
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -14,9 +13,6 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -25,7 +21,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -37,7 +32,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Add
 import com.composables.icons.materialsymbols.rounded.Assistant
-import com.composables.icons.materialsymbols.rounded.Expand_more
 import com.composables.icons.materialsymbols.rounded.Graphic_eq
 import com.composables.icons.materialsymbols.rounded.Mic
 import com.composables.icons.materialsymbols.rounded.Record_voice_over
@@ -75,13 +69,14 @@ internal fun VoiceSettingsContent(
     padding: PaddingValues,
 ) {
     var editingLanguage by rememberSaveable { mutableStateOf(false) }
+    val providerOptions = voice.providers.map { DropdownOption(it.id, it.name) }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = padding.calculateTopPadding(), bottom = 32.dp),
         verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
     ) {
         item { SectionHeader(stringResource(R.string.voice_settings_section_providers), topPadding = 8.dp) }
-        item { Caption(R.string.voice_settings_providers_hint) }
+        item { SectionCaption(stringResource(R.string.voice_settings_providers_hint)) }
         voiceProviderItems(voice, onEditProvider)
 
         item { SectionHeader(stringResource(R.string.dictation_settings_section)) }
@@ -89,13 +84,14 @@ internal fun VoiceSettingsContent(
         itemsIndexed(inputs, key = { _, row -> "input-$row" }) { index, row ->
             val shape = ListItemDefaults.segmentedShapes(index, inputs.size).shape
             when (row) {
-                InputRow.PROVIDER -> ProviderPicker(
+                InputRow.PROVIDER -> MenuCard(
                     icon = MaterialSymbols.Rounded.Mic,
-                    title = R.string.voice_settings_transcription_provider,
-                    voice = voice,
-                    selectedId = voice.transcriptionProvider?.id,
+                    title = stringResource(R.string.voice_settings_transcription_provider),
+                    options = providerOptions,
+                    selected = voice.transcriptionProvider?.id,
+                    onSelect = { id -> onUpdate { it.copy(activeProviderId = id) } },
                     shape = shape,
-                ) { id -> onUpdate { it.copy(activeProviderId = id) } }
+                )
                 InputRow.LANGUAGE -> SettingCard(
                     icon = MaterialSymbols.Rounded.Translate,
                     title = stringResource(R.string.dictation_settings_language),
@@ -135,13 +131,14 @@ internal fun VoiceSettingsContent(
                     selected = voice.speechOutput,
                     shape = shape,
                 ) { value -> onUpdate { it.copy(speechOutput = value) } }
-                OutputRow.PROVIDER -> ProviderPicker(
+                OutputRow.PROVIDER -> MenuCard(
                     icon = MaterialSymbols.Rounded.Graphic_eq,
-                    title = R.string.voice_settings_speech_provider,
-                    voice = voice,
-                    selectedId = voice.speechProvider?.id,
+                    title = stringResource(R.string.voice_settings_speech_provider),
+                    options = providerOptions,
+                    selected = voice.speechProvider?.id,
+                    onSelect = { id -> onUpdate { it.copy(speechProviderId = id) } },
                     shape = shape,
-                ) { id -> onUpdate { it.copy(speechProviderId = id) } }
+                )
             }
         }
     }
@@ -237,50 +234,6 @@ private fun roles(provider: VoiceProvider, transcriptionId: String?, speechId: S
 private fun RolePill(text: String) {
     Surface(shape = CircleShape, color = MaterialTheme.colorScheme.secondaryContainer, contentColor = MaterialTheme.colorScheme.onSecondaryContainer) {
         Text(text, style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp))
-    }
-}
-
-@Composable
-private fun Caption(@StringRes text: Int) {
-    Text(
-        stringResource(text),
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 8.dp),
-    )
-}
-
-@Composable
-private fun ProviderPicker(
-    icon: ImageVector,
-    @StringRes title: Int,
-    voice: VoiceSettings,
-    selectedId: String?,
-    shape: Shape,
-    onSelect: (String) -> Unit,
-) {
-    var expanded by remember { mutableStateOf(false) }
-    val options = voice.providers.map { DropdownOption(it.id, it.name) }
-    Box {
-        SettingCard(
-            icon = icon,
-            title = stringResource(title),
-            summary = options.firstOrNull { it.value == selectedId }?.label,
-            shape = shape,
-            onClick = { expanded = true },
-            trailing = { Icon(MaterialSymbols.Rounded.Expand_more, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
-        )
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }, modifier = Modifier.clickHaptics()) {
-            options.forEach { option ->
-                DropdownMenuItem(
-                    text = { Text(option.label) },
-                    onClick = {
-                        onSelect(option.value)
-                        expanded = false
-                    },
-                )
-            }
-        }
     }
 }
 

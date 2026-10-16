@@ -124,7 +124,7 @@
     <string name="provider_header_add">Добавить заголовок</string>
     <string name="chat_settings_section_replies">Ответы</string>
     <string name="chat_settings_show_tokens">Показывать токены</string>
-    <string name="chat_settings_show_tokens_summary">Сколько токенов ушло на запрос и ответ и сколько из запроса взято из кеша, под каждым сообщением. Время ответа видно всегда.</string>
+    <string name="chat_settings_show_tokens_summary">Сколько токенов ушло и сколько взято из кеша, под каждым ответом. Время ответа видно всегда.</string>
     <string name="chat_settings_section_typing">Анимация печати</string>
     <string name="typing_mode_fade">Плавно</string>
     <string name="typing_mode_typewriter">Печать</string>
@@ -536,7 +536,7 @@
     <string name="settings_about_summary">Версия %1$s, обновления, исходники</string>
     <string name="appearance_section_feedback">Отклик</string>
     <string name="appearance_haptics">Вибрация при нажатии</string>
-    <string name="appearance_haptics_summary">Отклик на кнопки, переключатели и смену вкладок, сильнее на главных действиях</string>
+    <string name="appearance_haptics_summary">Кнопки, переключатели и вкладки, сильнее на главных действиях</string>
     <string name="playground_hint">Хватай фигурки, швыряй их вверх</string>
     <string name="about_logo_taps_left">Ещё %1$d</string>
     <string name="appearance_haptic_strength">Сила вибрации</string>
@@ -742,4 +742,5 @@
     <string name="files_error_reason_unknown">неизвестная ошибка</string>
     <string name="files_error_share">Не удалось поделиться файлами</string>
     <string name="files_error_name">Такое название не подходит</string>
+    <string name="typing_style">Стиль</string>
 </resources>
