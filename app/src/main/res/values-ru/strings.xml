@@ -267,9 +267,10 @@
     <string name="approval_allow">Разрешить</string>
     <string name="approval_deny">Запретить</string>
     <string name="approval_allow_session">Всегда разрешать в этой сессии</string>
-    <string name="tools_permission_off">Выкл</string>
-    <string name="tools_permission_ask">Спрашивать</string>
+    <string name="tools_permission_ask">Спросить</string>
     <string name="tools_permission_auto">Авто</string>
+    <string name="tools_search_hint">Поиск инструментов</string>
+    <string name="tools_search_empty">Инструменты не найдены</string>
     <string name="tools_run_command_title">Команды shell</string>
     <string name="tools_run_command_summary">Запускает команды на телефоне. Где именно, выбирается в «Доступе к устройству»</string>
     <string name="chat_tool_running_command">Выполняю %1$s</string>
@@ -395,7 +396,7 @@
     <string name="picker_tab_model">Модель</string>
     <string name="picker_tab_agents">Агенты</string>
     <string name="model_search">Поиск по имени, компании или id</string>
-    <string name="model_search_clear">Очистить поиск</string>
+    <string name="common_search_clear">Очистить поиск</string>
     <string name="model_refresh">Обновить список моделей</string>
     <string name="model_filter_vision">Зрение</string>
     <string name="model_filter_reasoning">Рассуждения</string>

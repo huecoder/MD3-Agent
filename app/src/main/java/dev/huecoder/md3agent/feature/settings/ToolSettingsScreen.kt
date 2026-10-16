@@ -23,6 +23,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,6 +52,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import dev.huecoder.md3agent.ui.components.SaveAction
+import dev.huecoder.md3agent.ui.components.SearchField
 import dev.huecoder.md3agent.ui.components.SettingsScaffold
 import dev.huecoder.md3agent.ui.components.ShapeBadge
 import dev.huecoder.md3agent.ui.components.ToolCatalog
@@ -79,33 +81,37 @@ fun ToolSettingsScreen(onBack: () -> Unit) {
         }
     }
 
-    val folds = rememberSectionFolds()
+    val folds = rememberSectionFolds(*ToolCategory.entries.map { it.name }.toTypedArray())
+    var query by rememberSaveable { mutableStateOf("") }
 
     SettingsScaffold(stringResource(R.string.settings_tools), onBack, save = save) { padding ->
         val current = tools ?: return@SettingsScaffold
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
-        ) {
-            ToolPermissionGroups(
-                tools = container.tools.all,
-                permissionOf = { container.tools.permission(it, current) },
-                onChange = { tool, permission -> tools = current.withPermission(tool.spec.name, permission) },
-                folds = folds,
-            ) { category ->
-                if (category == ToolCategory.WEB) {
-                    ServiceCard(R.string.tools_section_search, Modifier.padding(top = 12.dp)) {
-                        SearchSection(current.search) { tools = current.copy(search = it) }
-                    }
-                    ServiceCard(R.string.tools_section_fetch) {
-                        FetchSection(current.fetch) { tools = current.copy(fetch = it) }
-                    }
-                    ServiceCard(R.string.tools_weather_title) {
-                        WeatherSection(current.weather) { tools = current.copy(weather = it) }
+        Column(Modifier.fillMaxSize().padding(padding)) {
+            SearchField(query, { query = it }, stringResource(R.string.tools_search_hint), Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
+            ) {
+                ToolPermissionGroups(
+                    tools = container.tools.all,
+                    permissionOf = { container.tools.permission(it, current) },
+                    onChange = { tool, permission -> tools = current.withPermission(tool.spec.name, permission) },
+                    folds = folds,
+                    query = query,
+                ) { category ->
+                    if (category == ToolCategory.WEB) {
+                        ServiceCard(R.string.tools_section_search, Modifier.padding(top = 12.dp)) {
+                            SearchSection(current.search) { tools = current.copy(search = it) }
+                        }
+                        ServiceCard(R.string.tools_section_fetch) {
+                            FetchSection(current.fetch) { tools = current.copy(fetch = it) }
+                        }
+                        ServiceCard(R.string.tools_weather_title) {
+                            WeatherSection(current.weather) { tools = current.copy(weather = it) }
+                        }
                     }
                 }
             }

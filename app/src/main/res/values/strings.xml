@@ -274,9 +274,10 @@
     <string name="approval_allow">Allow</string>
     <string name="approval_deny">Deny</string>
     <string name="approval_allow_session">Always allow in this session</string>
-    <string name="tools_permission_off">Off</string>
     <string name="tools_permission_ask">Ask</string>
     <string name="tools_permission_auto">Auto</string>
+    <string name="tools_search_hint">Search tools</string>
+    <string name="tools_search_empty">No tools found</string>
     <string name="tools_run_command_title">Shell commands</string>
     <string name="tools_run_command_summary">Runs commands on the phone. Where they run is set in Device access</string>
     <string name="chat_tool_running_command">Running %1$s</string>
@@ -400,7 +401,7 @@
     <string name="picker_tab_model">Model</string>
     <string name="picker_tab_agents">Agents</string>
     <string name="model_search">Search by name, company or id</string>
-    <string name="model_search_clear">Clear search</string>
+    <string name="common_search_clear">Clear search</string>
     <string name="model_refresh">Refresh the model list</string>
     <string name="model_filter_vision">Vision</string>
     <string name="model_filter_reasoning">Reasoning</string>

@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
@@ -26,8 +25,6 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -44,15 +41,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composables.icons.materialsymbols.MaterialSymbols
-import com.composables.icons.materialsymbols.rounded.Close
 import com.composables.icons.materialsymbols.rounded.Image
 import com.composables.icons.materialsymbols.rounded.Neurology
 import com.composables.icons.materialsymbols.rounded.Refresh
-import com.composables.icons.materialsymbols.rounded.Search
 import com.composables.icons.materialsymbols.rounded.Visibility
 import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.data.settings.ModelSelection
 import dev.huecoder.md3agent.llm.models.ModelVendor
+import dev.huecoder.md3agent.ui.components.SearchField
 import dev.huecoder.md3agent.ui.components.appViewModel
 import dev.huecoder.md3agent.ui.text.asString
 import dev.huecoder.md3agent.ui.components.iconRes
@@ -124,7 +120,7 @@ private fun ColumnScope.ModelTab(
             }
         }
     }
-    SearchField(query, viewModel::search)
+    SearchField(query, viewModel::search, stringResource(R.string.model_search), Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
     ChipRow {
         CapabilityChip(CapabilityFilter.VISION in capabilities, MaterialSymbols.Rounded.Visibility, R.string.model_filter_vision) { viewModel.toggle(CapabilityFilter.VISION) }
         CapabilityChip(CapabilityFilter.REASONING in capabilities, MaterialSymbols.Rounded.Neurology, R.string.model_filter_reasoning) { viewModel.toggle(CapabilityFilter.REASONING) }
@@ -175,30 +171,6 @@ private fun PickerHeader(count: Int, isRefreshing: Boolean, onRefresh: () -> Uni
             }
         }
     }
-}
-
-@Composable
-private fun SearchField(query: String, onQuery: (String) -> Unit) {
-    TextField(
-        value = query,
-        onValueChange = onQuery,
-        singleLine = true,
-        placeholder = { Text(stringResource(R.string.model_search)) },
-        leadingIcon = { Icon(MaterialSymbols.Rounded.Search, contentDescription = null) },
-        trailingIcon = {
-            if (query.isNotEmpty()) {
-                IconButton(onClick = { onQuery("") }) { Icon(MaterialSymbols.Rounded.Close, contentDescription = stringResource(R.string.model_search_clear)) }
-            }
-        },
-        shape = CircleShape,
-        colors = TextFieldDefaults.colors(
-            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-            focusedIndicatorColor = Color.Transparent,
-            unfocusedIndicatorColor = Color.Transparent,
-        ),
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-    )
 }
 
 @Composable

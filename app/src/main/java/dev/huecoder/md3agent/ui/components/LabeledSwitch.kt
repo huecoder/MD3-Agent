@@ -46,16 +46,22 @@ fun LabeledSwitch(
                 Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
-        Switch(
-            checked = checked,
-            onCheckedChange = null,
-            thumbContent = {
-                Icon(
-                    if (checked) MaterialSymbols.Rounded.Check else MaterialSymbols.Rounded.Close,
-                    contentDescription = null,
-                    modifier = Modifier.size(SwitchDefaults.IconSize),
-                )
-            },
-        )
+        CheckSwitch(checked = checked, onCheckedChange = null)
     }
+}
+
+@Composable
+fun CheckSwitch(checked: Boolean, onCheckedChange: ((Boolean) -> Unit)?, modifier: Modifier = Modifier) {
+    Switch(
+        checked = checked,
+        onCheckedChange = onCheckedChange,
+        modifier = modifier,
+        thumbContent = {
+            Icon(
+                if (checked) MaterialSymbols.Rounded.Check else MaterialSymbols.Rounded.Close,
+                contentDescription = null,
+                modifier = Modifier.size(SwitchDefaults.IconSize),
+            )
+        },
+    )
 }

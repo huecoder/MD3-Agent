@@ -24,6 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,6 +44,7 @@ import dev.huecoder.md3agent.ui.avatar.AgentLook
 import dev.huecoder.md3agent.ui.components.AgentAvatar
 import dev.huecoder.md3agent.ui.components.FormField
 import dev.huecoder.md3agent.ui.components.SaveAction
+import dev.huecoder.md3agent.ui.components.SearchField
 import dev.huecoder.md3agent.ui.components.SectionHeader
 import dev.huecoder.md3agent.ui.components.SettingsScaffold
 import dev.huecoder.md3agent.ui.components.rememberSectionFolds
@@ -182,12 +184,15 @@ private fun PromptEditor(container: AppContainer, draft: AgentProfile, prompt: T
 private fun AgentTools(container: AppContainer, agent: AgentProfile, baseTools: ToolSettings, onChange: (AgentProfile) -> Unit) {
     val effective = agent.tools(baseTools)
     val folds = rememberSectionFolds()
+    var query by rememberSaveable { mutableStateOf("") }
+    SearchField(query, { query = it }, stringResource(R.string.tools_search_hint))
     Column(verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)) {
         ToolPermissionGroups(
             tools = container.tools.all,
             permissionOf = { container.tools.permission(it, effective) },
             onChange = { tool, permission -> onChange(agent.copy(toolPermissions = agent.toolPermissions + (tool.spec.name to permission))) },
             folds = folds,
+            query = query,
         )
     }
     TextButton(onClick = { onChange(agent.copy(toolPermissions = emptyMap())) }, enabled = agent.toolPermissions.isNotEmpty()) {
