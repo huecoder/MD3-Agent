@@ -21,16 +21,23 @@ class PythonRuntime(private val context: Context) {
 
     val version: String get() = PYTHON_VERSION
 
-    suspend fun run(code: String, workdir: File, timeoutSeconds: Long): PythonResult {
+    suspend fun run(code: String, workdir: File, timeoutSeconds: Long, bridge: ScriptBridge? = null): PythonResult {
         val script = withContext(Dispatchers.IO) {
             workdir.mkdirs()
-            interpreter().getModule(RUNNER_MODULE).callAttr(START_FUNCTION, code, workdir.absolutePath)
+            interpreter().getModule(RUNNER_MODULE).callAttr(START_FUNCTION, code, workdir.absolutePath, bridge)
         }
-        return awaitResult(script, timeoutSeconds)
+        try {
+            return awaitResult(script, timeoutSeconds, bridge)
+        } finally {
+            bridge?.abort()
+        }
     }
 
-    private suspend fun awaitResult(script: PyObject, timeoutSeconds: Long): PythonResult = suspendCancellableCoroutine { continuation ->
-        continuation.invokeOnCancellation { interpreterThreads.launch { script.callAttr(CANCEL_FUNCTION) } }
+    private suspend fun awaitResult(script: PyObject, timeoutSeconds: Long, bridge: ScriptBridge?): PythonResult = suspendCancellableCoroutine { continuation ->
+        continuation.invokeOnCancellation {
+            bridge?.abort()
+            interpreterThreads.launch { script.callAttr(CANCEL_FUNCTION) }
+        }
         interpreterThreads.launch {
             try {
                 val result = script.callAttr(WAIT_FUNCTION, timeoutSeconds).asList()

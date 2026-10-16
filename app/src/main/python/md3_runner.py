@@ -6,6 +6,8 @@ import threading
 import time
 import traceback
 
+import phone
+
 POLL_SECONDS = 0.05
 GRACE_SECONDS = 2
 
@@ -48,9 +50,10 @@ def _captures():
 
 
 class Script:
-    def __init__(self, code, workdir):
+    def __init__(self, code, workdir, bridge=None):
         self.code = code
         self.workdir = workdir
+        self.bridge = bridge
         self.output = io.StringIO()
         self.failed = False
         self.cancelled = threading.Event()
@@ -81,6 +84,7 @@ class Script:
         captures = _captures()
         for capture in captures:
             capture.attach(self.output)
+        phone.attach(self.bridge)
         try:
             os.chdir(self.workdir)
             exec(compile(self.code, "<agent>", "exec"), {"__name__": "__main__"})
@@ -92,11 +96,12 @@ class Script:
             self.failed = True
             self.output.write(traceback.format_exc())
         finally:
+            phone.detach()
             for capture in captures:
                 capture.detach(self.output)
 
 
-def start(code, workdir):
-    script = Script(code, workdir)
+def start(code, workdir, bridge=None):
+    script = Script(code, workdir, bridge)
     script.start()
     return script

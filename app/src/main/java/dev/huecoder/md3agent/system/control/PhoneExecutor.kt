@@ -41,15 +41,13 @@ internal class PhoneExecutor(
         return PhoneReport(reports, changed, snapshot?.let { observation(request.observe, it, beforeElements, changed) }, hint)
     }
 
-    suspend fun look(service: AccessibilityService): Pair<ScreenSnapshot, Boolean> {
+    suspend fun read(service: AccessibilityService, detailed: Boolean, find: ElementSelector?): ScreenReading {
         val leftOwnApp = reader.isOwnAppInFront(service)
         if (leftOwnApp) leaveOwnApp(service)
-        return reader.snapshot(service) to leftOwnApp
+        val snapshot = reader.snapshot(service)
+        val description = snapshot.describe(detailed, find)
+        return ScreenReading(snapshot, if (leftOwnApp) "$HOME_FIRST_NOTE\n$description" else description)
     }
-
-    fun snapshot(service: AccessibilityService): ScreenSnapshot = reader.snapshot(service)
-
-    fun lastSnapshot(): ScreenSnapshot? = reader.last
 
     private fun observation(observe: Observe, snapshot: ScreenSnapshot, before: List<ScreenElement>, changed: Boolean): String = when (observe) {
         Observe.SCREEN -> snapshot.describe()
@@ -121,7 +119,7 @@ internal class PhoneExecutor(
         val node = snapshot.nodes[element.number]
         val screen = reader.screenSize(service)
         val fresh = node?.refresh() == true
-        val live = if (fresh) Rect().also { node?.getBoundsInScreen(it) }.takeUnless { it.isEmpty }?.let(ScreenBox::of) else null
+        val live = if (fresh) Rect().also { node.getBoundsInScreen(it) }.takeUnless { it.isEmpty }?.let(ScreenBox::of) else null
         val box = (live ?: element.bounds).clippedTo(screen)
         return Located.Ready(element, node, box)
     }

@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.conversation.ApprovalDecision
+import dev.huecoder.md3agent.tools.system.RunPythonTool
 import dev.huecoder.md3agent.ui.components.ShapeBadge
 import dev.huecoder.md3agent.ui.components.ToolCatalog
 import dev.huecoder.md3agent.ui.text.asString
@@ -41,6 +42,19 @@ fun ApprovalCard(call: ToolCallUi, onDecision: (ApprovalDecision) -> Unit, modif
                         stringResource(R.string.approval_subtitle),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            if (call.controlsPhone()) {
+                Surface(
+                    shape = MaterialTheme.shapes.large,
+                    color = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                ) {
+                    Text(
+                        stringResource(R.string.approval_python_phone),
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.fillMaxWidth().padding(12.dp),
                     )
                 }
             }
@@ -77,6 +91,8 @@ fun ApprovalCard(call: ToolCallUi, onDecision: (ApprovalDecision) -> Unit, modif
         }
     }
 }
+
+private fun ToolCallUi.controlsPhone(): Boolean = name == RunPythonTool.NAME && RunPythonTool.usesPhone(arguments)
 
 private val BADGE_SIZE = 40.dp
 private val ARGUMENTS_MAX_HEIGHT = 160.dp

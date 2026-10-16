@@ -25,6 +25,7 @@ import kotlinx.serialization.json.doubleOrNull
 
 object PhoneRequestParser {
     const val ACTIONS = "tap, long_press, double_tap, tap_at, type, scroll, scroll_to, swipe, drag, press, open_app, wait, wait_for"
+    val ACTION_NAMES: List<String> = ACTIONS.split(", ")
     const val MAX_STEPS = 10
     const val MAX_PATH_POINTS = 16
     const val MIN_WAIT_MS = 100
@@ -37,6 +38,7 @@ object PhoneRequestParser {
     const val MIN_DISTANCE = 0.1f
     const val MAX_DISTANCE = 0.95f
     const val MAX_COORDINATE = 10_000
+    private const val TARGET = "target"
 
     fun parse(arguments: JsonObject): PhoneRequest {
         val observe = arguments.optionalString("observe")?.let { Observe.of(it) ?: throw ToolArgumentException("observe must be screen, changes or none") } ?: Observe.SCREEN
@@ -102,8 +104,8 @@ object PhoneRequestParser {
     private fun optionalTarget(arguments: JsonObject): Target? =
         arguments.optionalInt("element")?.let(Target::Numbered) ?: selector(arguments)?.let(Target::Selected)
 
-    private fun selector(arguments: JsonObject): ElementSelector? {
-        val target = arguments["target"] as? JsonObject ?: return null
+    fun selector(arguments: JsonObject, key: String = TARGET): ElementSelector? {
+        val target = arguments[key] as? JsonObject ?: return null
         val selector = ElementSelector(
             text = target.optionalString("text"),
             id = target.optionalString("id"),
@@ -111,7 +113,7 @@ object PhoneRequestParser {
             exact = target.optionalBoolean("exact") ?: false,
             index = target.optionalInt("index")?.also { if (it < 1) throw ToolArgumentException("index counts from 1") },
         )
-        if (selector.isBlank) throw ToolArgumentException("target needs text, id or role")
+        if (selector.isBlank) throw ToolArgumentException("$key needs text, id or role")
         return selector
     }
 

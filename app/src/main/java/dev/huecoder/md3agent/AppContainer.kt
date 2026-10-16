@@ -32,6 +32,7 @@ import dev.huecoder.md3agent.tools.memory.MemoryUpdateTool
 import dev.huecoder.md3agent.data.settings.SecretCipher
 import dev.huecoder.md3agent.data.settings.SettingsRepository
 import dev.huecoder.md3agent.llm.ChatCompletionClient
+import dev.huecoder.md3agent.llm.ToolCall
 import dev.huecoder.md3agent.mcp.McpToolbox
 import dev.huecoder.md3agent.mcp.auth.McpOAuth
 import dev.huecoder.md3agent.mcp.auth.McpSignIn
@@ -88,6 +89,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
 import java.io.File
 
 class AppContainer(context: Context) {
@@ -153,7 +156,7 @@ class AppContainer(context: Context) {
             MemoryDeleteTool(memories),
             MemorySearchTool(memories),
             RunCommandTool(shellAccess),
-            RunPythonTool(python, shellAccess.workspace),
+            RunPythonTool(python, shellAccess.workspace, phoneControl),
             ListFilesTool(deviceFiles),
             ReadFileTool(deviceFiles, attachments),
             WriteFileTool(deviceFiles),
@@ -206,7 +209,7 @@ class AppContainer(context: Context) {
             conversations.drafts.collect { drafts ->
                 drafts.forEach { (chatId, draft) ->
                     val awaiting = draft.toolCalls.firstOrNull { it.id == draft.awaitingCallId }
-                    if (awaiting != null && awaiting.name in PHONE_TOOLS) phoneControl.session.begin(chatId)
+                    if (awaiting != null && awaiting.drivesPhone()) phoneControl.session.begin(chatId)
                 }
                 val active = phoneControl.session.chatId.value
                 if (active != null && active !in drafts) phoneControl.session.end()
@@ -218,6 +221,8 @@ class AppContainer(context: Context) {
             }
         }
     }
+
+    private fun ToolCall.drivesPhone(): Boolean = name in PHONE_TOOLS || (name == RunPythonTool.NAME && runCatching { RunPythonTool.usesPhone(Json.parseToJsonElement(arguments).jsonObject) }.getOrDefault(false))
 
     private companion object {
         val PHONE_TOOLS = setOf(PhoneScreenTool.NAME, PhoneScreenshotTool.NAME, PhoneActionTool.NAME)

@@ -47,4 +47,14 @@ class PhoneUseSettingsTest {
 
         assertEquals(PhoneUseSettings(), json.decodeFromString(ToolSettings.serializer(), stored).phoneUse)
     }
+
+    @Test
+    fun `python stays away from the phone until the user allows it`() {
+        assertEquals(false, PhoneUseSettings().pythonControl)
+        assertEquals(false, json.decodeFromString(ToolSettings.serializer(), """{"phoneUse":{"cursorTrail":true}}""").phoneUse.pythonControl)
+
+        val allowed = json.encodeToString(ToolSettings.serializer(), ToolSettings(phoneUse = PhoneUseSettings(pythonControl = true)))
+
+        assertEquals(true, json.decodeFromString(ToolSettings.serializer(), allowed).phoneUse.pythonControl)
+    }
 }

@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class PhoneControl(private val context: Context, shell: suspend () -> Shell?) {
+class PhoneControl(private val context: Context, shell: suspend () -> Shell?) : ScriptPhone {
     private val service = MutableStateFlow<AccessibilityService?>(null)
     private val screenshots = PhoneScreenshots()
     private val reader = ScreenReader(context)
@@ -36,10 +36,14 @@ class PhoneControl(private val context: Context, shell: suspend () -> Shell?) {
 
     fun isReady(): Boolean = service.value != null
 
-    fun screen(say: String? = null): ScreenSnapshot? {
+    override fun begin(chatId: String) = session.begin(chatId)
+
+    override fun say(caption: String) = session.say(caption)
+
+    override suspend fun read(say: String?, detailed: Boolean, find: ElementSelector?): ScreenReading? {
         val active = service.value ?: return null
         session.say(say ?: context.getString(R.string.phone_use_looking))
-        return reader.snapshot(active)
+        return executor.read(active, detailed, find)
     }
 
     suspend fun screenshot(region: ScreenRegion, marks: Boolean, say: String? = null): ScreenshotResult {
@@ -58,7 +62,7 @@ class PhoneControl(private val context: Context, shell: suspend () -> Shell?) {
         return session.withOverlayHidden { screenshots.capture(active, area, numbered) }
     }
 
-    suspend fun run(request: PhoneRequest): PhoneReport? {
+    override suspend fun run(request: PhoneRequest): PhoneReport? {
         val active = service.value ?: return null
         return executor.run(active, request)
     }

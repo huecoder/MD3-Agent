@@ -2,3 +2,4 @@
 -keep class dev.huecoder.md3agent.system.shell.ShellUserService { <init>(); }
 -keep class org.scilab.forge.jlatexmath.** { *; }
 -keep class ru.noties.jlatexmath.** { *; }
+-keep class dev.huecoder.md3agent.tools.phone.PhoneScriptBridge { public *; }

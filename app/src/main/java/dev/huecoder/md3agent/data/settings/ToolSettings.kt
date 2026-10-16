@@ -162,6 +162,7 @@ data class PhoneUseSettings(
     val agentPlacement: AgentPlacement = AgentPlacement.BESIDE_CURSOR,
     val tapSound: TapSound = TapSound.SOFT_A,
     val soundVolume: Float = DEFAULT_SOUND_VOLUME,
+    val pythonControl: Boolean = false,
 ) {
     fun withCurrentPanelDefaults(): PhoneUseSettings =
         if (panelOpacity == FIRST_BUILD_PANEL_OPACITY && panelWidth == FIRST_BUILD_PANEL_WIDTH) {

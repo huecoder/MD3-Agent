@@ -656,6 +656,10 @@
     <string name="phone_use_panel_width">Ширина</string>
     <string name="phone_use_panel_height">Высота</string>
     <string name="phone_use_section_sound">Звук нажатия</string>
+    <string name="phone_use_section_python">Python</string>
+    <string name="phone_use_python">Python может управлять телефоном</string>
+    <string name="phone_use_python_summary">Скриптам из инструмента «Запуск Python» доступен модуль phone: нажатия, ввод, прокрутка и ожидание, длинные сценарии идут за один вызов. Каждый скрипт по-прежнему просит одобрения, если вы не разрешили инструмент на время чата. По умолчанию выключено.</string>
+    <string name="approval_python_phone">Этот скрипт управляет телефоном: пока он работает, он нажимает, вводит текст и прокручивает в любых приложениях. Прочитайте код перед разрешением.</string>
     <string name="phone_use_sound_off">Выключен</string>
     <string name="phone_use_sound_soft_a">Мягкий тап 1</string>
     <string name="phone_use_sound_soft_b">Мягкий тап 2</string>

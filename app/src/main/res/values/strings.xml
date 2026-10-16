@@ -655,6 +655,10 @@
     <string name="phone_use_panel_width">Width</string>
     <string name="phone_use_panel_height">Height</string>
     <string name="phone_use_section_sound">Tap sound</string>
+    <string name="phone_use_section_python">Python</string>
+    <string name="phone_use_python">Python can control the phone</string>
+    <string name="phone_use_python_summary">Scripts from the Run Python tool get a phone module to tap, type, scroll and wait, so long flows run in one go. Each script still asks for approval unless you allowed the tool for the chat. Off by default.</string>
+    <string name="approval_python_phone">This script controls the phone: it can tap, type and scroll in any app until it finishes. Check the code before you allow it.</string>
     <string name="phone_use_sound_off">Off</string>
     <string name="phone_use_sound_soft_a">Soft tap 1</string>
     <string name="phone_use_sound_soft_b">Soft tap 2</string>

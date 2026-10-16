@@ -185,4 +185,15 @@ class PhoneRequestParserTest {
         assertEquals(PhoneAction.Wait(100), single("""{"action":"wait","ms":1}"""))
         assertEquals(PhoneAction.Wait(1_500), single("""{"action":"wait"}"""))
     }
+
+    @Test
+    fun `find reads a selector under its own key`() {
+        val arguments = Json.parseToJsonElement("""{"find":{"text":"Wi-Fi","role":"Switch"},"target":{"id":"x"}}""") as JsonObject
+
+        assertEquals(ElementSelector(text = "Wi-Fi", role = "Switch"), PhoneRequestParser.selector(arguments, "find"))
+        assertEquals(ElementSelector(id = "x"), PhoneRequestParser.selector(arguments))
+        assertNull(PhoneRequestParser.selector(Json.parseToJsonElement("""{}""") as JsonObject, "find"))
+        val blank = assertThrows(ToolArgumentException::class.java) { PhoneRequestParser.selector(Json.parseToJsonElement("""{"find":{"exact":true}}""") as JsonObject, "find") }
+        assertTrue(blank.message!!.startsWith("find"))
+    }
 }

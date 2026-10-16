@@ -193,6 +193,16 @@ fun PhoneUseSettingsScreen(onBack: () -> Unit) {
                 onSelect = { value -> update { it.copy(tapSound = value) } },
                 onVolume = { value -> update { it.copy(soundVolume = value) } },
             )
+
+            SectionHeader(stringResource(R.string.phone_use_section_python), topPadding = 12.dp)
+            Card {
+                LabeledSwitch(
+                    title = stringResource(R.string.phone_use_python),
+                    summary = stringResource(R.string.phone_use_python_summary),
+                    checked = current.pythonControl,
+                    onCheckedChange = { value -> update { it.copy(pythonControl = value) } },
+                )
+            }
         }
     }
 }
