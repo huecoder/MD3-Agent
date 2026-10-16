@@ -39,6 +39,7 @@ class FileLibrary(
     uploads: File,
     workspace: File,
     private val sentFiles: SentFiles,
+    private val removalFallback: RemovalFallback = RemovalFallback.None,
     private val mimeTypeOf: (fileName: String) -> String = TextFormats::guessMimeType,
 ) {
     val uploads: File by lazy { uploads.apply { mkdirs() }.canonicalFile }
@@ -73,14 +74,7 @@ class FileLibrary(
         val failures = mediaCandidates()
             .map { it.file.file }
             .filter { file -> file.path in paths || contentHash(file) in hashes }
-            .mapNotNull { file ->
-                try {
-                    file.deleteTree()
-                    null
-                } catch (e: IOException) {
-                    e
-                }
-            }
+            .mapNotNull { file -> removeTree(file) }
         failures.firstOrNull()?.let { throw it }
     }
 
@@ -109,16 +103,17 @@ class FileLibrary(
 
     suspend fun delete(location: LibraryLocation, entries: Collection<LibraryEntry>) = withContext(Dispatchers.IO) {
         val folder = folderOf(location)
-        val failures = entries.filterNot { it.isReadOnly }.mapNotNull { entry ->
-            try {
-                File(folder, entry.name).deleteTree()
-                null
-            } catch (e: IOException) {
-                e
-            }
-        }
+        val failures = entries.filterNot { it.isReadOnly }.mapNotNull { entry -> removeTree(File(folder, entry.name)) }
         failures.firstOrNull()?.let { throw it }
     }
+
+    private suspend fun removeTree(target: File): DeleteFailedException? =
+        try {
+            target.deleteTree()
+            null
+        } catch (failure: IOException) {
+            if (removalFallback.remove(target)) null else target.describeFailure(failure)
+        }
 
     private suspend fun mediaCandidates(): List<MediaCandidate> {
         val folders = listOf(uploads, workspace).flatMap { root ->

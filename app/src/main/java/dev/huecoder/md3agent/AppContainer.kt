@@ -3,6 +3,7 @@ package dev.huecoder.md3agent
 import android.content.Context
 import dev.huecoder.md3agent.data.files.ChatSentFiles
 import dev.huecoder.md3agent.data.files.FileLibrary
+import dev.huecoder.md3agent.data.files.RemovalFallback
 import dev.huecoder.md3agent.data.chat.SearchHistory
 import dev.huecoder.md3agent.ui.haptics.HapticEngine
 import dev.huecoder.md3agent.assistant.ScreenContextStore
@@ -29,6 +30,7 @@ import dev.huecoder.md3agent.tools.memory.MemoryDeleteTool
 import dev.huecoder.md3agent.tools.memory.MemorySaveTool
 import dev.huecoder.md3agent.tools.memory.MemorySearchTool
 import dev.huecoder.md3agent.tools.memory.MemoryUpdateTool
+import dev.huecoder.md3agent.data.settings.ShellMode
 import dev.huecoder.md3agent.data.settings.SecretCipher
 import dev.huecoder.md3agent.data.settings.SettingsRepository
 import dev.huecoder.md3agent.llm.ChatCompletionClient
@@ -66,6 +68,7 @@ import dev.huecoder.md3agent.tools.reminders.SetAlarmTool
 import dev.huecoder.md3agent.tools.reminders.SetReminderTool
 import dev.huecoder.md3agent.tools.reminders.SetTimerTool
 import dev.huecoder.md3agent.system.files.DeviceFiles
+import dev.huecoder.md3agent.system.files.ShellRemoval
 import dev.huecoder.md3agent.system.python.PythonRuntime
 import dev.huecoder.md3agent.tools.files.ListFilesTool
 import dev.huecoder.md3agent.tools.files.ReadFileTool
@@ -120,7 +123,16 @@ class AppContainer(context: Context) {
     val shellAccess = ShellAccess(appContext)
     private val uploads = File(appContext.filesDir, UPLOADS_DIR)
     val deviceFiles = DeviceFiles(shellAccess.workspace, attachments.directory, File(appContext.cacheDir, FILE_STAGING_DIR), uploads)
-    val library = FileLibrary(appContext.contentResolver, uploads, shellAccess.workspace, ChatSentFiles(database.messageDao(), attachments))
+    val library = FileLibrary(
+        appContext.contentResolver,
+        uploads,
+        shellAccess.workspace,
+        ChatSentFiles(database.messageDao(), attachments),
+        removalFallback = RemovalFallback.firstOf(
+            ShellRemoval(appContext.filesDir) { shellAccess.shell(ShellMode.SANDBOX) },
+            ShellRemoval(appContext.filesDir) { shellAccess.privilegedShell(settings.current().tools.access) },
+        ),
+    )
 
     val python = PythonRuntime(appContext)
     val phoneControl = PhoneControl(appContext) {

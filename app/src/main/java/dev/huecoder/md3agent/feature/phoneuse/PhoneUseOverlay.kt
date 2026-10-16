@@ -75,6 +75,9 @@ class PhoneUseOverlay(private val service: AccessibilityService, private val con
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val windowManager = service.getSystemService(WindowManager::class.java)
     private val session = container.phoneControl.session
+    private val haptics: StateFlow<Haptics> = container.settings.settings.map { it.ui }.distinctUntilChanged()
+        .map { ui -> if (ui.haptics) Haptics(container.hapticEngine, ui.hapticStrength) else Haptics.Silent }
+        .stateIn(scope, SharingStarted.Eagerly, Haptics.Silent)
     private var shell: Shell? = null
 
     fun start() {
@@ -94,6 +97,7 @@ class PhoneUseOverlay(private val service: AccessibilityService, private val con
             session.cursor.map { if (it.pressed) it.pressToken else 0 }.distinctUntilChanged().filter { it > 0 }.collect {
                 val settings = session.settings.value
                 container.phoneSounds.play(settings.tapSound, settings.soundVolume)
+                haptics.value.tap()
             }
         }
     }
@@ -156,9 +160,6 @@ class PhoneUseOverlay(private val service: AccessibilityService, private val con
         private val agentLook: StateFlow<AgentLook> = combine(appSettings.filterNotNull(), viewModel.state.map { it.agentId }.distinctUntilChanged()) { all, agentId ->
             AgentLook.of(all.agent(agentId))
         }.distinctUntilChanged().stateIn(shellScope, SharingStarted.Eagerly, AgentLook())
-        private val haptics: StateFlow<Haptics> = appSettings.filterNotNull().map { it.ui }.distinctUntilChanged()
-            .map { ui -> if (ui.haptics) Haptics(container.hapticEngine, ui.hapticStrength) else Haptics.Silent }
-            .stateIn(shellScope, SharingStarted.Eagerly, Haptics.Silent)
         private val modal: StateFlow<ModalRequest?> = combine(viewModel.pendingPrompt, viewModel.state, interruptAsked) { prompt, state, asked ->
             when {
                 prompt != null -> ModalRequest.Prompt(prompt)

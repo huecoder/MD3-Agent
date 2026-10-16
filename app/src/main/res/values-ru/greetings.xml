@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="greetings_any">
+        <item>Чем помочь?</item>
+        <item>О чём думаешь?</item>
+        <item>Над чем поработаем?</item>
+        <item>Спрашивай что угодно</item>
+        <item>С чего начнём?</item>
+        <item>Что нужно сделать?</item>
+        <item>Я на связи</item>
+        <item>Какие планы?</item>
+        <item>Есть вопрос?</item>
+        <item>Давай что-нибудь сделаем</item>
+    </string-array>
+    <string-array name="greetings_morning">
+        <item>Доброе утро! Чем помочь?</item>
+        <item>Утро! Какие планы на день?</item>
+        <item>Новый день — новые идеи?</item>
+        <item>Сначала кофе, потом вопросы?</item>
+        <item>Доброе утро! С чего начнём?</item>
+        <item>Доброе утро! Что у нас сегодня?</item>
+        <item>С добрым утром! Что нужно?</item>
+        <item>Утро доброе! О чём поговорим?</item>
+        <item>Доброе утро! Что в списке дел?</item>
+        <item>Ранний старт! Что делаем?</item>
+    </string-array>
+    <string-array name="greetings_day">
+        <item>Добрый день! Чем помочь?</item>
+        <item>Привет! Как проходит день?</item>
+        <item>Чем займёмся после обеда?</item>
+        <item>Есть вопрос на обеде?</item>
+        <item>Добрый день! Над чем работаем?</item>
+        <item>Загруженный день? Помогу</item>
+        <item>Чем займёмся днём?</item>
+        <item>Что снять с твоих плеч?</item>
+        <item>Сделаем день продуктивным</item>
+        <item>Добрый день! Что нужно?</item>
+    </string-array>
+    <string-array name="greetings_evening">
+        <item>Добрый вечер! Чем помочь?</item>
+        <item>Вечер! О чём думаешь?</item>
+        <item>Как прошёл день?</item>
+        <item>Завершаем день или начинаем?</item>
+        <item>Добрый вечер! Чем займёмся?</item>
+        <item>Планы на вечер? Давай обсудим</item>
+        <item>Ещё в строю? Что нужно?</item>
+        <item>Отдохнуть или что-то построить?</item>
+        <item>Добрый вечер! Что нового?</item>
+        <item>Что решаем этим вечером?</item>
+    </string-array>
+    <string-array name="greetings_night">
+        <item>Не спишь? О чём думаешь?</item>
+        <item>Ночные мысли?</item>
+        <item>Не спится? Давай поговорим</item>
+        <item>Ночная смена: чем помочь?</item>
+        <item>Ночь длинная. Что делаем?</item>
+        <item>Работаешь допоздна?</item>
+        <item>Тишина вокруг. О чём думаешь?</item>
+        <item>Уже поздно. Что решаем?</item>
+        <item>Полуночные идеи приветствуются</item>
+        <item>Бодрствуем? Чем помочь?</item>
+    </string-array>
+</resources>

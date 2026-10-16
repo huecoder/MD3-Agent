@@ -11,6 +11,7 @@ import org.junit.rules.TemporaryFolder
 import java.io.File
 import java.io.IOException
 import java.nio.file.AccessDeniedException
+import java.nio.file.DirectoryNotEmptyException
 import java.nio.file.Files
 
 class FileLibraryTest {
@@ -204,5 +205,64 @@ class FileLibraryTest {
         assertTrue(!File(tree, "other").exists())
         assertTrue(File(tree, "stuck/inner.txt").exists())
         assertTrue(tree.exists())
+    }
+
+    private fun impossibleEntry(name: String) = LibraryEntry(EntryKind.FILE, name, null, 0, 0, isReadOnly = false)
+
+    private fun libraryWith(removal: RemovalFallback) =
+        FileLibrary(object : ContentResolver(null) {}, uploads, workspace, sentFiles = { sent }, removalFallback = removal)
+
+    @Test
+    fun `a delete that cannot be done says what failed and why`() = runTest {
+        File(workspace, "plain.txt").withBytes("x")
+        val location = LibraryLocation(LibraryRoot.AGENT)
+
+        val failure = runCatching { libraryWith(RemovalFallback.None).delete(location, listOf(impossibleEntry("plain.txt/inside"))) }.exceptionOrNull()
+
+        assertTrue(failure is DeleteFailedException)
+        assertEquals(DeleteReason.OTHER, (failure as DeleteFailedException).reason)
+        assertEquals("Not a directory", failure.detail)
+        assertTrue(File(workspace, "plain.txt").exists())
+    }
+
+    @Test
+    fun `the fallback steps in only after the normal delete failed`() = runTest {
+        File(workspace, "plain.txt").withBytes("x")
+        File(workspace, "fine.txt").withBytes("y")
+        val asked = mutableListOf<String>()
+        val library = libraryWith { file -> asked += file.name; true }
+        val location = LibraryLocation(LibraryRoot.AGENT)
+
+        library.delete(location, listOf(impossibleEntry("plain.txt/inside"), library.list(location).first { it.name == "fine.txt" }))
+
+        assertEquals(listOf("inside"), asked)
+        assertFalse(File(workspace, "fine.txt").exists())
+    }
+
+    @Test
+    fun `a refused fallback keeps the original failure`() = runTest {
+        File(workspace, "plain.txt").withBytes("x")
+        val library = libraryWith { false }
+
+        val failure = runCatching { library.delete(LibraryLocation(LibraryRoot.AGENT), listOf(impossibleEntry("plain.txt/inside"))) }.exceptionOrNull()
+
+        assertTrue(failure is DeleteFailedException)
+    }
+
+    @Test
+    fun `failures are described by their kind and shown relative to the deleted item`() {
+        val doomed = File(workspace, "project")
+        val nested = File(doomed, "src/deep/a.txt")
+
+        val denied = doomed.describeFailure(AccessDeniedException(nested.path))
+        val notEmpty = doomed.describeFailure(DirectoryNotEmptyException(File(doomed, "src").path))
+        val other = doomed.describeFailure(IOException("disk on fire"))
+
+        assertEquals("project/src/deep/a.txt", denied.path)
+        assertEquals(DeleteReason.PERMISSION_DENIED, denied.reason)
+        assertEquals("project/src", notEmpty.path)
+        assertEquals(DeleteReason.NOT_EMPTY, notEmpty.reason)
+        assertEquals("project", other.path)
+        assertEquals("disk on fire", other.detail)
     }
 }

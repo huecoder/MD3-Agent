@@ -171,9 +171,11 @@ private fun ReplyFooter(
         if (end != null && end.isLatest) {
             ActionIcon(MaterialSymbols.Rounded.Refresh, stringResource(R.string.chat_regenerate), onRegenerate)
         }
+        val shownUsage = reply.usage?.takeIf { showUsage }
         val meta = listOfNotNull(
             replyDuration(reply)?.let(ReplyMetaFormat::duration)?.asString(),
-            reply.usage?.takeIf { showUsage }?.let(ReplyMetaFormat::usage)?.asString(),
+            shownUsage?.let(ReplyMetaFormat::usage)?.asString(),
+            shownUsage?.let(ReplyMetaFormat::cached)?.asString(),
         )
         if (meta.isNotEmpty()) {
             Text(

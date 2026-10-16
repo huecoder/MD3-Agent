@@ -6,6 +6,7 @@ import dev.huecoder.md3agent.data.settings.AppSettings
 import dev.huecoder.md3agent.data.settings.ChatSettings
 import dev.huecoder.md3agent.data.settings.InterfaceSettings
 import dev.huecoder.md3agent.data.settings.SettingsRepository
+import dev.huecoder.md3agent.data.settings.ToolSettings
 import dev.huecoder.md3agent.data.settings.VoiceSettings
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -26,6 +27,10 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
 
     fun updateVoice(transform: (VoiceSettings) -> VoiceSettings) {
         viewModelScope.launch { repository.updateVoice(transform) }
+    }
+
+    fun updateTools(transform: (ToolSettings) -> ToolSettings) {
+        viewModelScope.launch { repository.updateTools(transform) }
     }
 
     private companion object {

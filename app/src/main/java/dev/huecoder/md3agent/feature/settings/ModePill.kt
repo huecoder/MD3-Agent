@@ -20,6 +20,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.data.settings.ToolPermission
@@ -27,22 +30,36 @@ import dev.huecoder.md3agent.ui.haptics.rememberHaptics
 
 @Composable
 internal fun ModePill(mode: ToolPermission, enabled: Boolean, onSelect: (ToolPermission) -> Unit, modifier: Modifier = Modifier) {
+    ChoicePill(MODES, mode, onSelect, modifier, enabled)
+}
+
+@Composable
+internal fun <T> ChoicePill(
+    choices: List<Choice<T>>,
+    selected: T,
+    onSelect: (T) -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    fillWidth: Boolean = false,
+    height: Dp = PILL_HEIGHT,
+) {
     val colors = MaterialTheme.colorScheme
     val track = if (enabled) colors.surfaceContainerHighest else colors.onSurface.copy(alpha = TRACK_DISABLED_ALPHA)
-    Row(modifier.height(PILL_HEIGHT).clip(CircleShape).background(track).selectableGroup()) {
-        MODES.forEach { choice ->
-            ModeOption(
+    Row(modifier.height(height).clip(CircleShape).background(track).selectableGroup()) {
+        choices.forEach { choice ->
+            PillOption(
                 label = stringResource(choice.label),
-                selected = choice.value == mode,
+                selected = choice.value == selected,
                 enabled = enabled,
                 onClick = { onSelect(choice.value) },
+                modifier = if (fillWidth) Modifier.weight(1f) else Modifier,
             )
         }
     }
 }
 
 @Composable
-private fun ModeOption(label: String, selected: Boolean, enabled: Boolean, onClick: () -> Unit) {
+private fun PillOption(label: String, selected: Boolean, enabled: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val colors = MaterialTheme.colorScheme
     val haptics = rememberHaptics()
     val container by animateColorAsState(
@@ -59,7 +76,7 @@ private fun ModeOption(label: String, selected: Boolean, enabled: Boolean, onCli
         else -> colors.onSurfaceVariant
     }
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxHeight()
             .clip(CircleShape)
             .background(container)
@@ -70,7 +87,7 @@ private fun ModeOption(label: String, selected: Boolean, enabled: Boolean, onCli
             .padding(horizontal = OPTION_PADDING),
         contentAlignment = Alignment.Center,
     ) {
-        Text(label, style = MaterialTheme.typography.labelLarge, color = content, maxLines = 1)
+        Text(label, style = MaterialTheme.typography.labelLarge, color = content, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
     }
 }
 

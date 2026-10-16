@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="greetings_any">
+        <item>How can I help?</item>
+        <item>What\'s on your mind?</item>
+        <item>What shall we work on?</item>
+        <item>Ask me anything</item>
+        <item>Where do we start?</item>
+        <item>What do you need?</item>
+        <item>Ready when you are</item>
+        <item>What are we up to?</item>
+        <item>Got a question?</item>
+        <item>Let\'s get something done</item>
+    </string-array>
+    <string-array name="greetings_morning">
+        <item>Good morning! How can I help?</item>
+        <item>Morning! What\'s the plan today?</item>
+        <item>Fresh day, fresh ideas?</item>
+        <item>Coffee first, then questions?</item>
+        <item>Good morning! Where do we start?</item>
+        <item>Rise and shine! What\'s up?</item>
+        <item>A new day. What shall we do?</item>
+        <item>Morning! Ready when you are</item>
+        <item>Good morning! Any plans today?</item>
+        <item>Early start! What do you need?</item>
+    </string-array>
+    <string-array name="greetings_day">
+        <item>Good afternoon! How can I help?</item>
+        <item>Hey! How\'s the day going?</item>
+        <item>What\'s on this afternoon?</item>
+        <item>Midday check-in. What\'s up?</item>
+        <item>Afternoon! What are we tackling?</item>
+        <item>Busy day? Let me help</item>
+        <item>Got a lunch break question?</item>
+        <item>Good day! What\'s up?</item>
+        <item>Let\'s make the afternoon count</item>
+        <item>What can I take off your plate?</item>
+    </string-array>
+    <string-array name="greetings_evening">
+        <item>Good evening! How can I help?</item>
+        <item>Evening! What\'s on your mind?</item>
+        <item>How was your day?</item>
+        <item>Winding down or starting up?</item>
+        <item>Good evening! What shall we do?</item>
+        <item>Evening plans? Let\'s talk</item>
+        <item>Still going? What do you need?</item>
+        <item>Time to relax or time to build?</item>
+        <item>Hey, evening! What\'s up?</item>
+        <item>What are we figuring out tonight?</item>
+    </string-array>
+    <string-array name="greetings_night">
+        <item>Still up? What\'s on your mind?</item>
+        <item>Late night thoughts?</item>
+        <item>Can\'t sleep? Let\'s talk</item>
+        <item>Night owl mode: how can I help?</item>
+        <item>The night is young. What\'s up?</item>
+        <item>Burning the midnight oil?</item>
+        <item>Quiet hours. What\'s on your mind?</item>
+        <item>It\'s late. What\'s the plan?</item>
+        <item>Midnight ideas welcome</item>
+        <item>Wide awake? What are we doing?</item>
+    </string-array>
+</resources>

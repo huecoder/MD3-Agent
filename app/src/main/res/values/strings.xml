@@ -134,7 +134,7 @@
     <string name="provider_header_add">Add header</string>
     <string name="chat_settings_section_replies">Replies</string>
     <string name="chat_settings_show_tokens">Show tokens</string>
-    <string name="chat_settings_show_tokens_summary">How many tokens the request and reply used, under each message. Reply time is always shown.</string>
+    <string name="chat_settings_show_tokens_summary">How many tokens the request and reply used, and how many of the request came from the cache, under each message. Reply time is always shown.</string>
     <string name="chat_settings_section_typing">Typing animation</string>
     <string name="typing_mode_fade">Fade</string>
     <string name="typing_mode_typewriter">Typewriter</string>
@@ -149,6 +149,7 @@
     <string name="typing_preview_sample">Hi! This is how replies will show up in the chat. Pick the style and speed that feel right.</string>
     <string name="dictation_settings_section">Voice input</string>
     <string name="dictation_settings_language">Language</string>
+    <string name="dictation_settings_language_auto">Auto-detect</string>
     <string name="dictation_settings_language_placeholder">en</string>
     <string name="dictation_settings_language_hint">The language code tells the model what to expect. Leave empty to auto-detect.</string>
     <string name="home_title">Chats</string>
@@ -169,7 +170,6 @@
     <string name="chat_attachment_too_large">The file is larger than %1$d MB</string>
     <string name="chat_attachment_failed">Couldn\'t attach the file</string>
     <string name="chat_attachment_image_unreadable">Couldn\'t read the image</string>
-    <string name="chat_empty_greeting">How can I help?</string>
     <string name="dictation_transcribing">Transcribing…</string>
     <string name="dictation_error_microphone_denied">Dictation doesn\'t work without microphone access</string>
     <string name="dictation_error_microphone_unavailable">Microphone is unavailable</string>
@@ -184,6 +184,7 @@
     <string name="chat_meta_duration_seconds">%1$.1f s</string>
     <string name="chat_meta_duration_minutes">%1$d min %2$02d s</string>
     <string name="chat_meta_usage" translatable="false">↑ %1$s ↓ %2$s</string>
+    <string name="chat_meta_cached">cached %1$s</string>
     <string name="chat_meta_tokens_thousands" translatable="false">%1$.1fk</string>
     <string name="chat_copy">Copy</string>
     <string name="chat_regenerate">Regenerate</string>
@@ -231,8 +232,9 @@
     <string name="settings_voice_speak_after_voice">after voice input</string>
     <string name="settings_voice_speak_always">always</string>
     <string name="voice_settings_section_providers">Voice providers</string>
-    <string name="voice_settings_providers_hint">Kept apart from chat providers. Any OpenAI-compatible server with /audio/transcriptions and /audio/speech works, Gemini and ElevenLabs use their own formats.</string>
+    <string name="voice_settings_providers_hint">Kept apart from chat providers.</string>
     <string name="voice_settings_add_provider">Add voice provider</string>
+    <string name="voice_settings_add_provider_summary">OpenAI-compatible server, Gemini or ElevenLabs</string>
     <string name="voice_settings_invoke">When opened by the system</string>
     <string name="voice_settings_invoke_text">Keyboard</string>
     <string name="voice_settings_invoke_voice">Voice</string>
@@ -278,13 +280,15 @@
     <string name="tools_permission_auto">Auto</string>
     <string name="tools_search_hint">Search tools</string>
     <string name="tools_search_empty">No tools found</string>
+    <string name="tools_group_builtin">Built-in</string>
+    <string name="tools_group_mcp">Custom MCP</string>
     <string name="tools_run_command_title">Shell commands</string>
     <string name="tools_run_command_summary">Runs commands on the phone. Where they run is set in Device access</string>
     <string name="chat_tool_running_command">Running %1$s</string>
     <string name="chat_tool_command">Command %1$s</string>
     <string name="settings_access">Access and permissions</string>
     <string name="access_section_shell">Commands</string>
-    <string name="access_shell_hint">Where the assistant runs shell commands. The assistant is told which one you picked, so it knows what it can reach.</string>
+    <string name="access_shell_hint">Where the assistant runs shell commands.</string>
     <string name="access_mode_sandbox">App sandbox</string>
     <string name="access_mode_sandbox_summary">Built-in shell, only the app\'s own files</string>
     <string name="access_mode_termux">Termux</string>
@@ -292,7 +296,6 @@
     <string name="access_mode_shizuku">Shizuku</string>
     <string name="access_mode_shizuku_summary">ADB level: pm, am, settings, input</string>
     <string name="access_mode_root">Root</string>
-    <string name="access_mode_root_summary">su from KernelSU, Magisk or APatch</string>
     <string name="access_status_ready">Ready</string>
     <string name="access_status_unknown">Not checked yet</string>
     <string name="access_status_not_installed">Not installed</string>
@@ -330,7 +333,7 @@
     </plurals>
     <string name="chat_attachment_no_viewer">No app can open %1$s</string>
     <string name="access_section_files">Files</string>
-    <string name="access_files_hint">Which files the assistant can read, write and send you. Its workspace is the same folder the sandbox shell starts in.</string>
+    <string name="access_files_hint">Which files the assistant can reach.</string>
     <string name="access_files_app">App folder</string>
     <string name="access_files_app_summary">Workspace and chat attachments only</string>
     <string name="access_files_shared">Phone storage</string>
@@ -339,27 +342,23 @@
     <string name="access_files_root_summary">Any path, other apps\' data included</string>
     <string name="access_action_open_settings">Settings</string>
     <string name="access_section_permissions">Permissions</string>
-    <string name="access_permissions_hint">What the app can get from the system. Grant only what you are going to use.</string>
+    <string name="access_permissions_hint">Grant only what you are going to use.</string>
     <string name="access_action_choose">Choose</string>
     <string name="access_action_install">Install</string>
     <string name="access_action_open">Open</string>
     <string name="access_action_check">Check</string>
-    <string name="access_needs_setup">Grant access above first</string>
     <string name="access_shell_root_summary">Commands as superuser, keep confirmation on</string>
     <string name="permission_assistant">Default assistant</string>
     <string name="permission_assistant_summary">Opens with the assist gesture or by holding the power button</string>
     <string name="permission_microphone">Microphone</string>
     <string name="permission_microphone_summary">Voice input and dictation</string>
-    <string name="permission_all_files">All files access</string>
-    <string name="permission_all_files_summary">Lets the assistant reach the phone storage</string>
-    <string name="permission_termux_summary">Runs commands in Termux</string>
-    <string name="permission_shizuku_summary">ADB-level commands without root</string>
     <string name="settings_access_summary">%1$s · files: %2$s</string>
     <string name="settings_access_summary_not_assistant">Not set as the default assistant</string>
     <string name="settings_mcp">MCP servers</string>
     <string name="settings_mcp_summary_none">Not connected</string>
     <string name="mcp_section_servers">Servers</string>
-    <string name="mcp_servers_hint">Remote MCP servers over Streamable HTTP. Their tools show up for the model and ask before running by default, you can change that in Tools.</string>
+    <string name="mcp_servers_hint">Remote MCP servers over Streamable HTTP. Each server lists its tools below it: turn them on or off and choose whether they ask first. New tools ask before running.</string>
+    <string name="mcp_server_edit">Edit server</string>
     <string name="mcp_add_server">Add server</string>
     <string name="mcp_reconnect">Reconnect</string>
     <string name="mcp_status_disabled">Turned off</string>
@@ -524,10 +523,6 @@
     <string name="common_expanded">Expanded</string>
     <string name="common_collapsed">Collapsed</string>
     <string name="access_group_ready">%1$d of %2$d ready</string>
-    <string name="access_group_essentials">Basics</string>
-    <string name="access_group_storage">Storage</string>
-    <string name="access_group_elevated">Elevated access</string>
-    <string name="access_section_backends">Access mode</string>
     <string name="tools_category_enabled">%1$d of %2$d on</string>
     <string name="settings_appearance">Appearance</string>
     <string name="settings_appearance_summary">Avatar, replies, vibration</string>
@@ -583,7 +578,6 @@
     <string name="phone_control_description">Lets the MD3 Agent assistant read the screen and tap, type and scroll for you when you ask it to. Every action asks for your approval unless you allow it in the tool settings. Nothing from the screen leaves the phone except what is sent to your chosen model.</string>
     <string name="permission_phone_control">Phone control</string>
     <string name="permission_phone_control_summary">Accessibility service so the assistant can read the screen and tap for you</string>
-    <string name="access_group_control">Phone control</string>
     <string name="tools_category_phone">Phone control</string>
     <string name="tools_phone_screen_title">Look at the phone screen</string>
     <string name="tools_phone_screen_summary">Reads buttons, texts and fields of the app in front</string>
@@ -737,6 +731,10 @@
     <string name="files_error_folder">Could not create the folder</string>
     <string name="files_error_rename">Could not rename</string>
     <string name="files_error_delete">Could not delete</string>
+    <string name="files_error_delete_named">Could not delete %1$s: %2$s</string>
+    <string name="files_error_reason_permission">permission denied</string>
+    <string name="files_error_reason_not_empty">the folder is not empty</string>
+    <string name="files_error_reason_unknown">unknown error</string>
     <string name="files_error_share">Could not share the files</string>
     <string name="files_error_name">That name can\'t be used</string>
 </resources>

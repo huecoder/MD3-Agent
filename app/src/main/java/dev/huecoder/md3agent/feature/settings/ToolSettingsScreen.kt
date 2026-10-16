@@ -19,6 +19,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,10 +30,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.huecoder.md3agent.App
 import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.data.settings.FetchBackend
@@ -83,24 +86,33 @@ fun ToolSettingsScreen(onBack: () -> Unit) {
 
     val folds = rememberSectionFolds(*ToolCategory.entries.map { it.name }.toTypedArray())
     var query by rememberSaveable { mutableStateOf("") }
+    val anchors = remember { SectionAnchors() }
+    val scroll = rememberScrollState()
+    val spyThreshold = with(LocalDensity.current) { SPY_OFFSET.toPx() }
+    val currentGroup by remember { derivedStateOf { anchors.selected(scroll, spyThreshold) } }
+    val mcpStates by container.mcp.states.collectAsStateWithLifecycle()
+    val allTools = remember(mcpStates) { container.tools.all }
 
     SettingsScaffold(stringResource(R.string.settings_tools), onBack, save = save) { padding ->
         val current = tools ?: return@SettingsScaffold
         Column(Modifier.fillMaxSize().padding(padding)) {
             SearchField(query, { query = it }, stringResource(R.string.tools_search_hint), Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+            ToolJumpBar(anchors.groups, currentGroup, onSelect = { group -> scope.launch { anchors.scrollTo(group, scroll) } })
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .verticalScroll(rememberScrollState())
+                    .then(anchors.viewport())
+                    .verticalScroll(scroll)
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
             ) {
                 ToolPermissionGroups(
-                    tools = container.tools.all,
+                    tools = allTools,
                     permissionOf = { container.tools.permission(it, current) },
                     onChange = { tool, permission -> tools = current.withPermission(tool.spec.name, permission) },
                     folds = folds,
                     query = query,
+                    sectionModifier = { category -> anchors.anchor(category) },
                 ) { category ->
                     if (category == ToolCategory.WEB) {
                         ServiceCard(R.string.tools_section_search, Modifier.padding(top = 12.dp)) {
@@ -268,3 +280,4 @@ private fun ToolSettings.trimmed() = copy(
     fetch = fetch.copy(jinaApiKey = fetch.jinaApiKey.trim(), customUrl = fetch.customUrl.trim(), customApiKey = fetch.customApiKey.trim()),
 )
 
+private val SPY_OFFSET = 96.dp

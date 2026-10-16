@@ -78,9 +78,17 @@ enum class ToolCategory(@StringRes val title: Int) {
     FILES(R.string.tools_category_files),
     TIME(R.string.tools_category_time),
     SYSTEM(R.string.tools_category_system),
-    MCP(R.string.tools_category_mcp),
     OTHER(R.string.tools_category_other),
+    MCP(R.string.tools_category_mcp),
 }
+
+enum class ToolGroup(@StringRes val title: Int) {
+    BUILT_IN(R.string.tools_group_builtin),
+    MCP(R.string.tools_group_mcp),
+}
+
+val ToolCategory.group: ToolGroup
+    get() = if (this == ToolCategory.MCP) ToolGroup.MCP else ToolGroup.BUILT_IN
 
 data class ToolInfo(val icon: ImageVector, val title: UiText, val summary: UiText, val category: ToolCategory)
 

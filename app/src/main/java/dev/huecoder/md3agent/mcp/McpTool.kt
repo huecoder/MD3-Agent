@@ -30,7 +30,7 @@ class McpTool(
 
     override val timeoutMs = TIMEOUT_MS
 
-    val displayName: String get() = remote.title ?: remote.name
+    val displayName: String get() = remote.title ?: readable(remote.name)
 
     override fun promptNote(settings: ToolSettings): String? =
         client.instructions?.let { "Notes from the MCP server $serverName: ${it.take(MAX_INSTRUCTION_CHARS)}" }
@@ -61,6 +61,7 @@ class McpTool(
         private const val MAX_INSTRUCTION_CHARS = 2_000
         private const val DEFAULT_EXTENSION = "png"
         private val UNSAFE_CHARS = Regex("[^a-zA-Z0-9_-]+")
+        private val WORD_SEPARATORS = Regex("[_-]+")
 
         fun toolName(serverName: String, remoteName: String): String {
             val server = serverName.replace(UNSAFE_CHARS, "_").trim('_').lowercase().ifEmpty { "server" }
@@ -69,6 +70,8 @@ class McpTool(
         }
 
         fun isMcpName(name: String) = name.startsWith("${PREFIX}_")
+
+        fun readable(name: String): String = name.replace(WORD_SEPARATORS, " ").trim().replaceFirstChar { it.uppercase() }
 
         fun shortName(name: String) = name.removePrefix("${PREFIX}_")
 

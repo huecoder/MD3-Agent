@@ -40,8 +40,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -319,9 +319,11 @@ fun EmptyConversation(
             knockout = knockout,
         )
         Text(
-            stringResource(R.string.chat_empty_greeting),
+            rememberGreeting(),
             style = style,
+            textAlign = TextAlign.Center,
             modifier = Modifier
+                .padding(horizontal = GREETING_MARGIN)
                 .knockoutObstacle(knockout, GREETING_OBSTACLE)
                 .graphicsLayer { alpha = handoff?.greetingAlpha ?: 1f },
         )
@@ -337,6 +339,7 @@ private val SCROLL_BUTTON_MARGIN = 12.dp
 private val COMPOSER_GAP = 8.dp
 
 private const val GREETING_OBSTACLE = "greeting"
+private val GREETING_MARGIN = 32.dp
 private const val COMPOSER_OBSTACLE = "composer"
 
 private val PICKABLE_MIME_TYPES = arrayOf("*/*")

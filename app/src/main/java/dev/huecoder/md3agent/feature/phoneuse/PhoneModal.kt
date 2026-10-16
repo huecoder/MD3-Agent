@@ -33,6 +33,7 @@ import dev.huecoder.md3agent.feature.chat.ApprovalCard
 import dev.huecoder.md3agent.feature.chat.PromptCard
 import dev.huecoder.md3agent.feature.chat.PromptPanel
 import dev.huecoder.md3agent.feature.chat.ToolCallUi
+import dev.huecoder.md3agent.ui.haptics.clickHaptics
 
 sealed interface ModalRequest {
     data class Prompt(val pending: PendingPrompt) : ModalRequest
@@ -57,7 +58,7 @@ fun PhoneModal(request: ModalRequest, actions: ModalActions) {
             .pointerInput(Unit) { detectTapGestures { } }
             .padding(MODAL_MARGIN),
     ) {
-        val card = Modifier.widthIn(max = MODAL_MAX_WIDTH)
+        val card = Modifier.widthIn(max = MODAL_MAX_WIDTH).clickHaptics()
         when (request) {
             is ModalRequest.Prompt -> WithStopAgent(actions, card) {
                 PromptPanel(request.pending, onAnswer = { actions.onAnswer(request.pending, it) }, modifier = Modifier.fillMaxWidth())

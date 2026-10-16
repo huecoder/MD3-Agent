@@ -4,6 +4,8 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.huecoder.md3agent.R
+import dev.huecoder.md3agent.data.files.DeleteFailedException
+import dev.huecoder.md3agent.data.files.DeleteReason
 import dev.huecoder.md3agent.data.files.EntryKind
 import dev.huecoder.md3agent.data.files.FileLibrary
 import dev.huecoder.md3agent.data.files.InvalidFileNameException
@@ -63,6 +65,8 @@ class MediaViewModel(private val library: FileLibrary) : ViewModel() {
         viewModelScope.launch {
             try {
                 library.deleteMedia(doomed)
+            } catch (e: DeleteFailedException) {
+                _errors.value = e.toUiText()
             } catch (e: IOException) {
                 _errors.value = UiText.Resource(R.string.files_error_delete)
             }
@@ -139,10 +143,21 @@ class FolderViewModel(private val library: FileLibrary, val location: LibraryLoc
                 action()
             } catch (e: InvalidFileNameException) {
                 _errors.value = UiText.Resource(R.string.files_error_name)
+            } catch (e: DeleteFailedException) {
+                _errors.value = e.toUiText()
             } catch (e: IOException) {
                 _errors.value = UiText.Resource(failure)
             }
             refresh()
         }
     }
+}
+
+private fun DeleteFailedException.toUiText(): UiText {
+    val why = when (reason) {
+        DeleteReason.PERMISSION_DENIED -> UiText.Resource(R.string.files_error_reason_permission)
+        DeleteReason.NOT_EMPTY -> UiText.Resource(R.string.files_error_reason_not_empty)
+        DeleteReason.OTHER -> detail?.let(UiText::Raw) ?: UiText.Resource(R.string.files_error_reason_unknown)
+    }
+    return UiText.Resource(R.string.files_error_delete_named, listOf(path, why))
 }

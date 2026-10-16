@@ -124,7 +124,7 @@
     <string name="provider_header_add">Добавить заголовок</string>
     <string name="chat_settings_section_replies">Ответы</string>
     <string name="chat_settings_show_tokens">Показывать токены</string>
-    <string name="chat_settings_show_tokens_summary">Сколько токенов ушло на запрос и ответ, под каждым сообщением. Время ответа видно всегда.</string>
+    <string name="chat_settings_show_tokens_summary">Сколько токенов ушло на запрос и ответ и сколько из запроса взято из кеша, под каждым сообщением. Время ответа видно всегда.</string>
     <string name="chat_settings_section_typing">Анимация печати</string>
     <string name="typing_mode_fade">Плавно</string>
     <string name="typing_mode_typewriter">Печать</string>
@@ -139,6 +139,7 @@
     <string name="typing_preview_sample">Привет! Вот так ответы будут появляться в чате. Выбери стиль и скорость, которые нравятся.</string>
     <string name="dictation_settings_section">Голосовой ввод</string>
     <string name="dictation_settings_language">Язык</string>
+    <string name="dictation_settings_language_auto">Определять автоматически</string>
     <string name="dictation_settings_language_placeholder">ru</string>
     <string name="dictation_settings_language_hint">Код языка подсказывает модели, что ждать. Пусто - определит сама.</string>
     <string name="home_title">Чаты</string>
@@ -159,7 +160,6 @@
     <string name="chat_attachment_too_large">Файл больше %1$d МБ</string>
     <string name="chat_attachment_failed">Не удалось прикрепить файл</string>
     <string name="chat_attachment_image_unreadable">Не удалось прочитать картинку</string>
-    <string name="chat_empty_greeting">Чем помочь?</string>
     <string name="dictation_transcribing">Распознаю…</string>
     <string name="dictation_error_microphone_denied">Без доступа к микрофону диктовка не работает</string>
     <string name="dictation_error_microphone_unavailable">Микрофон недоступен</string>
@@ -173,6 +173,7 @@
     <string name="overlay_open_in_app">Открыть в приложении</string>
     <string name="chat_meta_duration_seconds">%1$.1f с</string>
     <string name="chat_meta_duration_minutes">%1$d мин %2$02d с</string>
+    <string name="chat_meta_cached">из кеша %1$s</string>
     <string name="chat_copy">Копировать</string>
     <string name="chat_regenerate">Сгенерировать заново</string>
     <string name="chat_scroll_to_bottom">Прокрутить вниз</string>
@@ -221,8 +222,9 @@
     <string name="settings_voice_speak_after_voice">после голосового ввода</string>
     <string name="settings_voice_speak_always">всегда</string>
     <string name="voice_settings_section_providers">Голосовые провайдеры</string>
-    <string name="voice_settings_providers_hint">Отдельно от провайдеров чата. Подойдёт любой OpenAI-совместимый сервер с /audio/transcriptions и /audio/speech, а у Gemini и ElevenLabs свои форматы.</string>
+    <string name="voice_settings_providers_hint">Отдельно от провайдеров чата.</string>
     <string name="voice_settings_add_provider">Добавить голосовой провайдер</string>
+    <string name="voice_settings_add_provider_summary">OpenAI-совместимый сервер, Gemini или ElevenLabs</string>
     <string name="voice_settings_invoke">При вызове из системы</string>
     <string name="voice_settings_invoke_text">Клавиатура</string>
     <string name="voice_settings_invoke_voice">Голос</string>
@@ -271,13 +273,15 @@
     <string name="tools_permission_auto">Авто</string>
     <string name="tools_search_hint">Поиск инструментов</string>
     <string name="tools_search_empty">Инструменты не найдены</string>
+    <string name="tools_group_builtin">Встроенные</string>
+    <string name="tools_group_mcp">Свои MCP</string>
     <string name="tools_run_command_title">Команды shell</string>
     <string name="tools_run_command_summary">Запускает команды на телефоне. Где именно, выбирается в «Доступе к устройству»</string>
     <string name="chat_tool_running_command">Выполняю %1$s</string>
     <string name="chat_tool_command">Команда %1$s</string>
     <string name="settings_access">Доступ и разрешения</string>
     <string name="access_section_shell">Команды</string>
-    <string name="access_shell_hint">Где ассистент запускает shell-команды. Ассистент знает, что ты выбрал, и понимает, до чего может дотянуться.</string>
+    <string name="access_shell_hint">Где ассистент запускает shell-команды.</string>
     <string name="access_mode_sandbox">Песочница приложения</string>
     <string name="access_mode_sandbox_summary">Встроенный shell, только свои файлы</string>
     <string name="access_mode_termux">Termux</string>
@@ -285,7 +289,6 @@
     <string name="access_mode_shizuku">Shizuku</string>
     <string name="access_mode_shizuku_summary">Уровень ADB: pm, am, settings, input</string>
     <string name="access_mode_root">Root</string>
-    <string name="access_mode_root_summary">su из KernelSU, Magisk или APatch</string>
     <string name="access_status_ready">Готово</string>
     <string name="access_status_unknown">Ещё не проверено</string>
     <string name="access_status_not_installed">Не установлен</string>
@@ -323,7 +326,7 @@
     </plurals>
     <string name="chat_attachment_no_viewer">Нечем открыть %1$s</string>
     <string name="access_section_files">Файлы</string>
-    <string name="access_files_hint">Какие файлы ассистент может читать, записывать и отправлять тебе. Его рабочая папка та же, где стартует шелл песочницы.</string>
+    <string name="access_files_hint">До каких файлов ассистент может дотянуться.</string>
     <string name="access_files_app">Папка приложения</string>
     <string name="access_files_app_summary">Только рабочая папка и вложения из чата</string>
     <string name="access_files_shared">Память телефона</string>
@@ -332,27 +335,23 @@
     <string name="access_files_root_summary">Любой путь, включая данные других приложений</string>
     <string name="access_action_open_settings">Настройки</string>
     <string name="access_section_permissions">Разрешения</string>
-    <string name="access_permissions_hint">Всё, что приложение может получить от системы. Выдавай только то, чем будешь пользоваться.</string>
+    <string name="access_permissions_hint">Выдавай только то, чем будешь пользоваться.</string>
     <string name="access_action_choose">Выбрать</string>
     <string name="access_action_install">Установить</string>
     <string name="access_action_open">Открыть</string>
     <string name="access_action_check">Проверить</string>
-    <string name="access_needs_setup">Сначала выдай доступ выше</string>
     <string name="access_shell_root_summary">Команды от суперпользователя, подтверждение лучше не выключать</string>
     <string name="permission_assistant">Ассистент по умолчанию</string>
     <string name="permission_assistant_summary">Вызов жестом или зажатием кнопки питания</string>
     <string name="permission_microphone">Микрофон</string>
     <string name="permission_microphone_summary">Голосовой ввод и диктовка</string>
-    <string name="permission_all_files">Доступ ко всем файлам</string>
-    <string name="permission_all_files_summary">Агент сможет работать с памятью телефона</string>
-    <string name="permission_termux_summary">Запуск команд в Termux</string>
-    <string name="permission_shizuku_summary">Команды уровня ADB без root</string>
     <string name="settings_access_summary">%1$s · файлы: %2$s</string>
     <string name="settings_access_summary_not_assistant">Не назначен ассистентом по умолчанию</string>
     <string name="settings_mcp">MCP-серверы</string>
     <string name="settings_mcp_summary_none">Не подключены</string>
     <string name="mcp_section_servers">Серверы</string>
-    <string name="mcp_servers_hint">Удалённые MCP-серверы по Streamable HTTP. Их тулзы видит модель, по умолчанию они спрашивают перед запуском, это меняется в разделе «Инструменты».</string>
+    <string name="mcp_servers_hint">Удалённые MCP-серверы по Streamable HTTP. Тулзы каждого сервера показаны под ним: включай, выключай и выбирай, спрашивать ли перед запуском. Новые по умолчанию спрашивают.</string>
+    <string name="mcp_server_edit">Изменить сервер</string>
     <string name="mcp_add_server">Добавить сервер</string>
     <string name="mcp_reconnect">Переподключить</string>
     <string name="mcp_status_disabled">Выключен</string>
@@ -525,10 +524,6 @@
     <string name="common_expanded">Развёрнуто</string>
     <string name="common_collapsed">Свёрнуто</string>
     <string name="access_group_ready">готово %1$d из %2$d</string>
-    <string name="access_group_essentials">Основные</string>
-    <string name="access_group_storage">Хранилище</string>
-    <string name="access_group_elevated">Расширенный доступ</string>
-    <string name="access_section_backends">Режим доступа</string>
     <string name="tools_category_enabled">включено %1$d из %2$d</string>
     <string name="settings_appearance">Внешний вид</string>
     <string name="settings_appearance_summary">Аватар, ответы, вибрация</string>
@@ -584,7 +579,6 @@
     <string name="phone_control_description">Позволяет ассистенту MD3 Agent читать экран, нажимать, вводить текст и листать по вашей просьбе. Каждое действие требует подтверждения, если вы не разрешили его в настройках инструментов. С экрана ничего не уходит с телефона, кроме того что отправляется выбранной вами модели.</string>
     <string name="permission_phone_control">Управление телефоном</string>
     <string name="permission_phone_control_summary">Служба специальных возможностей, чтобы ассистент читал экран и нажимал за вас</string>
-    <string name="access_group_control">Управление телефоном</string>
     <string name="tools_category_phone">Управление телефоном</string>
     <string name="tools_phone_screen_title">Смотреть на экран</string>
     <string name="tools_phone_screen_summary">Читает кнопки, тексты и поля открытого приложения</string>
@@ -742,6 +736,10 @@
     <string name="files_error_folder">Не удалось создать папку</string>
     <string name="files_error_rename">Не удалось переименовать</string>
     <string name="files_error_delete">Не удалось удалить</string>
+    <string name="files_error_delete_named">Не удалось удалить %1$s: %2$s</string>
+    <string name="files_error_reason_permission">нет прав</string>
+    <string name="files_error_reason_not_empty">папка не пуста</string>
+    <string name="files_error_reason_unknown">неизвестная ошибка</string>
     <string name="files_error_share">Не удалось поделиться файлами</string>
     <string name="files_error_name">Такое название не подходит</string>
 </resources>

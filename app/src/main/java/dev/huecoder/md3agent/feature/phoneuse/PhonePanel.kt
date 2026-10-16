@@ -60,6 +60,7 @@ import dev.huecoder.md3agent.feature.chat.ReplyText
 import dev.huecoder.md3agent.feature.chat.UserMessage
 import dev.huecoder.md3agent.feature.chat.WorkBlock
 import dev.huecoder.md3agent.ui.components.AgentAvatar
+import dev.huecoder.md3agent.ui.haptics.rememberHaptics
 import dev.huecoder.md3agent.ui.text.asString
 import kotlinx.coroutines.delay
 
@@ -141,6 +142,7 @@ fun PhonePanel(
 
 @Composable
 private fun PanelHeader(state: ChatUiState, collapsed: Boolean, status: String?, actions: PanelActions) {
+    val haptics = rememberHaptics()
     val chevron by animateFloatAsState(if (collapsed) 0f else HALF_TURN, label = "panel-chevron")
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -165,10 +167,22 @@ private fun PanelHeader(state: ChatUiState, collapsed: Boolean, status: String?,
                 modifier = Modifier.weight(1f),
             )
         }
-        IconButton(onClick = actions.onMinimize, shapes = IconButtonDefaults.shapes()) {
+        IconButton(
+            onClick = {
+                haptics.tap()
+                actions.onMinimize()
+            },
+            shapes = IconButtonDefaults.shapes(),
+        ) {
             Icon(MaterialSymbols.Rounded.Close_fullscreen, contentDescription = stringResource(R.string.phone_use_minimize))
         }
-        IconButton(onClick = actions.onToggleCollapsed, shapes = IconButtonDefaults.shapes()) {
+        IconButton(
+            onClick = {
+                haptics.tick()
+                actions.onToggleCollapsed()
+            },
+            shapes = IconButtonDefaults.shapes(),
+        ) {
             Icon(
                 MaterialSymbols.Rounded.Expand_more,
                 contentDescription = stringResource(if (collapsed) R.string.phone_use_expand else R.string.phone_use_collapse),
@@ -206,13 +220,21 @@ private fun PlateLog(state: ChatUiState, modifier: Modifier) {
 
 @Composable
 fun PhoneBubble(isWorking: Boolean, actions: BubbleActions, modifier: Modifier = Modifier) {
+    val haptics = rememberHaptics()
     Surface(
         shape = CircleShape,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         shadowElevation = BUBBLE_ELEVATION,
         modifier = modifier
             .size(BUBBLE_SIZE)
-            .windowDrag(actions.onDrag, actions.onDragEnd, onTap = actions.onOpen),
+            .windowDrag(
+                actions.onDrag,
+                actions.onDragEnd,
+                onTap = {
+                    haptics.tap()
+                    actions.onOpen()
+                },
+            ),
     ) {
         Box(contentAlignment = Alignment.Center) {
             if (isWorking) {

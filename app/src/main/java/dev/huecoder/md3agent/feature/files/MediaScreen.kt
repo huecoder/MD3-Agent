@@ -47,7 +47,7 @@ fun MediaScreen(onBack: () -> Unit) {
     }
     LaunchedEffect(error) {
         error?.let {
-            Toast.makeText(context, it.resolve(context), Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, it.resolve(context), Toast.LENGTH_LONG).show()
             viewModel.consumeError()
         }
     }

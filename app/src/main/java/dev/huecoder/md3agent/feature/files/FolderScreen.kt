@@ -101,7 +101,7 @@ fun FolderScreen(location: LibraryLocation, onOpen: (LibraryLocation) -> Unit, o
     }
     LaunchedEffect(error) {
         error?.let {
-            Toast.makeText(context, it.resolve(context), Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, it.resolve(context), Toast.LENGTH_LONG).show()
             viewModel.consumeError()
         }
     }

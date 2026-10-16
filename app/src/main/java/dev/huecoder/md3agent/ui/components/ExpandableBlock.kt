@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Expand_more
 import dev.huecoder.md3agent.R
+import dev.huecoder.md3agent.ui.haptics.rememberHaptics
 import dev.huecoder.md3agent.ui.theme.LayoutMotion
 
 @Composable
@@ -50,6 +51,7 @@ fun ExpandableBlock(
     content: @Composable () -> Unit,
 ) {
     var expanded by rememberSaveable { mutableStateOf(initiallyExpanded) }
+    val haptics = rememberHaptics()
     val chevronRotation by animateFloatAsState(
         targetValue = if (expanded) HALF_TURN else 0f,
         animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
@@ -61,7 +63,10 @@ fun ExpandableBlock(
         Row(
             modifier = Modifier
                 .clip(MaterialTheme.shapes.small)
-                .clickable { expanded = !expanded }
+                .clickable {
+                    haptics.tick()
+                    expanded = !expanded
+                }
                 .padding(vertical = HEADER_VERTICAL_PADDING),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,

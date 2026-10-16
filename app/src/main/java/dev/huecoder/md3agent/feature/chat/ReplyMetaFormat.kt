@@ -19,6 +19,9 @@ object ReplyMetaFormat {
     fun usage(usage: TokenUsage): UiText =
         UiText.Resource(R.string.chat_meta_usage, listOf(tokens(usage.promptTokens), tokens(usage.completionTokens)))
 
+    fun cached(usage: TokenUsage): UiText? =
+        usage.cachedTokens.takeIf { it > 0 }?.let { UiText.Resource(R.string.chat_meta_cached, listOf(tokens(it))) }
+
     private fun tokens(count: Int): UiText =
         if (count < THOUSAND) UiText.Raw(count.toString()) else UiText.Resource(R.string.chat_meta_tokens_thousands, listOf(count.toDouble() / THOUSAND))
 }
