@@ -33,7 +33,9 @@ class BackgroundWorkService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        running = true
         startInForeground(workNotification(count = 1))
+        container.keepAlive.engage(scope)
         scope.launch {
             container.conversations.activity.combine(container.visibility.isVisible) { activity, visible -> activity to visible }
                 .collect { (activity, visible) -> render(activity, visible) }
@@ -46,6 +48,8 @@ class BackgroundWorkService : Service() {
     }
 
     override fun onDestroy() {
+        running = false
+        container.keepAlive.disengage()
         notifications().let { manager -> approvalNotified.forEach { manager?.cancel(it, APPROVAL_NOTIFICATION_ID) } }
         scope.cancel()
         super.onDestroy()
@@ -110,6 +114,10 @@ class BackgroundWorkService : Service() {
         private const val APPROVAL_NOTIFICATION_ID = 1002
         private const val STOP_REQUEST_CODE = 1
         private const val OPEN_REQUEST_CODE = 2
+
+        @Volatile
+        var running = false
+            private set
 
         fun start(context: Context) {
             try {

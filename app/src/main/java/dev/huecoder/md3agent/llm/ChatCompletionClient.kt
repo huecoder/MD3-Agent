@@ -22,7 +22,10 @@ import kotlinx.serialization.json.jsonObject
 import okhttp3.Response
 import java.io.IOException
 
-class ChatCompletionClient(private val httpClients: HttpClientProvider) {
+class ChatCompletionClient(
+    private val httpClients: HttpClientProvider,
+    private val diagnostics: StreamDiagnostics = NoStreamDiagnostics,
+) {
     fun stream(
         provider: ProviderProfile,
         model: String,
@@ -33,23 +36,32 @@ class ChatCompletionClient(private val httpClients: HttpClientProvider) {
         val wire = ChatWire.of(provider.format)
         val request = wire.request(ProviderEndpoint(provider), ChatRequest(model, turns, tools, options))
         val call = httpClients.current().newCall(request)
+        val trace = StreamTrace()
         try {
             call.executeCancellable { response ->
                 if (!response.isSuccessful) throw httpError(response)
-                emitServerSentEvents(response, wire.newStream())
+                trace.onResponse()
+                emitServerSentEvents(response, wire.newStream(), trace)
             }
         } catch (e: IOException) {
             if (call.isCanceled()) throw CancellationException("Stream cancelled", e)
-            throw ProviderException.Network(e)
+            val failure = trace.failure(e)
+            diagnostics.failed(failure)
+            throw ProviderException.Network(e, failure.kind)
         }
     }.flowOn(Dispatchers.IO)
 
-    private suspend fun FlowCollector<CompletionEvent>.emitServerSentEvents(response: Response, stream: ChatStream) {
+    private suspend fun FlowCollector<CompletionEvent>.emitServerSentEvents(response: Response, stream: ChatStream, trace: StreamTrace) {
         val source = response.body.source()
         var finished = false
         var usageSeen = false
         while (!(finished && usageSeen)) {
-            val line = source.readUtf8Line() ?: break
+            val line = source.readUtf8Line()
+            if (line == null) {
+                if (!finished) diagnostics.endedWithoutFinish(trace.timings())
+                break
+            }
+            trace.onChunk()
             if (!line.startsWith(SSE_DATA_PREFIX)) continue
             val data = line.removePrefix(SSE_DATA_PREFIX).trim()
             if (data == SSE_DONE) break

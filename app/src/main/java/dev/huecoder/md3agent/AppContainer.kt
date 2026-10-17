@@ -56,6 +56,9 @@ import dev.huecoder.md3agent.tools.ShowDiagramTool
 import dev.huecoder.md3agent.tools.ShowUiTool
 import dev.huecoder.md3agent.tools.system.RunCommandTool
 import dev.huecoder.md3agent.tools.system.RunPythonTool
+import dev.huecoder.md3agent.system.health.DeviceHealth
+import dev.huecoder.md3agent.system.health.NetworkWatch
+import dev.huecoder.md3agent.system.health.WorkKeepAlive
 import dev.huecoder.md3agent.system.shell.AccessStatus
 import dev.huecoder.md3agent.system.shell.ShellAccess
 import dev.huecoder.md3agent.tools.ToolRegistry
@@ -113,7 +116,11 @@ class AppContainer(context: Context) {
     val reminders = ReminderRepository(database.reminderDao(), ReminderAlarms(appContext))
     val memories = MemoryStore(database.memoryDao(), EmbeddingClient(httpClients), settings.settings.map { it.tools.memory })
 
-    val completions = ChatCompletionClient(httpClients)
+    private val networkWatch = NetworkWatch(appContext)
+    val health = DeviceHealth(appContext, networkWatch, { visibility.isVisible.value }, { BackgroundWorkService.running })
+    val keepAlive = WorkKeepAlive(networkWatch, health)
+
+    val completions = ChatCompletionClient(httpClients, health.streamDiagnostics())
     val modelCatalogClient = ModelCatalogClient(httpClients)
     val voiceList = VoiceListClient(httpClients)
     val modelCatalog = ModelCatalog(modelCatalogClient, File(appContext.filesDir, MODEL_CATALOG_DIR))
