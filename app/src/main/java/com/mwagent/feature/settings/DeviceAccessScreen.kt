@@ -58,6 +58,7 @@ import com.composables.icons.materialsymbols.rounded.Adb
 import com.composables.icons.materialsymbols.rounded.Assistant
 import com.composables.icons.materialsymbols.rounded.Content_copy
 import com.composables.icons.materialsymbols.rounded.Folder
+import com.composables.icons.materialsymbols.rounded.Location_on
 import com.composables.icons.materialsymbols.rounded.Mic
 import com.composables.icons.materialsymbols.rounded.Notifications
 import com.composables.icons.materialsymbols.rounded.Shield_lock

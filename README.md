@@ -145,7 +145,7 @@ The app never updates itself. **Check for updates** in About looks at GitHub Rel
 To check that an APK is genuine, run `apksigner verify --print-certs mw-agent-<version>.apk` and compare the SHA-256 digest of the signer certificate with this one:
 
 ```
-a269959f24a0b8816fbcf313dff1641a0b16a505b2acb8e8701f92a688e411e5
+7ddf784ffa7ed58dc259fd7a2b9065d7e67a5f93db21bfe6015351d5459e8bea
 ```
 
 ## Troubleshooting
