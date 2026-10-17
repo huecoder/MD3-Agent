@@ -117,8 +117,11 @@ data class MemorySettings(
     val embeddingApiKey: String = "",
     val embeddingModel: String = "",
 ) {
+    val canListModels: Boolean
+        get() = embeddingKind != EmbeddingKind.OFF && embeddingApiKey.isNotBlank() && baseUrl.isNotBlank()
+
     val embeddingsReady: Boolean
-        get() = embeddingKind != EmbeddingKind.OFF && embeddingApiKey.isNotBlank() && model.isNotBlank() && baseUrl.isNotBlank()
+        get() = canListModels && model.isNotBlank()
 
     val model: String
         get() = embeddingModel.trim().ifEmpty { if (embeddingKind == EmbeddingKind.GEMINI) GEMINI_MODEL else "" }
@@ -129,7 +132,16 @@ data class MemorySettings(
     val baseUrl: String
         get() = embeddingBaseUrl.trim().ifEmpty { if (embeddingKind == EmbeddingKind.GEMINI) GEMINI_BASE_URL else "" }
 
+    fun asEndpointProfile() = ProviderProfile(
+        id = ENDPOINT_ID,
+        name = ENDPOINT_ID,
+        baseUrl = baseUrl.removeSuffix("/").removeSuffix("/embeddings"),
+        apiKey = embeddingApiKey,
+        format = if (embeddingKind == EmbeddingKind.GEMINI) ApiFormat.GEMINI else ApiFormat.OPENAI,
+    )
+
     companion object {
+        private const val ENDPOINT_ID = "embeddings"
         const val GEMINI_MODEL = "gemini-embedding-2"
         const val GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta"
         const val GEMINI_KEY_URL = "https://aistudio.google.com/apikey"

@@ -2,12 +2,15 @@ package dev.huecoder.md3agent.feature.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.data.db.MemoryEntity
 import dev.huecoder.md3agent.data.db.MemoryTier
 import dev.huecoder.md3agent.data.memory.MemoryStore
 import dev.huecoder.md3agent.data.settings.EmbeddingKind
 import dev.huecoder.md3agent.data.settings.MemorySettings
 import dev.huecoder.md3agent.data.settings.SettingsRepository
+import dev.huecoder.md3agent.llm.ModelCatalogClient
+import dev.huecoder.md3agent.llm.models.ModelInfo
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -42,14 +45,17 @@ sealed interface EmbeddingProbe {
 class MemoryViewModel(
     private val settings: SettingsRepository,
     private val memories: MemoryStore,
+    private val catalog: ModelCatalogClient,
 ) : ViewModel() {
     private val draft = FormDraft<MemorySettings>(viewModelScope)
+    private val modelLoader = CatalogLoader(viewModelScope, R.string.provider_models_fetch_failed) { catalog.listModelInfo(it, withDetails = true) }
     private val _probe = MutableStateFlow<EmbeddingProbe>(EmbeddingProbe.Idle)
     private var probeJob: Job? = null
 
     val embedding: StateFlow<MemorySettings?> = draft.value
     val isDirty: StateFlow<Boolean> = draft.isDirty
     val probe: StateFlow<EmbeddingProbe> = _probe.asStateFlow()
+    val models: StateFlow<Loaded<ModelInfo>> = modelLoader.state
 
     val lists: StateFlow<MemoryLists> = memories.all
         .map { all ->
@@ -71,6 +77,11 @@ class MemoryViewModel(
     }
 
     fun selectKind(kind: EmbeddingKind) = edit { it.copy(embeddingKind = kind) }
+
+    fun loadModels(force: Boolean = false) {
+        val current = draft.current?.trimmed()?.takeIf { it.canListModels } ?: return
+        modelLoader.load(current.asEndpointProfile(), force)
+    }
 
     fun probeEmbeddings() {
         val current = draft.current?.trimmed()?.takeIf { it.embeddingsReady } ?: return

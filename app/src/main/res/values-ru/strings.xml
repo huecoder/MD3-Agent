@@ -460,7 +460,7 @@
     <string name="memory_search_hint">Без эмбеддингов агент ищет воспоминания по словам. С эмбеддингами ищет по смыслу, так что «мой кот» найдёт и «питомец по имени Моти».</string>
     <string name="memory_kind_off">По словам</string>
     <string name="memory_kind_gemini">Gemini</string>
-    <string name="memory_kind_openai">OpenAI-формат</string>
+    <string name="memory_kind_openai">OpenAI</string>
     <string name="memory_gemini_tip_title">Попробуй Gemini Embedding 2</string>
     <string name="memory_gemini_tip_body">Бесплатно, 50 запросов в минуту и хорошо понимает русский. Ключ в Google AI Studio получается за минуту.</string>
     <string name="memory_gemini_tip_use">Выбрать Gemini</string>
@@ -468,7 +468,7 @@
     <string name="memory_api_key">API-ключ</string>
     <string name="memory_model">Модель</string>
     <string name="memory_base_url">Base URL</string>
-    <string name="memory_probe">Проверить</string>
+    <string name="memory_probe">Проверить подключение</string>
     <string name="memory_probe_ok">Работает, у векторов %1$d измерений</string>
     <string name="memory_section_instant">Мгновенная память</string>
     <string name="memory_instant_hint">Всегда лежит в системном промпте, агент знает это без поиска. Занято %1$d из %2$d.</string>
@@ -782,5 +782,4 @@
     <string name="memory_probe_hint">Отправит тестовый запрос и покажет размер вектора</string>
     <string name="memory_model_not_set">Не выбрана</string>
     <string name="memory_model_default">По умолчанию</string>
-    <string name="memory_optional_default">Оставь пустым для значения по умолчанию</string>
 </resources>

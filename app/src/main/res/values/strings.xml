@@ -461,7 +461,7 @@
     <string name="memory_search_hint">Without embeddings the agent finds memories by keywords. Embeddings let it match by meaning, so "my cat" also finds "pet named Mochi".</string>
     <string name="memory_kind_off">Keywords</string>
     <string name="memory_kind_gemini">Gemini</string>
-    <string name="memory_kind_openai">OpenAI format</string>
+    <string name="memory_kind_openai">OpenAI</string>
     <string name="memory_gemini_tip_title">Try Gemini Embedding 2</string>
     <string name="memory_gemini_tip_body">It is free, handles 50 requests per minute and understands Russian well. A key from Google AI Studio takes a minute to get.</string>
     <string name="memory_gemini_tip_use">Use Gemini</string>
@@ -470,7 +470,7 @@
     <string name="memory_model">Model</string>
     <string name="memory_base_url">Base URL</string>
     <string name="memory_base_url_placeholder_openai" translatable="false">https://api.openai.com/v1</string>
-    <string name="memory_probe">Check</string>
+    <string name="memory_probe">Test connection</string>
     <string name="memory_probe_ok">Works, vectors have %1$d dimensions</string>
     <string name="memory_section_instant">Instant memory</string>
     <string name="memory_instant_hint">Always in the system prompt, so the agent knows it without searching. %1$d of %2$d used.</string>
@@ -770,6 +770,4 @@
     <string name="memory_probe_hint">Sends a test request and shows the vector size</string>
     <string name="memory_model_not_set">Not chosen</string>
     <string name="memory_model_default">Default</string>
-    <string name="memory_optional_default">Leave empty for the default</string>
-    <string name="memory_model_placeholder_openai">text-embedding-3-small</string>
 </resources>

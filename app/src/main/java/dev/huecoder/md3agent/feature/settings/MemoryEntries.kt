@@ -5,13 +5,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -21,7 +18,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Add
@@ -33,8 +29,6 @@ import dev.huecoder.md3agent.data.db.MemoryTier
 import dev.huecoder.md3agent.data.memory.MemoryStore
 import dev.huecoder.md3agent.ui.components.FormField
 import dev.huecoder.md3agent.ui.components.SectionHeader
-import dev.huecoder.md3agent.ui.components.ShapeBadge
-import dev.huecoder.md3agent.ui.components.groupedListColors
 import dev.huecoder.md3agent.ui.haptics.clickHaptics
 
 internal fun LazyListScope.memorySection(
@@ -44,39 +38,28 @@ internal fun LazyListScope.memorySection(
     onOpen: (MemoryDraft) -> Unit,
 ) {
     val count = memories.size + 1
-    item(key = "header-$tier") {
-        Column {
-            SectionHeader(stringResource(tier.title))
-            Text(
-                hint(),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 8.dp),
-            )
-        }
-    }
+    item(key = "header-$tier") { SectionHeader(stringResource(tier.title)) }
+    item(key = "hint-$tier") { SectionCaption(hint()) }
     itemsIndexed(memories, key = { _, memory -> memory.id }) { index, memory ->
-        SegmentedListItem(
+        SettingCard(
+            icon = tier.icon,
+            title = memory.title,
+            summary = memory.content,
+            summaryMaxLines = PREVIEW_LINES,
+            shape = segmentShape(index, count),
             onClick = { onOpen(MemoryDraft(memory.id, memory.tier, memory.title, memory.content)) },
-            shapes = ListItemDefaults.segmentedShapes(index, count),
-            colors = groupedListColors(),
-            leadingContent = { ShapeBadge(tier.icon) },
-            supportingContent = { Text(memory.content, maxLines = PREVIEW_LINES, overflow = TextOverflow.Ellipsis) },
-        ) { Text(memory.title, style = MaterialTheme.typography.titleMediumEmphasized) }
+        )
     }
     item(key = "add-$tier") {
-        SegmentedListItem(
+        SettingCard(
+            icon = MaterialSymbols.Rounded.Add,
+            title = stringResource(R.string.memory_add),
+            summary = stringResource(R.string.memory_empty).takeIf { memories.isEmpty() },
+            shape = segmentShape(count - 1, count),
+            badgeContainer = MaterialTheme.colorScheme.surfaceContainerHighest,
+            badgeContent = MaterialTheme.colorScheme.onSurface,
             onClick = { onOpen(MemoryDraft(tier = tier)) },
-            shapes = ListItemDefaults.segmentedShapes(count - 1, count),
-            colors = groupedListColors(),
-            leadingContent = {
-                ShapeBadge(
-                    MaterialSymbols.Rounded.Add,
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                    contentColor = MaterialTheme.colorScheme.onSurface,
-                )
-            },
-        ) { Text(stringResource(R.string.memory_add), style = MaterialTheme.typography.titleMediumEmphasized) }
+        )
     }
 }
 
@@ -97,7 +80,7 @@ internal fun MemoryEditorDialog(
         title = { Text(stringResource(if (initial.id == null) R.string.memory_add else R.string.memory_edit)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                SegmentedChoices(TIER_CHOICES, draft.tier, { draft = draft.copy(tier = it) })
+                ChoicePill(TIER_CHOICES, draft.tier, { draft = draft.copy(tier = it) }, Modifier.fillMaxWidth(), fillWidth = true, height = CHOICE_HEIGHT)
                 FormField(
                     value = draft.title,
                     onValueChange = { draft = draft.copy(title = it.take(MemoryStore.MAX_TITLE)); error = null },
