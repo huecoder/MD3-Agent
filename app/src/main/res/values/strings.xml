@@ -200,6 +200,11 @@
     <string name="common_expand">Expand</string>
     <string name="common_back">Back</string>
     <string name="chat_error_unknown">Unknown error</string>
+    <string name="chat_error_retry">Retry</string>
+    <string name="chat_error_network_dropped">The connection dropped (%1$s). The network may have changed, or Android limited the app in the background. Allow unrestricted battery use under Access and permissions → Background work, then retry.</string>
+    <string name="chat_error_network_unreachable">Couldn\'t reach the server (%1$s). Check the internet connection and retry.</string>
+    <string name="chat_error_network_stalled">The server sent nothing for too long (%1$s). The model may still be thinking: retry, or pick a faster model.</string>
+    <string name="chat_error_network_insecure">The secure connection to the server failed (%1$s). Check the provider address and the server certificate.</string>
     <string name="chat_error_empty_response">The model returned an empty response</string>
     <string name="chat_tool_arguments">Arguments</string>
     <string name="chat_tool_result">Result</string>

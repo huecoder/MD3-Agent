@@ -1,6 +1,8 @@
 package dev.huecoder.md3agent.feature.chat
 
+import androidx.annotation.StringRes
 import dev.huecoder.md3agent.R
+import dev.huecoder.md3agent.conversation.ReplyErrors
 import dev.huecoder.md3agent.conversation.StreamingDraft
 import dev.huecoder.md3agent.conversation.TurnAssembler
 import dev.huecoder.md3agent.data.attachments.Attachment
@@ -9,6 +11,7 @@ import dev.huecoder.md3agent.data.db.MessageRole
 import dev.huecoder.md3agent.data.db.MessageStatus
 import dev.huecoder.md3agent.llm.TokenUsage
 import dev.huecoder.md3agent.llm.ToolCall
+import dev.huecoder.md3agent.net.NetworkFailureKind
 import dev.huecoder.md3agent.tools.ChartSpec
 import dev.huecoder.md3agent.tools.ReplyUi
 import dev.huecoder.md3agent.tools.ShowChartTool
@@ -164,7 +167,7 @@ object ChatTimeline {
             }
             when {
                 isLive -> Unit
-                row.status == MessageStatus.ERROR -> add(ReplyPart.Error(row.errorText?.let(UiText::Raw) ?: UiText.Resource(R.string.chat_error_unknown)))
+                row.status == MessageStatus.ERROR -> add(ReplyPart.Error(errorText(row.errorText)))
                 row.status == MessageStatus.COMPLETE && content.isEmpty() && calls.isEmpty() && generated.isEmpty() -> add(ReplyPart.Error(UiText.Resource(R.string.chat_error_empty_response)))
             }
         }
@@ -181,6 +184,24 @@ object ChatTimeline {
             }
         }
     }
+
+    private fun errorText(stored: String?): UiText {
+        val network = stored?.let(ReplyErrors::decodeNetwork)
+        return when {
+            network != null -> UiText.Resource(network.kind.message, listOf(network.detail))
+            stored != null -> UiText.Raw(stored)
+            else -> UiText.Resource(R.string.chat_error_unknown)
+        }
+    }
+
+    @get:StringRes
+    private val NetworkFailureKind.message: Int
+        get() = when (this) {
+            NetworkFailureKind.DROPPED -> R.string.chat_error_network_dropped
+            NetworkFailureKind.UNREACHABLE -> R.string.chat_error_network_unreachable
+            NetworkFailureKind.STALLED -> R.string.chat_error_network_stalled
+            NetworkFailureKind.INSECURE -> R.string.chat_error_network_insecure
+        }
 
     private fun List<ReplyPart>.mergeAdjacentWork(): List<ReplyPart> = fold(mutableListOf()) { merged, part ->
         val previous = merged.lastOrNull()

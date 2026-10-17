@@ -188,6 +188,11 @@
     <string name="common_expand">Развернуть</string>
     <string name="common_back">Назад</string>
     <string name="chat_error_unknown">Неизвестная ошибка</string>
+    <string name="chat_error_retry">Повторить</string>
+    <string name="chat_error_network_dropped">Соединение оборвалось (%1$s). Возможно, сменилась сеть или Android ограничил приложение в фоне. Разрешите работу без ограничений в «Доступ и разрешения» → «Работа в фоне» и повторите.</string>
+    <string name="chat_error_network_unreachable">Не удалось связаться с сервером (%1$s). Проверьте интернет и повторите.</string>
+    <string name="chat_error_network_stalled">Сервер слишком долго молчал (%1$s). Возможно, модель ещё думает: повторите или выберите модель побыстрее.</string>
+    <string name="chat_error_network_insecure">Не удалось установить защищённое соединение с сервером (%1$s). Проверьте адрес провайдера и сертификат сервера.</string>
     <string name="chat_error_empty_response">Модель вернула пустой ответ</string>
     <string name="chat_tool_arguments">Аргументы</string>
     <string name="chat_tool_result">Результат</string>

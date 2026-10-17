@@ -1,5 +1,6 @@
 package dev.huecoder.md3agent.conversation
 
+import android.util.Log
 import dev.huecoder.md3agent.data.attachments.Attachment
 import dev.huecoder.md3agent.data.attachments.AttachmentContent
 import dev.huecoder.md3agent.data.attachments.AttachmentStore
@@ -25,6 +26,7 @@ import dev.huecoder.md3agent.data.settings.ModelSelection
 import dev.huecoder.md3agent.llm.CompletionEvent
 import dev.huecoder.md3agent.llm.ProviderException
 import dev.huecoder.md3agent.llm.ReasoningBlock
+import dev.huecoder.md3agent.llm.STREAM_LOG_TAG
 import dev.huecoder.md3agent.llm.ReasoningTrace
 import dev.huecoder.md3agent.llm.ToolCall
 import dev.huecoder.md3agent.llm.ToolCallAccumulator
@@ -166,7 +168,7 @@ class ConversationRunner(
         var draft = StreamingDraft(message.id, content = "", reasoning = "", toolCalls = emptyList(), runningCallIds = emptySet(), awaitingCallId = null, usage = null)
         publish(chatId, draft)
         try {
-            streamWithReplayFallback(model, turns, toolSpecs, options).collect { event ->
+            streamResilient(model, turns, toolSpecs, options).collect { event ->
                 draft = when (event) {
                     is CompletionEvent.ContentDelta -> draft.copy(content = draft.content + event.text)
                     is CompletionEvent.ReasoningDelta -> draft.copy(reasoning = draft.reasoning + event.text)
@@ -184,7 +186,7 @@ class ConversationRunner(
             withContext(NonCancellable) { persist(message, draft, MessageStatus.CANCELLED, errorText = null, trace = reasoningTrace(model, prompt, draft)) }
             throw e
         } catch (e: Exception) {
-            persist(message, draft, MessageStatus.ERROR, errorText = e.message ?: e.javaClass.simpleName, trace = null)
+            persist(message, draft, MessageStatus.ERROR, errorText = ReplyErrors.encode(e), trace = null)
             return null
         }
     }
@@ -225,6 +227,13 @@ class ConversationRunner(
         val active = current.activeSelection ?: return null
         val provider = current.provider(active.providerId) ?: return null
         return ResolvedModel(provider, active.modelId, active.reasoningEffort)
+    }
+
+    private fun streamResilient(model: ResolvedModel, turns: List<ChatTurn>, toolSpecs: List<ToolSpec>, options: CompletionOptions): Flow<CompletionEvent> =
+        streamWithReplayFallback(model, turns, toolSpecs, options).retryWhileSilent(onRetry = ::logRetry)
+
+    private fun logRetry(attempt: Int, failure: ProviderException.Network, delayMs: Long) {
+        Log.i(STREAM_LOG_TAG, "nothing received yet, retry $attempt in $delayMs ms after ${failure.kind}")
     }
 
     private fun streamWithReplayFallback(model: ResolvedModel, turns: List<ChatTurn>, toolSpecs: List<ToolSpec>, options: CompletionOptions): Flow<CompletionEvent> =

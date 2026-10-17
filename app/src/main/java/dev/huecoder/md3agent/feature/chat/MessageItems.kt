@@ -14,11 +14,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -131,7 +134,7 @@ fun AssistantReply(
                     is ReplyPart.Media -> MediaGallery(part.attachments)
                     is ReplyPart.Chart -> ChartCard(part.spec)
                     is ReplyPart.Diagram -> DiagramCard(part.spec)
-                    is ReplyPart.Error -> ErrorNotice(part.text.asString())
+                    is ReplyPart.Error -> ErrorNotice(part.text.asString(), onRetry = onRegenerate.takeIf { reply.end?.isLatest == true })
                 }
             }
         }
@@ -210,19 +213,25 @@ private fun ActionIcon(icon: ImageVector, description: String, onClick: () -> Un
 }
 
 @Composable
-private fun ErrorNotice(text: String) {
+private fun ErrorNotice(text: String, onRetry: (() -> Unit)?) {
     Surface(
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.errorContainer,
         contentColor = MaterialTheme.colorScheme.onErrorContainer,
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.Top,
-        ) {
-            Icon(MaterialSymbols.Rounded.Error, contentDescription = null, modifier = Modifier.size(20.dp))
-            Text(text, style = MaterialTheme.typography.bodyMedium)
+        Column(Modifier.padding(start = 18.dp, end = 18.dp, top = 14.dp, bottom = if (onRetry == null) 14.dp else 6.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
+                Icon(MaterialSymbols.Rounded.Error, contentDescription = null, modifier = Modifier.size(20.dp))
+                Text(text, style = MaterialTheme.typography.bodyMedium)
+            }
+            if (onRetry != null) {
+                TextButton(
+                    onClick = onRetry,
+                    shapes = ButtonDefaults.shapes(),
+                    colors = ButtonDefaults.textButtonColors(contentColor = LocalContentColor.current),
+                    modifier = Modifier.align(Alignment.End),
+                ) { Text(stringResource(R.string.chat_error_retry)) }
+            }
         }
     }
 }
