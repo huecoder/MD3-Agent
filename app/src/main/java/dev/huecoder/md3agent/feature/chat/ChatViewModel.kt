@@ -20,6 +20,7 @@ import dev.huecoder.md3agent.data.chat.ChatRepository
 import dev.huecoder.md3agent.data.db.ChatEntity
 import dev.huecoder.md3agent.data.db.MessageEntity
 import dev.huecoder.md3agent.data.db.selection
+import dev.huecoder.md3agent.data.files.ViewableFile
 import dev.huecoder.md3agent.data.settings.AgentProfile
 import dev.huecoder.md3agent.data.settings.AgentSettings
 import dev.huecoder.md3agent.data.models.ModelCatalog
@@ -34,6 +35,7 @@ import dev.huecoder.md3agent.voice.ReplySpeaker
 import dev.huecoder.md3agent.voice.SpeechSynthesizer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -46,6 +48,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import java.io.IOException
 
@@ -202,23 +205,32 @@ class ChatViewModel(
         return copy(selection = selection, modelId = selection.modelId, modelFamily = info.family, modelName = info.displayName)
     }
 
-    fun attach(uris: List<Uri>) {
-        uris.forEach { uri ->
-            pending.update { it.copy(importing = it.importing + 1) }
-            viewModelScope.launch {
-                try {
-                    val attachment = attachments.import(uri)
-                    pending.update { it.copy(items = it.items + attachment) }
-                } catch (e: AttachmentTooLargeException) {
-                    _errors.value = UiText.Resource(R.string.chat_attachment_too_large, listOf(e.limitMb))
-                } catch (e: IOException) {
-                    _errors.value = UiText.Resource(R.string.chat_attachment_failed)
-                } catch (e: IllegalArgumentException) {
-                    _errors.value = UiText.Resource(R.string.chat_attachment_image_unreadable)
-                } finally {
-                    pending.update { it.copy(importing = it.importing - 1) }
-                }
-            }
+    fun attach(uris: List<Uri>): Job = attachAll(uris) { attachments.import(it) }
+
+    fun attachFiles(files: List<ViewableFile>): Job =
+        attachAll(files) { attachments.importLocal(it.file, forModel = true, name = it.name, mimeType = it.mimeType) }
+
+    private fun <T> attachAll(sources: List<T>, importer: suspend (T) -> Attachment): Job {
+        sources.forEach { pending.update { it.copy(importing = it.importing + 1) } }
+        return viewModelScope.launch {
+            sources.map { source -> launch { attachOne(source, importer) } }.joinAll()
+        }
+    }
+
+    private suspend fun <T> attachOne(source: T, importer: suspend (T) -> Attachment) {
+        try {
+            val attachment = importer(source)
+            pending.update { it.copy(items = it.items + attachment) }
+        } catch (e: AttachmentTooLargeException) {
+            _errors.value = UiText.Resource(R.string.chat_attachment_too_large, listOf(e.limitMb))
+        } catch (e: IOException) {
+            _errors.value = UiText.Resource(R.string.chat_attachment_failed)
+        } catch (e: SecurityException) {
+            _errors.value = UiText.Resource(R.string.chat_attachment_failed)
+        } catch (e: IllegalArgumentException) {
+            _errors.value = UiText.Resource(R.string.chat_attachment_image_unreadable)
+        } finally {
+            pending.update { it.copy(importing = it.importing - 1) }
         }
     }
 

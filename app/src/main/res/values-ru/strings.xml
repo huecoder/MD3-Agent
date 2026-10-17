@@ -840,8 +840,8 @@
     <string name="assistant_attach_camera">Камера</string>
     <string name="assistant_attach_files">Файлы</string>
     <string name="assistant_attach_app_files">Из приложения</string>
-    <string name="assistant_app_files_title">Картинки из приложения</string>
-    <string name="assistant_app_files_empty">В файлах приложения пока нет картинок</string>
+    <string name="assistant_attach_title">Прикрепить</string>
+    <string name="assistant_attach_app_files_hint">Файлы агента и файлы из чатов</string>
     <string name="assistant_app_files_attach">Прикрепить %1$d</string>
     <string name="settings_assistant_invoke">Вызов ассистента</string>
     <string name="settings_assistant_invoke_summary">Компакт или панель, рамка по краям, меню вложений</string>

@@ -265,7 +265,7 @@ internal fun EntryList(
 }
 
 @Composable
-private fun EntryIcon(entry: LibraryEntry, selected: Boolean) {
+internal fun EntryIcon(entry: LibraryEntry, selected: Boolean) {
     val image = entry.file?.takeIf { it.isImage }
     when {
         selected -> ShapeBadge(MaterialSymbols.Rounded.Check)
@@ -281,7 +281,7 @@ private fun EntryIcon(entry: LibraryEntry, selected: Boolean) {
     }
 }
 
-private fun LibraryEntry.details(locale: Locale): String? = when (kind) {
+internal fun LibraryEntry.details(locale: Locale): String? = when (kind) {
     EntryKind.CHAT_FILES -> null
     EntryKind.FOLDER -> RelativeTime.format(modifiedAt, locale)
     EntryKind.FILE -> "${ByteSize.describe(sizeBytes)} · ${RelativeTime.format(modifiedAt, locale)}"

@@ -70,9 +70,12 @@ class AttachmentStore(private val context: Context) {
         }
     }
 
-    suspend fun importLocal(source: File, forModel: Boolean): Attachment = withContext(Dispatchers.IO) {
-        val name = source.name
-        val mimeType = TextFormats.guessMimeType(name)
+    suspend fun importLocal(
+        source: File,
+        forModel: Boolean,
+        name: String = source.name,
+        mimeType: String = TextFormats.guessMimeType(name),
+    ): Attachment = withContext(Dispatchers.IO) {
         if (forModel && mimeType.startsWith("image/")) {
             storeImageForModel(name) { ImageDecoder.createSource(source) }
         } else {

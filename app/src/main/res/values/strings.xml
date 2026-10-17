@@ -829,8 +829,8 @@
     <string name="assistant_attach_camera">Camera</string>
     <string name="assistant_attach_files">Files</string>
     <string name="assistant_attach_app_files">From the app</string>
-    <string name="assistant_app_files_title">Images from the app</string>
-    <string name="assistant_app_files_empty">There are no images in the app files yet</string>
+    <string name="assistant_attach_title">Attach</string>
+    <string name="assistant_attach_app_files_hint">Agent files and files from chats</string>
     <string name="assistant_app_files_attach">Attach %1$d</string>
     <string name="settings_assistant_invoke">Assistant invocation</string>
     <string name="settings_assistant_invoke_summary">Compact or panel, edge glow, attach menu</string>

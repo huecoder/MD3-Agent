@@ -145,21 +145,24 @@ fun AssistantSheet(
                     }
                     .navigationBarsPadding(),
             ) {
-                Box(Modifier.align(Alignment.CenterHorizontally).collapsing(chrome)) {
-                    Box(
-                        Modifier
-                            .padding(vertical = HANDLE_PADDING)
-                            .size(HANDLE_WIDTH, HANDLE_HEIGHT)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = HANDLE_ALPHA)),
-                    )
-                }
+                Box(Modifier.align(Alignment.CenterHorizontally).collapsing(chrome)) { SheetHandle() }
                 CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
                     content(chrome)
                 }
             }
         }
     }
+}
+
+@Composable
+internal fun SheetHandle(modifier: Modifier = Modifier) {
+    Box(
+        modifier
+            .padding(vertical = HANDLE_PADDING)
+            .size(HANDLE_WIDTH, HANDLE_HEIGHT)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = HANDLE_ALPHA)),
+    )
 }
 
 fun Modifier.collapsing(progress: () -> Float): Modifier = this

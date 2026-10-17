@@ -2,7 +2,6 @@ package dev.huecoder.md3agent.assistant
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,12 +13,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -27,6 +28,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -59,7 +61,9 @@ import dev.huecoder.md3agent.feature.chat.EmptyConversation
 import dev.huecoder.md3agent.feature.chat.MessageList
 import dev.huecoder.md3agent.feature.chat.PromptPanel
 import dev.huecoder.md3agent.feature.chat.SendEntrance
-import dev.huecoder.md3agent.feature.chat.lightbox.LightboxHost
+import dev.huecoder.md3agent.feature.chat.lightbox.InlineLightbox
+import dev.huecoder.md3agent.feature.chat.lightbox.LightboxController
+import dev.huecoder.md3agent.feature.chat.lightbox.LocalLightbox
 import dev.huecoder.md3agent.feature.chat.appendDictated
 import dev.huecoder.md3agent.feature.chat.rememberDictationControls
 import dev.huecoder.md3agent.system.control.InstalledApps
@@ -112,7 +116,8 @@ fun AssistantOverlay(
     val windowInfo = LocalWindowInfo.current
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
-    var attachMenu by remember { mutableStateOf(AttachMenu.CLOSED) }
+    val menu = remember(activation) { AttachMenuState() }
+    val lightbox = remember(activation) { LightboxController() }
     var composerHeight by remember { mutableIntStateOf(with(density) { DEFAULT_COMPOSER_HEIGHT.roundToPx() }) }
 
     val dismiss: () -> Unit = {
@@ -120,16 +125,22 @@ fun AssistantOverlay(
         focusManager.clearFocus()
         scope.launch { sheet.hide() }
     }
-    val closeMenu = { attachMenu = AttachMenu.CLOSED }
+    val currentDismiss by rememberUpdatedState(dismiss)
     val openMenu = {
         keyboard?.hide()
         focusManager.clearFocus()
-        attachMenu = AttachMenu.SOURCES
+        menu.open()
     }
 
-    DisposableEffect(attachMenu) {
+    DisposableEffect(menu, lightbox) {
         onBackHandler {
-            if (attachMenu != AttachMenu.CLOSED) closeMenu() else dismiss()
+            val handled = if (lightbox.isOpen) {
+                lightbox.dismiss()
+                true
+            } else {
+                menu.back()
+            }
+            if (!handled) currentDismiss()
             true
         }
         onDispose { onBackHandler(null) }
@@ -140,8 +151,10 @@ fun AssistantOverlay(
         val canRecord = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
         if (wantsVoice && canRecord) dictation.onStart() else runCatching { focusRequester.requestFocus() }
     }
-    LaunchedEffect(Unit) {
-        container.assistant.attachments.collect(viewModel::attach)
+    LaunchedEffect(viewModel) {
+        container.assistant.picked.collect { picked ->
+            viewModel.attach(picked.uris).invokeOnCompletion { picked.markImported() }
+        }
     }
     LaunchedEffect(error) {
         error?.let {
@@ -157,37 +170,40 @@ fun AssistantOverlay(
     val composerDp = with(density) { composerHeight.toDp() }
     val navigationDp = with(density) { WindowInsets.navigationBars.getBottom(density).toDp() }
     val compactHeight = if (compact) composerDp + navigationDp + if (look.showOrb) ORB_ZONE else BARE_ZONE else null
-    val composerModifier = Modifier.onSizeChanged { composerHeight = it.height }.padding(horizontal = 8.dp, vertical = 4.dp)
+    val composerModifier = Modifier
+        .wrapContentHeight(Alignment.Top, unbounded = true)
+        .onSizeChanged { composerHeight = it.height }
+        .padding(horizontal = 8.dp, vertical = 4.dp)
 
-    Box(Modifier.fillMaxSize()) {
-        AssistantSheet(
-            state = sheet,
-            compactContentHeight = compactHeight,
-            onDismissRequest = dismiss,
-            onDismissed = onDismiss,
-        ) { chrome ->
-            OverlayHeader(
-                agentName = state.agentName,
-                canOpen = state.chatId != null,
-                onOpenInApp = { onOpenInApp(state.chatId) },
-                modifier = Modifier.collapsing(chrome),
-            )
-            Conversation {
-                if (state.messages.isEmpty()) {
-                    when {
-                        !compact -> EmptyConversation(
-                            Modifier.align(Alignment.Center),
-                            avatarSize = EMPTY_AVATAR_SIZE,
-                            style = MaterialTheme.typography.headlineSmallEmphasized,
-                        )
-                        look.showOrb -> AgentAvatar(
-                            isWorking = false,
-                            size = ORB_SIZE,
-                            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = ORB_GAP).graphicsLayer { alpha = 1f - chrome() },
-                        )
-                    }
-                } else {
-                    LightboxHost {
+    CompositionLocalProvider(LocalLightbox provides lightbox) {
+        Box(Modifier.fillMaxSize()) {
+            AssistantSheet(
+                state = sheet,
+                compactContentHeight = compactHeight,
+                onDismissRequest = dismiss,
+                onDismissed = onDismiss,
+            ) { chrome ->
+                OverlayHeader(
+                    agentName = state.agentName,
+                    canOpen = state.chatId != null,
+                    onOpenInApp = { onOpenInApp(state.chatId) },
+                    modifier = Modifier.collapsing(chrome),
+                )
+                Conversation {
+                    if (state.messages.isEmpty()) {
+                        when {
+                            !compact -> EmptyConversation(
+                                Modifier.align(Alignment.Center),
+                                avatarSize = EMPTY_AVATAR_SIZE,
+                                style = MaterialTheme.typography.headlineSmallEmphasized,
+                            )
+                            look.showOrb -> AgentAvatar(
+                                isWorking = false,
+                                size = ORB_SIZE,
+                                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = ORB_GAP).graphicsLayer { alpha = 1f - chrome() },
+                            )
+                        }
+                    } else {
                         MessageList(
                             messages = state.messages,
                             showUsage = state.showTokenUsage,
@@ -203,54 +219,54 @@ fun AssistantOverlay(
                         )
                     }
                 }
+                val asked = prompt
+                if (asked != null) {
+                    PromptPanel(asked, onAnswer = { viewModel.answerPrompt(asked, it) }, modifier = composerModifier)
+                } else {
+                    ChatInput(
+                        text = input,
+                        onTextChange = { input = it },
+                        isStreaming = state.isStreaming,
+                        canSend = state.canSend(input),
+                        onSend = {
+                            sendEntrance.arm()
+                            viewModel.send(input)
+                            input = ""
+                        },
+                        onStop = viewModel::stop,
+                        attachments = state.pendingAttachments,
+                        isImporting = state.isImporting,
+                        onAttach = openMenu,
+                        attachIcon = MaterialSymbols.Rounded.Add,
+                        onRemoveAttachment = viewModel::removeAttachment,
+                        onPasteImages = viewModel::attach,
+                        dictation = dictation,
+                        focusRequester = focusRequester,
+                        modifier = composerModifier,
+                    )
+                }
             }
-            val asked = prompt
-            if (asked != null) {
-                PromptPanel(asked, onAnswer = { viewModel.answerPrompt(asked, it) }, modifier = composerModifier)
-            } else {
-                ChatInput(
-                    text = input,
-                    onTextChange = { input = it },
-                    isStreaming = state.isStreaming,
-                    canSend = state.canSend(input),
-                    onSend = {
-                        sendEntrance.arm()
-                        viewModel.send(input)
-                        input = ""
-                    },
-                    onStop = viewModel::stop,
-                    attachments = state.pendingAttachments,
-                    isImporting = state.isImporting,
-                    onAttach = openMenu,
-                    attachIcon = MaterialSymbols.Rounded.Add,
-                    onRemoveAttachment = viewModel::removeAttachment,
-                    onPasteImages = viewModel::attach,
-                    dictation = dictation,
-                    focusRequester = focusRequester,
-                    modifier = composerModifier,
-                )
-            }
+            AttachMenuLayer(
+                menu = menu,
+                library = container.library,
+                onSource = { source ->
+                    menu.close()
+                    onPickAttachment(source)
+                },
+                onPickFiles = { files ->
+                    menu.close()
+                    viewModel.attachFiles(files)
+                },
+            )
+            InlineLightbox(lightbox, onLeaveApp = dismiss)
+            EdgeGlow(
+                glow = look.glow,
+                grid = look.glowGrid,
+                thickness = look.glowThickness,
+                durationSeconds = look.glowSeconds,
+                play = true,
+            )
         }
-        AttachMenuLayer(
-            menu = attachMenu,
-            onDismiss = closeMenu,
-            onSource = { source ->
-                closeMenu()
-                onPickAttachment(source)
-            },
-            onAppFiles = { attachMenu = AttachMenu.APP_FILES },
-            onPickedFromApp = { uris: List<Uri> ->
-                closeMenu()
-                viewModel.attach(uris)
-            },
-        )
-        EdgeGlow(
-            glow = look.glow,
-            grid = look.glowGrid,
-            thickness = look.glowThickness,
-            durationSeconds = look.glowSeconds,
-            play = true,
-        )
     }
 }
 
