@@ -23,6 +23,11 @@ class LocationTool(private val location: DeviceLocation) : Tool {
 
     override val defaultPermission: ToolPermission = ToolPermission.ASK
 
+    override fun promptNote(settings: ToolSettings): String =
+        "When the user asks where they are, or for places near them, call get_location first. " +
+            "Never guess their position from web search or earlier messages. " +
+            "If it fails, tell the user what it said and what to change."
+
     override suspend fun execute(arguments: JsonObject, settings: ToolSettings): ToolOutcome {
         if (!location.hasPermission()) {
             return ToolOutcome.error("Location permission is not granted. Ask the user to allow it in Settings > Device access.")
