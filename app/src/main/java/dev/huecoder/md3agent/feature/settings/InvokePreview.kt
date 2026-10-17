@@ -52,8 +52,8 @@ internal fun InvokePreview(settings: AssistantSettings, modifier: Modifier = Mod
     val density = LocalDensity.current
     val scaled = Density(density.density * PREVIEW_SCALE, density.fontScale)
     var round by remember { mutableIntStateOf(0) }
-    LaunchedEffect(round, settings.glow, settings.glowGrid) {
-        delay(((GlowEnvelope().durationSeconds + REPLAY_GAP_SECONDS) * MILLIS_PER_SECOND).toLong())
+    LaunchedEffect(round, settings.glow, settings.glowGrid, settings.glowThickness, settings.glowSeconds) {
+        delay(((GlowEnvelope.spanning(settings.glowSeconds).durationSeconds + REPLAY_GAP_SECONDS) * MILLIS_PER_SECOND).toLong())
         round++
     }
     Box(modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
@@ -69,8 +69,8 @@ internal fun InvokePreview(settings: AssistantSettings, modifier: Modifier = Mod
                     AssistantLayout.PANEL -> PanelMock()
                     AssistantLayout.COMPACT -> CompactMock(showOrb = settings.showOrb)
                 }
-                key(round, settings.glow, settings.glowGrid) {
-                    EdgeGlow(settings.glow, settings.glowGrid, play = true, cornerRadius = PHONE_CORNER)
+                key(round, settings.glow, settings.glowGrid, settings.glowThickness, settings.glowSeconds) {
+                    EdgeGlow(settings.glow, settings.glowGrid, settings.glowThickness, settings.glowSeconds, play = true, cornerRadius = PHONE_CORNER)
                 }
             }
         }

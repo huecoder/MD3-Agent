@@ -862,6 +862,10 @@
     <string name="assistant_invoke_glow_hint">Играет несколько секунд в обоих режимах. Нажми на превью, чтобы повторить.</string>
     <string name="assistant_invoke_grid">Сетка</string>
     <string name="assistant_invoke_grid_hint">Растр из точек поверх свечения, как у Gemini.</string>
+    <string name="assistant_invoke_thickness">Толщина</string>
+    <string name="assistant_invoke_duration">Длительность</string>
+    <string name="assistant_invoke_percent">%1$d%%</string>
+    <string name="assistant_invoke_seconds">%1$.1f с</string>
     <string name="assistant_invoke_system_title">Белая рамка по краям</string>
     <string name="assistant_invoke_system_hint">Некоторые прошивки рисуют её для сторонних ассистентов, пока система читает экран. Пропадает, если в системных настройках ассистента выключить «Использовать текст с экрана», но тогда агент не получит текст экрана.</string>
 </resources>

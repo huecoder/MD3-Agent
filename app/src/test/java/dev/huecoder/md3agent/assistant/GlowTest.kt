@@ -5,6 +5,7 @@ import dev.huecoder.md3agent.assistant.glow.GlowEnvelope
 import dev.huecoder.md3agent.assistant.glow.GlowLook
 import dev.huecoder.md3agent.assistant.glow.GlowPalette
 import dev.huecoder.md3agent.data.settings.AssistantGlow
+import dev.huecoder.md3agent.data.settings.AssistantSettings
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -52,10 +53,34 @@ class GlowTest {
 
     @Test
     fun `the grid only adds dots to the look`() {
-        val smooth = GlowLook.of(AssistantGlow.ACCENT, grid = false)
-        val grid = GlowLook.of(AssistantGlow.ACCENT, grid = true)
+        val smooth = GlowLook.of(AssistantGlow.ACCENT, grid = false, thickness = 1f)
+        val grid = GlowLook.of(AssistantGlow.ACCENT, grid = true, thickness = 1f)
         assertEquals(0f, smooth.dots, 0f)
         assertTrue(grid.dots > 0f)
         assertEquals(smooth, grid.copy(dots = 0f))
+    }
+
+    @Test
+    fun `thickness is kept inside the range the settings allow`() {
+        val thin = GlowLook.of(AssistantGlow.ACCENT, grid = false, thickness = 0f)
+        val thick = GlowLook.of(AssistantGlow.ACCENT, grid = false, thickness = 9f)
+        assertEquals(AssistantSettings.MIN_GLOW_THICKNESS, thin.thickness, 0f)
+        assertEquals(AssistantSettings.MAX_GLOW_THICKNESS, thick.thickness, 0f)
+    }
+
+    @Test
+    fun `a spanning envelope lasts the requested time and rises before it falls`() {
+        val spanning = GlowEnvelope.spanning(2.4f)
+        assertEquals(2.4f, spanning.durationSeconds, 0.001f)
+        assertTrue(spanning.fadeInSeconds > 0f)
+        assertTrue(spanning.holdSeconds > 0f)
+        assertEquals(1f, spanning.at(spanning.fadeInSeconds + spanning.holdSeconds / 2), 0.001f)
+        assertEquals(0f, spanning.at(2.4f), 0f)
+    }
+
+    @Test
+    fun `a spanning envelope clamps the duration to the settings range`() {
+        assertEquals(AssistantSettings.MIN_GLOW_SECONDS, GlowEnvelope.spanning(0f).durationSeconds, 0.001f)
+        assertEquals(AssistantSettings.MAX_GLOW_SECONDS, GlowEnvelope.spanning(60f).durationSeconds, 0.001f)
     }
 }

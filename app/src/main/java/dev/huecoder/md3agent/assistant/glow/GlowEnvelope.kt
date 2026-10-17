@@ -1,9 +1,11 @@
 package dev.huecoder.md3agent.assistant.glow
 
+import dev.huecoder.md3agent.data.settings.AssistantSettings
+
 data class GlowEnvelope(
-    val fadeInSeconds: Float = 0.8f,
-    val holdSeconds: Float = 2.6f,
-    val fadeOutSeconds: Float = 1f,
+    val fadeInSeconds: Float,
+    val holdSeconds: Float,
+    val fadeOutSeconds: Float,
 ) {
     val durationSeconds: Float get() = fadeInSeconds + holdSeconds + fadeOutSeconds
 
@@ -16,5 +18,19 @@ data class GlowEnvelope(
     private fun smooth(progress: Float): Float {
         val t = progress.coerceIn(0f, 1f)
         return t * t * (3f - 2f * t)
+    }
+
+    companion object {
+        private const val RISE_SHARE = 0.25f
+        private const val FALL_SHARE = 0.3f
+
+        fun spanning(totalSeconds: Float): GlowEnvelope {
+            val total = totalSeconds.coerceIn(AssistantSettings.MIN_GLOW_SECONDS, AssistantSettings.MAX_GLOW_SECONDS)
+            return GlowEnvelope(
+                fadeInSeconds = total * RISE_SHARE,
+                holdSeconds = total * (1f - RISE_SHARE - FALL_SHARE),
+                fadeOutSeconds = total * FALL_SHARE,
+            )
+        }
     }
 }

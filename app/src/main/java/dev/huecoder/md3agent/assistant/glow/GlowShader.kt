@@ -28,6 +28,7 @@ internal class GlowShader {
         shader.setFloatUniform("uBlobAmt", look.blobAmount)
         shader.setFloatUniform("uSat", look.saturation)
         shader.setFloatUniform("uDots", look.dots)
+        shader.setFloatUniform("uThick", look.thickness)
     }
 
     fun advance(seconds: Float, envelope: Float) {
@@ -54,6 +55,7 @@ internal class GlowShader {
             uniform float uBlobAmt;
             uniform float uSat;
             uniform float uDots;
+            uniform float uThick;
 
             const float TAU = 6.2831853;
             const float CORE_WIDTH = 1.8;
@@ -128,9 +130,9 @@ internal class GlowShader {
               float3 midColor = tune(palette(around - flow + uSpread));
               float3 coreColor = tune(palette(around - flow * 1.25 + uSpread * 2.0));
 
-              float core = exp(-inward / CORE_WIDTH);
-              float mid = exp(-inward / (MID_WIDTH * widen));
-              float halo = exp(-inward / (HALO_WIDTH * widen));
+              float core = exp(-inward / (CORE_WIDTH * uThick));
+              float mid = exp(-inward / (MID_WIDTH * uThick * widen));
+              float halo = exp(-inward / (HALO_WIDTH * uThick * widen));
 
               float blob = pow(0.5 + 0.5 * cos((around * uBlobs - uTime * uFlow * 2.0) * TAU), BLOB_SHARPNESS);
               float shimmer = mix(1.0, 0.2 + 0.8 * blob, uBlobAmt);
@@ -143,7 +145,7 @@ internal class GlowShader {
               float3 rgb = light * (peak / max(raw, 0.0001));
               float alpha = peak * (1.0 - ADDITIVE_SHARE);
 
-              float veil = DIM * uEnv * mix(0.4, 1.0, v) * (0.3 + 0.7 * exp(-inward / (HALO_WIDTH * 1.6)));
+              float veil = DIM * uEnv * mix(0.4, 1.0, v) * (0.3 + 0.7 * exp(-inward / (HALO_WIDTH * uThick * 1.6)));
               alpha = alpha + veil * (1.0 - alpha);
 
               float3 hue = rgb / max(peak, 0.0001);

@@ -16,8 +16,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Auto_awesome
 import com.composables.icons.materialsymbols.rounded.Face
+import com.composables.icons.materialsymbols.rounded.Line_weight
 import com.composables.icons.materialsymbols.rounded.Palette
 import com.composables.icons.materialsymbols.rounded.Shield_question
+import com.composables.icons.materialsymbols.rounded.Timer
 import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.assistant.AssistantRole
 import dev.huecoder.md3agent.data.settings.AssistantGlow
@@ -26,6 +28,7 @@ import dev.huecoder.md3agent.data.settings.AssistantSettings
 import dev.huecoder.md3agent.ui.components.SectionHeader
 import dev.huecoder.md3agent.ui.components.SettingsScaffold
 import dev.huecoder.md3agent.ui.components.appViewModel
+import kotlin.math.roundToInt
 
 @Composable
 fun AssistantInvokeSettingsScreen(onBack: () -> Unit) {
@@ -88,6 +91,28 @@ fun AssistantInvokeSettingsScreen(onBack: () -> Unit) {
                             shape = shape,
                         )
                     }
+                    card("thickness") { shape ->
+                        SliderCard(
+                            icon = MaterialSymbols.Rounded.Line_weight,
+                            title = stringResource(R.string.assistant_invoke_thickness),
+                            value = current.glowThickness,
+                            range = AssistantSettings.MIN_GLOW_THICKNESS..AssistantSettings.MAX_GLOW_THICKNESS,
+                            valueLabel = { stringResource(R.string.assistant_invoke_percent, (it * PERCENT).roundToInt()) },
+                            onCommit = { value -> update { it.copy(glowThickness = value) } },
+                            shape = shape,
+                        )
+                    }
+                    card("duration") { shape ->
+                        SliderCard(
+                            icon = MaterialSymbols.Rounded.Timer,
+                            title = stringResource(R.string.assistant_invoke_duration),
+                            value = current.glowSeconds,
+                            range = AssistantSettings.MIN_GLOW_SECONDS..AssistantSettings.MAX_GLOW_SECONDS,
+                            valueLabel = { stringResource(R.string.assistant_invoke_seconds, it) },
+                            onCommit = { value -> update { it.copy(glowSeconds = value.roundedToTenth()) } },
+                            shape = shape,
+                        )
+                    }
                 }
             }
 
@@ -111,6 +136,11 @@ fun AssistantInvokeSettingsScreen(onBack: () -> Unit) {
         }
     }
 }
+
+private fun Float.roundedToTenth(): Float = (this * TENTHS_PER_UNIT).roundToInt() / TENTHS_PER_UNIT
+
+private const val PERCENT = 100
+private const val TENTHS_PER_UNIT = 10f
 
 private val LAYOUT_CHOICES = listOf(
     Choice(AssistantLayout.PANEL, R.string.assistant_invoke_layout_panel),

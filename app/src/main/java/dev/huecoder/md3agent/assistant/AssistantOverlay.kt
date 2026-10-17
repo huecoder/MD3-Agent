@@ -244,7 +244,13 @@ fun AssistantOverlay(
                 viewModel.attach(uris)
             },
         )
-        EdgeGlow(glow = look.glow, grid = look.glowGrid, play = true)
+        EdgeGlow(
+            glow = look.glow,
+            grid = look.glowGrid,
+            thickness = look.glowThickness,
+            durationSeconds = look.glowSeconds,
+            play = true,
+        )
     }
 }
 

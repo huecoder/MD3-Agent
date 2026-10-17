@@ -851,6 +851,10 @@
     <string name="assistant_invoke_glow_hint">Plays a few seconds in both layouts. Tap the preview to replay it.</string>
     <string name="assistant_invoke_grid">Dot grid</string>
     <string name="assistant_invoke_grid_hint">Halftone dots over the glow, like in Gemini.</string>
+    <string name="assistant_invoke_thickness">Thickness</string>
+    <string name="assistant_invoke_duration">Duration</string>
+    <string name="assistant_invoke_percent">%1$d%%</string>
+    <string name="assistant_invoke_seconds">%1$.1f s</string>
     <string name="assistant_invoke_system_title">White frame on the edges</string>
     <string name="assistant_invoke_system_hint">Some firmwares draw it for third-party assistants while the system reads the screen. It goes away if Use text from screen is off in the system assistant settings, but then the agent does not get the screen text.</string>
 </resources>

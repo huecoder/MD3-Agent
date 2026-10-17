@@ -32,16 +32,24 @@ import androidx.compose.ui.util.lerp
 import dev.huecoder.md3agent.data.settings.AssistantGlow
 
 @Composable
-fun EdgeGlow(glow: AssistantGlow, grid: Boolean, play: Boolean, modifier: Modifier = Modifier, cornerRadius: Dp? = null) {
+fun EdgeGlow(
+    glow: AssistantGlow,
+    grid: Boolean,
+    thickness: Float,
+    durationSeconds: Float,
+    play: Boolean,
+    modifier: Modifier = Modifier,
+    cornerRadius: Dp? = null,
+) {
     if (glow == AssistantGlow.OFF || !play) return
-    val envelope = remember { GlowEnvelope() }
+    val envelope = remember(durationSeconds) { GlowEnvelope.spanning(durationSeconds) }
     val accent = MaterialTheme.colorScheme.primary
     val stops = remember(glow, accent) { GlowPalette.stops(glow, accent) }
-    val look = remember(glow, grid) { GlowLook.of(glow, grid) }
+    val look = remember(glow, grid, thickness) { GlowLook.of(glow, grid, thickness) }
     val displayCorner = cornerRadius ?: rememberDisplayCornerRadius()
     var seconds by remember { mutableFloatStateOf(0f) }
     var finished by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
+    LaunchedEffect(envelope) {
         val start = withFrameNanos { it }
         while (seconds < envelope.durationSeconds) {
             seconds = (withFrameNanos { it } - start) / NANOS_PER_SECOND
@@ -63,7 +71,7 @@ fun EdgeGlow(glow: AssistantGlow, grid: Boolean, play: Boolean, modifier: Modifi
                     shader.advance(seconds, level)
                     drawRect(shader.brush)
                 } else {
-                    drawLegacyGlow(stops, level, displayCorner.toPx())
+                    drawLegacyGlow(stops, level, look.thickness, displayCorner.toPx())
                 }
             }
         },
@@ -84,11 +92,11 @@ private fun rememberDisplayCornerRadius(): Dp {
 private fun displayCornerPixels(view: View): Int =
     view.rootWindowInsets?.getRoundedCorner(RoundedCorner.POSITION_BOTTOM_LEFT)?.radius ?: 0
 
-private fun DrawScope.drawLegacyGlow(stops: List<Color>, level: Float, cornerRadius: Float) {
+private fun DrawScope.drawLegacyGlow(stops: List<Color>, level: Float, thickness: Float, cornerRadius: Float) {
     val ring = Brush.sweepGradient(stops + stops.first(), center)
     for (layer in 0 until LEGACY_LAYERS) {
         val fraction = layer / (LEGACY_LAYERS - 1f)
-        val width = lerp(LEGACY_OUTER_WIDTH, LEGACY_INNER_WIDTH, fraction).dp.toPx()
+        val width = (lerp(LEGACY_OUTER_WIDTH, LEGACY_INNER_WIDTH, fraction) * thickness).dp.toPx()
         drawRoundRect(
             brush = ring,
             topLeft = Offset(width / 2, width / 2),
