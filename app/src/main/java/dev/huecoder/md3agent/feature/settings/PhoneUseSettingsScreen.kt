@@ -104,6 +104,12 @@ fun PhoneUseSettingsScreen(onBack: () -> Unit) {
                     checked = current.overlay,
                     onCheckedChange = { value -> update { it.copy(overlay = value) } },
                 )
+                LabeledSwitch(
+                    title = stringResource(R.string.phone_use_scan),
+                    summary = stringResource(R.string.phone_use_scan_summary),
+                    checked = current.scanOnStart,
+                    onCheckedChange = { value -> update { it.copy(scanOnStart = value) } },
+                )
             }
 
             SectionHeader(stringResource(R.string.phone_use_section_screen), topPadding = 12.dp)

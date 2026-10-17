@@ -163,6 +163,7 @@ enum class CursorShape { BIBATA_MODERN, BIBATA_ORIGINAL, ROUNDED }
 @Serializable
 data class PhoneUseSettings(
     val overlay: Boolean = true,
+    val scanOnStart: Boolean = true,
     val touchGuard: TouchGuard = TouchGuard.BLOCK,
     val keepAwake: Boolean = true,
     val dimScreen: Boolean = false,

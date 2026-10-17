@@ -90,7 +90,7 @@ fun EdgeGlow(
 }
 
 @Composable
-private fun rememberDisplayCornerRadius(): Dp {
+internal fun rememberDisplayCornerRadius(): Dp {
     val view = LocalView.current
     val density = LocalDensity.current
     return remember(view, density) {

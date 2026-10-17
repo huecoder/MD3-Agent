@@ -345,6 +345,7 @@ class PhoneUseOverlay(private val service: AccessibilityService, private val con
             Box(Modifier.fillMaxSize()) {
                 if (current.dimScreen) Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = DIM_SCRIM_ALPHA)))
                 CursorLayer(cursor, current, acknowledgements)
+                if (current.scanOnStart) ScanSweep()
             }
         }
 
