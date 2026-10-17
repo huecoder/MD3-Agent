@@ -5,4 +5,5 @@
     <color name="notification_accent">#FF5E8BFF</color>
     <color name="notification_accent_ask">#FFF29900</color>
     <color name="notification_accent_done">#FF1E9E52</color>
+    <color name="notification_accent_failed">#FFD93025</color>
 </resources>

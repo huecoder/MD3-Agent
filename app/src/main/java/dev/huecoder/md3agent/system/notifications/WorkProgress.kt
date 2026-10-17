@@ -72,6 +72,10 @@ class ChatProgress(private val startedAt: Long) {
 class WorkProgress(private val now: () -> Long) {
     private val chats = LinkedHashMap<String, ChatProgress>()
 
+    fun finished(): Set<String> = chats.keys.toSet()
+
+    fun clear() = chats.clear()
+
     fun sync(drafts: Map<String, StreamingDraft>, active: Set<String>): Map<String, ProgressView> {
         chats.keys.retainAll(active)
         active.forEach { chatId ->

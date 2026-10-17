@@ -464,6 +464,14 @@
     <string name="notification_live_writing">Пишет ответ…</string>
     <string name="notification_live_thought">Думает: %1$s</string>
     <string name="notification_live_public">Ассистент работает</string>
+    <string name="notification_channel_results">Результаты задач</string>
+    <string name="notification_done_title">Задача выполнена</string>
+    <string name="notification_failed_title">Ответ прервался</string>
+    <string name="notification_question_other">Другое…</string>
+    <string name="notification_question_reply">Ваш ответ</string>
+    <string name="notifications_section_results">Когда работа закончена</string>
+    <string name="notifications_done">Задача выполнена</string>
+    <string name="notifications_done_summary">Уведомление с названием чата и началом ответа, когда он закончился при закрытом приложении. О прерванном ответе тоже сообщим.</string>
     <plurals name="notification_work_title">
         <item quantity="one">Работаю над %1$d чатом</item>
         <item quantity="few">Работаю над %1$d чатами</item>

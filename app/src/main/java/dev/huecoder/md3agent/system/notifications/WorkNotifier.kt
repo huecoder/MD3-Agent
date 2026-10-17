@@ -1,8 +1,8 @@
 package dev.huecoder.md3agent.system.notifications
 
+import android.app.KeyguardManager
 import android.app.Notification
 import android.app.NotificationManager
-import android.app.KeyguardManager
 import android.content.Context
 import android.os.Build
 import android.os.SystemClock
@@ -11,6 +11,10 @@ import androidx.core.app.NotificationCompat
 import dev.huecoder.md3agent.AppContainer
 import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.conversation.ChatActivity
+import dev.huecoder.md3agent.conversation.PendingPrompt
+import dev.huecoder.md3agent.conversation.UserQuestion
+import dev.huecoder.md3agent.data.db.MessageRole
+import dev.huecoder.md3agent.data.db.MessageStatus
 import dev.huecoder.md3agent.data.settings.ApprovalSurface
 import dev.huecoder.md3agent.data.settings.NotificationSettings
 import dev.huecoder.md3agent.feature.chat.ToolStatus
@@ -19,6 +23,7 @@ import dev.huecoder.md3agent.feature.chat.toUi
 import dev.huecoder.md3agent.llm.ToolCall
 import dev.huecoder.md3agent.ui.text.resolve
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -36,6 +41,7 @@ class WorkNotifier(
     private val progress = WorkProgress(SystemClock::elapsedRealtime)
     private val mutex = Mutex()
     private val titles = mutableMapOf<String, String>()
+    private var scope: CoroutineScope? = null
     private var activity = emptyMap<String, ChatActivity>()
     private var appVisible = false
     private var settings = NotificationSettings()
@@ -43,10 +49,12 @@ class WorkNotifier(
     private var workSignature: String? = null
     private var promotedReported: Boolean? = null
     private var ticks = 0
+    private var finishing: Job? = null
 
     fun initial(): Notification = factory.simpleWork(count = 1)
 
     fun run(scope: CoroutineScope) {
+        this.scope = scope
         scope.launch {
             container.settings.settings.map { it.notifications }.distinctUntilChanged().collect {
                 settings = it
@@ -74,10 +82,65 @@ class WorkNotifier(
     }
 
     private suspend fun render() = mutex.withLock {
-        if (activity.isEmpty()) return@withLock onIdle()
+        if (activity.isEmpty()) return@withLock finishWork()
+        finishing?.cancel()
+        finishing = null
         val views = progress.sync(container.conversations.drafts.value, activity.keys)
         postInput()
         postWork(views)
+    }
+
+    private suspend fun finishWork() {
+        if (finishing != null) return
+        val ended = progress.finished()
+        progress.clear()
+        val manager = manager()
+        inputPosted.keys.forEach { manager?.cancel(it, NotificationIds.APPROVAL) }
+        inputPosted = emptyMap()
+        val outcomes = if (appVisible || !settings.taskDone) emptyMap() else ended.associateWith { outcomeOf(it) }
+        outcomes.filterValues { it is Outcome.Failed }.forEach { (chatId, outcome) -> postResult(manager, chatId, outcome) }
+        val done = outcomes.filterValues { it is Outcome.Done }
+        val holdLive = done.isNotEmpty() && settings.liveStatus && manager != null && liveAvailable(manager)
+        if (!holdLive) {
+            done.forEach { (chatId, outcome) -> postResult(manager, chatId, outcome) }
+            return onIdle()
+        }
+        manager?.notify(NotificationIds.WORK, factory.live(finalContent(done.keys.first()), settings.lockScreen))
+        finishing = scope?.launch {
+            delay(DONE_HOLD_MS)
+            done.forEach { (chatId, outcome) -> postResult(manager, chatId, outcome) }
+            onIdle()
+        }
+    }
+
+    private suspend fun postResult(manager: NotificationManager?, chatId: String, outcome: Outcome) {
+        val succeeded = outcome is Outcome.Done
+        val preview = (outcome as? Outcome.Done)?.preview.orEmpty()
+        manager?.notify(chatId, NotificationIds.RESULT, factory.result(chatId, titleOf(chatId), preview, succeeded, settings.lockScreen))
+    }
+
+    private suspend fun finalContent(chatId: String): LiveContent {
+        val chatTitle = titleOf(chatId).ifEmpty { context.getString(R.string.notification_work_text) }
+        val preview = (outcomeOf(chatId) as? Outcome.Done)?.preview.orEmpty()
+        return LiveContent(
+            chatId = chatId,
+            title = context.getString(R.string.notification_done_title),
+            text = chatTitle,
+            details = preview.ifEmpty { chatTitle },
+            chip = context.getString(R.string.chip_done),
+            publicTitle = context.getString(R.string.notification_done_title),
+            accent = context.getColor(R.color.notification_accent_done),
+            finished = true,
+        )
+    }
+
+    private suspend fun outcomeOf(chatId: String): Outcome {
+        val reply = container.chats.history(chatId).lastOrNull { it.role == MessageRole.ASSISTANT } ?: return Outcome.Stopped
+        return when (reply.status) {
+            MessageStatus.COMPLETE -> Outcome.Done(reply.content.replace(WHITESPACE, " ").trim().take(PREVIEW_CHARS))
+            MessageStatus.ERROR -> Outcome.Failed
+            MessageStatus.CANCELLED, MessageStatus.STREAMING -> Outcome.Stopped
+        }
     }
 
     private suspend fun postWork(views: Map<String, ProgressView>) {
@@ -97,8 +160,9 @@ class WorkNotifier(
         val chatId = asking.firstOrNull() ?: views.keys.first()
         val view = views.getValue(chatId)
         val approval = drafts[chatId]?.awaitingCallId != null
+        val asked = chatId in asking
         val title = when {
-            chatId in asking -> context.getString(if (approval) R.string.chat_tool_status_awaiting else R.string.notification_live_waiting_answer)
+            asked -> context.getString(if (approval) R.string.chat_tool_status_awaiting else R.string.notification_live_waiting_answer)
             view.currentCall != null -> view.currentCall.toUi(ToolStatus.RUNNING).title().resolve(context)
             view.isWriting -> context.getString(R.string.notification_live_writing)
             else -> context.getString(R.string.chat_thinking)
@@ -107,7 +171,6 @@ class WorkNotifier(
         val others = activity.size - 1
         val lines = view.earlierCalls.map { "• ${it.toUi(ToolStatus.DONE).title().resolve(context)}" } +
             listOfNotNull(view.thought?.let { context.getString(R.string.notification_live_thought, it) })
-        val asked = chatId in asking
         val content = LiveContent(
             chatId = chatId,
             title = title,
@@ -131,10 +194,16 @@ class WorkNotifier(
 
     private fun inputNeeded(): Map<String, InputNeed> {
         val drafts = container.conversations.drafts.value
+        val prompts = container.prompts.pending.value
         return activity.filterValues { it == ChatActivity.NEEDS_INPUT }.mapValues { (chatId, _) ->
             val draft = drafts[chatId]
             val call = draft?.toolCalls?.firstOrNull { it.id == draft.awaitingCallId }
-            if (call != null) InputNeed.Approval(call) else InputNeed.Question
+            val prompt = prompts[chatId]
+            when {
+                call != null -> InputNeed.Approval(call)
+                prompt != null && prompt.prompt is UserQuestion -> InputNeed.Question(prompt, prompt.prompt)
+                else -> InputNeed.Form
+            }
         }
     }
 
@@ -142,7 +211,8 @@ class WorkNotifier(
         val title = titleOf(chatId)
         val notification = when (need) {
             is InputNeed.Approval -> factory.approval(ApprovalNotice(chatId, title, need.call), withButtons = !overlayWillAsk(), settings.lockScreen)
-            InputNeed.Question -> factory.waiting(chatId, title, settings.lockScreen)
+            is InputNeed.Question -> factory.question(QuestionNotice(chatId, title, need.pending.id, need.question), settings.lockScreen)
+            InputNeed.Form -> factory.waiting(chatId, title, settings.lockScreen)
         }
         manager.notify(chatId, NotificationIds.APPROVAL, notification)
     }
@@ -177,13 +247,28 @@ class WorkNotifier(
             override val key: String get() = call.id
         }
 
-        data object Question : InputNeed {
-            override val key: String = "question"
+        data class Question(val pending: PendingPrompt, val question: UserQuestion) : InputNeed {
+            override val key: String get() = pending.id
         }
+
+        data object Form : InputNeed {
+            override val key: String = "form"
+        }
+    }
+
+    private sealed interface Outcome {
+        data class Done(val preview: String) : Outcome
+
+        data object Failed : Outcome
+
+        data object Stopped : Outcome
     }
 
     private companion object {
         const val TICK_MS = 1_000L
+        const val DONE_HOLD_MS = 4_000L
         const val PROMOTION_CHECK_EVERY = 5
+        const val PREVIEW_CHARS = 240
+        val WHITESPACE = Regex("""\s+""")
     }
 }

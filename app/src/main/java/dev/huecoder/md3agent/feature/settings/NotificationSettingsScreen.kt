@@ -30,6 +30,7 @@ import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Lock
 import com.composables.icons.materialsymbols.rounded.Notification_settings
 import com.composables.icons.materialsymbols.rounded.Shield_question
+import com.composables.icons.materialsymbols.rounded.Task_alt
 import com.composables.icons.materialsymbols.rounded.Timer
 import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.data.settings.ApprovalSurface
@@ -78,6 +79,20 @@ fun NotificationSettingsScreen(onBack: () -> Unit) {
                         choices = APPROVAL_CHOICES,
                         selected = current.approvals,
                         onSelect = { surface -> update { it.copy(approvals = surface) } },
+                        shape = shape,
+                    )
+                }
+            }
+
+            SectionHeader(stringResource(R.string.notifications_section_results))
+            CardGroup {
+                card { shape ->
+                    SwitchCard(
+                        icon = MaterialSymbols.Rounded.Task_alt,
+                        title = stringResource(R.string.notifications_done),
+                        summary = stringResource(R.string.notifications_done_summary),
+                        checked = current.taskDone,
+                        onCheckedChange = { value -> update { it.copy(taskDone = value) } },
                         shape = shape,
                     )
                 }

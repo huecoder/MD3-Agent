@@ -468,6 +468,14 @@
     <string name="notification_live_writing">Writing the reply…</string>
     <string name="notification_live_thought">Thinking: %1$s</string>
     <string name="notification_live_public">The assistant is working</string>
+    <string name="notification_channel_results">Task results</string>
+    <string name="notification_done_title">Task done</string>
+    <string name="notification_failed_title">The reply was interrupted</string>
+    <string name="notification_question_other">Other…</string>
+    <string name="notification_question_reply">Your answer</string>
+    <string name="notifications_section_results">When the work ends</string>
+    <string name="notifications_done">Task done</string>
+    <string name="notifications_done_summary">A notification with the chat name and the start of the reply when it finishes while the app is closed. An interrupted reply is reported too.</string>
     <plurals name="notification_work_title">
         <item quantity="one">Working on %1$d chat</item>
         <item quantity="other">Working on %1$d chats</item>

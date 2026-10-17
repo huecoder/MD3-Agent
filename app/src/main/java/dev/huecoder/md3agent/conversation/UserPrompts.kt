@@ -65,7 +65,5 @@ class UserPrompts {
         }
     }
 
-    fun answer(promptId: String, answer: PromptAnswer) {
-        answers[promptId]?.complete(answer)
-    }
+    fun answer(promptId: String, answer: PromptAnswer): Boolean = answers[promptId]?.complete(answer) ?: false
 }

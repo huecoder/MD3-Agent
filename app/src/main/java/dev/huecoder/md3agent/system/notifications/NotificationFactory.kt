@@ -5,9 +5,11 @@ import android.content.Context
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.core.app.RemoteInput
 import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.conversation.ApprovalDecision
 import dev.huecoder.md3agent.conversation.ApprovalRisk
+import dev.huecoder.md3agent.conversation.UserQuestion
 import dev.huecoder.md3agent.data.settings.LockScreenDetail
 import dev.huecoder.md3agent.feature.chat.ToolStatus
 import dev.huecoder.md3agent.feature.chat.toUi
@@ -18,6 +20,8 @@ import dev.huecoder.md3agent.ui.text.resolve
 
 data class ApprovalNotice(val chatId: String, val chatTitle: String, val call: ToolCall)
 
+data class QuestionNotice(val chatId: String, val chatTitle: String, val promptId: String, val question: UserQuestion)
+
 data class LiveContent(
     val chatId: String?,
     val title: String,
@@ -26,6 +30,7 @@ data class LiveContent(
     val chip: String,
     val publicTitle: String,
     val accent: Int,
+    val finished: Boolean = false,
 )
 
 enum class PromotionRule { OPT_IN, COLORIZED, NONE }
@@ -74,6 +79,39 @@ class NotificationFactory(private val context: Context) {
         return builder.build()
     }
 
+    fun question(notice: QuestionNotice, lockScreen: LockScreenDetail): Notification {
+        val question = notice.question
+        val optionLines = question.options.mapIndexed { index, option -> "${index + 1}. ${option.label}${option.description?.let { " — $it" }.orEmpty()}" }
+        val buttons = if (question.multiSelect) emptyList() else question.options.take(directButtons(question))
+        val builder = NotificationCompat.Builder(context, AppChannel.APPROVALS.id)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle(question.question)
+            .setContentText(question.options.joinToString(" · ") { it.label })
+            .setStyle(NotificationCompat.BigTextStyle().bigText((listOf(question.question) + optionLines).joinToString("\n")).setSummaryText(notice.chatTitle))
+            .setContentIntent(AppNotifications.openChatIntent(context, notice.chatId, notice.chatId.hashCode()))
+            .setAutoCancel(true)
+            .setCategory(NotificationCompat.CATEGORY_REMINDER)
+            .withLockScreen(lockScreen, context.getString(R.string.notification_approval_title))
+        buttons.forEachIndexed { slot, option -> builder.addAction(answerAction(notice, option.label, slot)) }
+        if (question.allowCustom || question.options.size > buttons.size) builder.addAction(typedAction(notice))
+        return builder.build()
+    }
+
+    fun result(chatId: String, chatTitle: String, preview: String, succeeded: Boolean, lockScreen: LockScreenDetail): Notification {
+        val title = context.getString(if (succeeded) R.string.notification_done_title else R.string.notification_failed_title)
+        return NotificationCompat.Builder(context, AppChannel.RESULTS.id)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setColor(context.getColor(if (succeeded) R.color.notification_accent_done else R.color.notification_accent_failed))
+            .setContentTitle(title)
+            .setContentText(chatTitle)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(preview.ifEmpty { chatTitle }).setSummaryText(chatTitle))
+            .setContentIntent(AppNotifications.openChatIntent(context, chatId, chatId.hashCode()))
+            .setAutoCancel(true)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .withLockScreen(lockScreen, title)
+            .build()
+    }
+
     fun waiting(chatId: String, chatTitle: String, lockScreen: LockScreenDetail): Notification =
         NotificationCompat.Builder(context, AppChannel.APPROVALS.id)
             .setSmallIcon(R.drawable.ic_notification)
@@ -92,10 +130,13 @@ class NotificationFactory(private val context: Context) {
             .setContentTitle(content.title)
             .setContentText(content.text)
             .setStyle(NotificationCompat.BigTextStyle().bigText(content.details))
-            .setProgress(0, 0, true)
             .setShortCriticalText(content.chip)
             .setContentIntent(AppNotifications.openChatIntent(context, content.chatId, NotificationIds.OPEN_APP_REQUEST))
-            .addAction(0, context.getString(R.string.notification_work_stop), AppNotifications.stopAllIntent(context))
+            .apply {
+                if (content.finished) return@apply
+                setProgress(0, 0, true)
+                addAction(0, context.getString(R.string.notification_work_stop), AppNotifications.stopAllIntent(context))
+            }
             .setCategory(NotificationCompat.CATEGORY_PROGRESS)
             .setOngoing(true)
             .setSilent(true)
@@ -117,6 +158,20 @@ class NotificationFactory(private val context: Context) {
             .apply { chip?.let { setShortCriticalText(it) } }
             .build()
 
+    private fun directButtons(question: UserQuestion): Int =
+        if (question.allowCustom || question.options.size > MAX_ACTIONS) MAX_ACTIONS - 1 else MAX_ACTIONS
+
+    private fun answerAction(notice: QuestionNotice, option: String, slot: Int): NotificationCompat.Action =
+        NotificationCompat.Action.Builder(0, option, AppNotifications.answerIntent(context, notice.chatId, notice.promptId, option, slot)).build()
+
+    private fun typedAction(notice: QuestionNotice): NotificationCompat.Action {
+        val input = RemoteInput.Builder(AppNotifications.REPLY_KEY).setLabel(context.getString(R.string.notification_question_reply)).build()
+        return NotificationCompat.Action.Builder(0, context.getString(R.string.notification_question_other), AppNotifications.answerIntent(context, notice.chatId, notice.promptId, option = null, slot = MAX_ACTIONS))
+            .addRemoteInput(input)
+            .setAllowGeneratedReplies(false)
+            .build()
+    }
+
     private fun approvalAction(notice: ApprovalNotice, decision: ApprovalDecision, label: Int, authenticate: Boolean): NotificationCompat.Action =
         NotificationCompat.Action.Builder(0, context.getString(label), AppNotifications.approvalIntent(context, notice.chatId, notice.call.id, decision))
             .setAuthenticationRequired(authenticate)
@@ -130,5 +185,6 @@ class NotificationFactory(private val context: Context) {
 
     private companion object {
         const val DETAILS_MAX_CHARS = 400
+        const val MAX_ACTIONS = 3
     }
 }

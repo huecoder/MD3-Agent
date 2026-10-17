@@ -8,6 +8,7 @@ data class NotificationSettings(
     val liveStatus: Boolean = true,
     val chip: ChipContent = ChipContent.TIME_AND_TOKENS,
     val lockScreen: LockScreenDetail = LockScreenDetail.STATUS_ONLY,
+    val taskDone: Boolean = true,
 )
 
 @Serializable
