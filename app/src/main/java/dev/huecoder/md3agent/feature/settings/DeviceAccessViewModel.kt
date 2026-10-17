@@ -14,6 +14,7 @@ import dev.huecoder.md3agent.data.settings.SettingsRepository
 import dev.huecoder.md3agent.data.settings.ShellMode
 import dev.huecoder.md3agent.system.control.PhoneControl
 import dev.huecoder.md3agent.system.files.DeviceFiles
+import dev.huecoder.md3agent.system.health.DeviceHealth
 import dev.huecoder.md3agent.system.shell.AccessStatus
 import dev.huecoder.md3agent.system.shell.ShellAccess
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,7 +26,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-enum class DevicePermission { ASSISTANT, MICROPHONE, NOTIFICATIONS, ALL_FILES, PHONE_CONTROL, TERMUX, SHIZUKU, ROOT }
+enum class DevicePermission { ASSISTANT, MICROPHONE, NOTIFICATIONS, BACKGROUND_WORK, ALL_FILES, PHONE_CONTROL, TERMUX, SHIZUKU, ROOT }
 
 class DeviceAccessViewModel(
     private val context: Context,
@@ -33,6 +34,7 @@ class DeviceAccessViewModel(
     private val access: ShellAccess,
     private val files: DeviceFiles,
     private val phoneControl: PhoneControl,
+    private val health: DeviceHealth,
 ) : ViewModel() {
     private val _permissions = MutableStateFlow<Map<DevicePermission, AccessStatus>>(emptyMap())
     private val _checkingRoot = MutableStateFlow(false)
@@ -52,6 +54,7 @@ class DeviceAccessViewModel(
             DevicePermission.ASSISTANT to readyIf(AssistantRole.isHeld(context)),
             DevicePermission.MICROPHONE to readyIf(isGranted(Manifest.permission.RECORD_AUDIO)),
             DevicePermission.NOTIFICATIONS to readyIf(AppNotifications.canPost(context)),
+            DevicePermission.BACKGROUND_WORK to readyIf(health.isUnrestricted()),
             DevicePermission.ALL_FILES to allFilesStatus(),
             DevicePermission.PHONE_CONTROL to phoneControlStatus(),
         )

@@ -669,7 +669,9 @@
     <string name="phone_use_test_click">Проверить клик</string>
     <string name="chat_tool_phone_action">Телефон: %1$s</string>
     <string name="permission_phone_control_restricted">Переключатель серый? Откройте «О приложении», нажмите три точки и выберите «Разрешить ограниченные настройки», потом вернитесь.</string>
-    <string name="home_archive">Архив</string>
+    <string name="permission_background_work">Работа в фоне</string>
+    <string name="permission_background_work_summary">Батарея без ограничений, чтобы Android не рвал соединение, пока ответ или управление телефоном идут в фоне</string>
+    <string name="permission_background_work_hint">На Samsung, Xiaomi и некоторых других телефонах ещё отключите «Усыплять неиспользуемые приложения» и ограничения автозапуска для приложения в системных настройках.</string>    <string name="home_archive">Архив</string>
     <string name="home_trash">Корзина</string>
     <string name="home_action_trash">В корзину</string>
     <string name="home_action_archive">В архив</string>

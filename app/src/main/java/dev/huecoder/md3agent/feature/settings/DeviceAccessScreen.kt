@@ -53,6 +53,7 @@ import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Touch_app
 import com.composables.icons.materialsymbols.rounded.Adb
 import com.composables.icons.materialsymbols.rounded.Assistant
+import com.composables.icons.materialsymbols.rounded.Battery_android_full
 import com.composables.icons.materialsymbols.rounded.Content_copy
 import com.composables.icons.materialsymbols.rounded.Folder
 import com.composables.icons.materialsymbols.rounded.Mic
@@ -79,7 +80,7 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun DeviceAccessScreen(onBack: () -> Unit) {
-    val viewModel = appViewModel { DeviceAccessViewModel(it.appContext, it.settings, it.shellAccess, it.deviceFiles, it.phoneControl) }
+    val viewModel = appViewModel { DeviceAccessViewModel(it.appContext, it.settings, it.shellAccess, it.deviceFiles, it.phoneControl, it.health) }
     val shellMode by viewModel.shellMode.collectAsStateWithLifecycle()
     val fileScope by viewModel.fileScope.collectAsStateWithLifecycle()
     val permissions by viewModel.permissions.collectAsStateWithLifecycle()
@@ -111,6 +112,7 @@ fun DeviceAccessScreen(onBack: () -> Unit) {
             } else {
                 PermissionAction(R.string.access_action_grant) { askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS) }
             }
+            DevicePermission.BACKGROUND_WORK -> PermissionAction(R.string.access_action_grant) { context.requestUnrestrictedBackground() }
             DevicePermission.ALL_FILES -> PermissionAction(R.string.access_action_open_settings) { context.openAllFilesAccess() }.takeIf { status != AccessStatus.UNAVAILABLE }
             DevicePermission.PHONE_CONTROL -> PermissionAction(R.string.access_action_open_settings) { context.openAccessibilitySettings() }
             DevicePermission.TERMUX -> when (status) {
@@ -159,6 +161,7 @@ private val SYSTEM_PERMISSIONS = listOf(
     SystemPermission(DevicePermission.ASSISTANT, Presentation(R.string.permission_assistant, R.string.permission_assistant_summary, MaterialSymbols.Rounded.Assistant)),
     SystemPermission(DevicePermission.MICROPHONE, Presentation(R.string.permission_microphone, R.string.permission_microphone_summary, MaterialSymbols.Rounded.Mic)),
     SystemPermission(DevicePermission.NOTIFICATIONS, Presentation(R.string.permission_notifications, R.string.permission_notifications_summary, MaterialSymbols.Rounded.Notifications)),
+    SystemPermission(DevicePermission.BACKGROUND_WORK, Presentation(R.string.permission_background_work, R.string.permission_background_work_summary, MaterialSymbols.Rounded.Battery_android_full)),
     SystemPermission(DevicePermission.PHONE_CONTROL, Presentation(R.string.permission_phone_control, R.string.permission_phone_control_summary, MaterialSymbols.Rounded.Touch_app)),
 )
 
@@ -314,15 +317,17 @@ private fun PermissionCard(
             {
                 StatusLabel(status)
                 if (permission == DevicePermission.PHONE_CONTROL && status == AccessStatus.NEEDS_PERMISSION && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    Text(
-                        stringResource(R.string.permission_phone_control_restricted),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    PermissionHint(R.string.permission_phone_control_restricted)
                 }
+                if (permission == DevicePermission.BACKGROUND_WORK) PermissionHint(R.string.permission_background_work_hint)
             }
         },
     )
+}
+
+@Composable
+private fun PermissionHint(@StringRes text: Int) {
+    Text(stringResource(text), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 }
 
 @Composable
@@ -454,6 +459,14 @@ private fun Context.openAccessibilitySettings() {
             .putExtra(SETTINGS_FRAGMENT_ARG, service)
             .putExtra(SETTINGS_FRAGMENT_ARGS, highlighted),
     )
+}
+
+private fun Context.requestUnrestrictedBackground() {
+    try {
+        startActivity(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, "package:$packageName".toUri()))
+    } catch (e: ActivityNotFoundException) {
+        startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+    }
 }
 
 private fun Context.openNotificationSettings() =

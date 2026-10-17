@@ -667,7 +667,9 @@
     <string name="phone_use_test_click">Test the click</string>
     <string name="chat_tool_phone_action">Phone: %1$s</string>
     <string name="permission_phone_control_restricted">Switch greyed out? Open App info, tap the three dots and choose Allow restricted settings, then come back.</string>
-    <string name="home_archive">Archive</string>
+    <string name="permission_background_work">Background work</string>
+    <string name="permission_background_work_summary">Unrestricted battery use, so Android doesn\'t cut the connection while a reply or phone control runs in the background</string>
+    <string name="permission_background_work_hint">On Samsung, Xiaomi and some other phones also turn off “Put unused apps to sleep” and auto-start limits for this app in the system settings.</string>    <string name="home_archive">Archive</string>
     <string name="home_trash">Trash</string>
     <string name="home_action_trash">Move to trash</string>
     <string name="home_action_archive">Archive</string>
