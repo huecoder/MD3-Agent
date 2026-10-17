@@ -6,6 +6,7 @@ import dev.huecoder.md3agent.data.files.FileLibrary
 import dev.huecoder.md3agent.data.files.RemovalFallback
 import dev.huecoder.md3agent.data.chat.SearchHistory
 import dev.huecoder.md3agent.ui.haptics.HapticEngine
+import dev.huecoder.md3agent.assistant.AssistantPresence
 import dev.huecoder.md3agent.assistant.ScreenContextStore
 import dev.huecoder.md3agent.conversation.BackgroundWorkService
 import dev.huecoder.md3agent.conversation.ConversationRunner
@@ -30,6 +31,7 @@ import dev.huecoder.md3agent.tools.memory.MemoryDeleteTool
 import dev.huecoder.md3agent.tools.memory.MemorySaveTool
 import dev.huecoder.md3agent.tools.memory.MemorySearchTool
 import dev.huecoder.md3agent.tools.memory.MemoryUpdateTool
+import dev.huecoder.md3agent.data.settings.AssistantSettings
 import dev.huecoder.md3agent.data.settings.ShellMode
 import dev.huecoder.md3agent.data.settings.SecretCipher
 import dev.huecoder.md3agent.data.settings.SettingsRepository
@@ -92,8 +94,11 @@ import dev.huecoder.md3agent.voice.VoiceRecorder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -104,8 +109,11 @@ class AppContainer(context: Context) {
     val appContext: Context = context.applicationContext
     val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     val visibility = AppVisibility()
+    val assistant = AssistantPresence()
 
     val settings = SettingsRepository(context, SecretCipher(), applicationScope)
+    val assistantSettings: StateFlow<AssistantSettings?> = settings.settings.map { it.assistant }.distinctUntilChanged()
+        .stateIn(applicationScope, SharingStarted.Eagerly, null)
     val hapticEngine = HapticEngine(appContext)
     val httpClients = HttpClientProvider(settings.networkSettings, applicationScope)
 
@@ -144,7 +152,7 @@ class AppContainer(context: Context) {
     )
 
     val python = PythonRuntime(appContext)
-    val phoneControl = PhoneControl(appContext) {
+    val phoneControl = PhoneControl(appContext, assistant) {
         when {
             shellAccess.shizuku.status() == AccessStatus.READY -> shellAccess.shizuku
             shellAccess.root.status() == AccessStatus.READY -> shellAccess.root

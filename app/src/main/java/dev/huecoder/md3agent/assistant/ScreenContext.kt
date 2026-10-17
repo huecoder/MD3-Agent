@@ -5,12 +5,14 @@ import android.graphics.Bitmap
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 
 data class ScreenSnapshot(
     val packageName: String?,
     val text: String,
     val screenshot: Bitmap?,
     val capturedAt: Long,
+    val elements: String? = null,
 )
 
 class ScreenContextStore(private val clock: () -> Long = System::currentTimeMillis) {
@@ -18,18 +20,44 @@ class ScreenContextStore(private val clock: () -> Long = System::currentTimeMill
     val latest: StateFlow<ScreenSnapshot?> = _latest.asStateFlow()
 
     fun recordStructure(structure: AssistStructure?) {
-        val text = structure?.let(ScreenTextExtractor::extract).orEmpty()
-        val packageName = structure?.activityComponent?.packageName
-        _latest.value = ScreenSnapshot(packageName, text, _latest.value?.screenshot, clock())
+        if (structure == null) return
+        val text = ScreenTextExtractor.extract(structure)
+        val packageName = structure.activityComponent?.packageName
+        update { it.copy(packageName = packageName ?: it.packageName, text = text, capturedAt = clock()) }
     }
 
     fun recordScreenshot(screenshot: Bitmap?) {
-        val previous = _latest.value
-        _latest.value = ScreenSnapshot(previous?.packageName, previous?.text.orEmpty(), screenshot, clock())
+        if (screenshot == null) return
+        update { it.copy(screenshot = screenshot, capturedAt = clock()) }
+    }
+
+    fun recordElements(packageName: String?, elements: String) {
+        update { it.copy(packageName = it.packageName ?: packageName, elements = elements) }
     }
 
     fun clear() {
         _latest.value = null
+    }
+
+    fun openedOverNote(appLabel: (packageName: String) -> String?): String? {
+        val snapshot = _latest.value ?: return null
+        val packageName = snapshot.packageName ?: return null
+        val app = appLabel(packageName)?.let { "$it ($packageName)" } ?: packageName
+        return buildString {
+            append("The user opened you over the app $app, so that app is on the screen right now.")
+            when {
+                snapshot.elements != null -> append("\nScreen elements at that moment (numbers go stale as soon as the screen changes):\n").append(snapshot.elements)
+                snapshot.text.isNotBlank() -> append("\nText on the screen at that moment:\n").append(snapshot.text.take(TEXT_NOTE_CHARS))
+            }
+        }
+    }
+
+    private fun update(change: (ScreenSnapshot) -> ScreenSnapshot) {
+        _latest.update { change(it ?: ScreenSnapshot(null, "", null, clock())) }
+    }
+
+    private companion object {
+        const val TEXT_NOTE_CHARS = 3_000
     }
 }
 

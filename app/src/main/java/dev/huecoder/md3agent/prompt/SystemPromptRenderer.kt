@@ -31,9 +31,10 @@ class SystemPromptRenderer(
         }
     }
 
-    fun contextNote(): String {
+    fun contextNote(screenNote: String? = null): String {
         val time = now()
-        return "${time.format(DateTimeFormatter.ISO_LOCAL_DATE)} ${time.format(TIME_FORMAT)}, battery ${deviceInfo.batteryDescription()}"
+        val stamp = "${time.format(DateTimeFormatter.ISO_LOCAL_DATE)} ${time.format(TIME_FORMAT)}, battery ${deviceInfo.batteryDescription()}"
+        return if (screenNote == null) stamp else "$stamp\n$screenNote"
     }
 
     val supportedVariables: List<String> get() = variables(AgentProfile()).keys.toList()

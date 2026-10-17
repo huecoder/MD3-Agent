@@ -12,11 +12,13 @@ import android.view.accessibility.AccessibilityNodeInfo
 import android.view.accessibility.AccessibilityNodeInfo.AccessibilityAction
 import androidx.annotation.StringRes
 import dev.huecoder.md3agent.R
+import dev.huecoder.md3agent.assistant.AssistantPresence
 import kotlinx.coroutines.delay
 
 internal class PhoneExecutor(
     private val context: Context,
     private val session: PhoneUseSession,
+    private val assistant: AssistantPresence,
     private val reader: ScreenReader,
     private val gestures: PhoneGestures,
     private val injector: InputInjector,
@@ -61,6 +63,7 @@ internal class PhoneExecutor(
     private suspend fun runStep(service: AccessibilityService, step: PhoneStep): ActionResult {
         val action = step.action
         val say = step.say
+        if (action.mayChangeScreen()) stepAsideForAssistant(service)
         val leftOwnApp = action.touchesScreen() && reader.isOwnAppInFront(service)
         if (leftOwnApp) {
             leaveOwnApp(service)
@@ -410,6 +413,9 @@ internal class PhoneExecutor(
 
     private suspend fun openApp(service: AccessibilityService, name: String, say: String?): ActionResult {
         val app = InstalledApps.find(service.packageManager, name) ?: return ActionResult.Failed("No installed app matches \"$name\"")
+        if (reader.frontRoot(service)?.packageName == app.packageName) {
+            return ActionResult.Done("${app.label} is already in front, nothing to open")
+        }
         session.say(caption(say, R.string.phone_use_open, app.label))
         val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
             .setComponent(app.component)
@@ -467,6 +473,12 @@ internal class PhoneExecutor(
             if (current == previous) return
             previous = current
         }
+    }
+
+    private suspend fun stepAsideForAssistant(service: AccessibilityService) {
+        if (!assistant.isShowing.value) return
+        assistant.dismiss()
+        settle(service, SETTLE_BETWEEN_MS)
     }
 
     private suspend fun leaveOwnApp(service: AccessibilityService) {

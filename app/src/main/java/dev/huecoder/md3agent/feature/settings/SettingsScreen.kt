@@ -37,6 +37,7 @@ import com.composables.icons.materialsymbols.rounded.Info
 import com.composables.icons.materialsymbols.rounded.Palette
 import com.composables.icons.materialsymbols.rounded.Chevron_right
 import com.composables.icons.materialsymbols.rounded.Dns
+import com.composables.icons.materialsymbols.rounded.Auto_awesome
 import com.composables.icons.materialsymbols.rounded.Face
 import com.composables.icons.materialsymbols.rounded.Handyman
 import com.composables.icons.materialsymbols.rounded.Shield_person
@@ -72,6 +73,7 @@ data class SettingsDestinations(
     val voice: () -> Unit,
     val access: () -> Unit,
     val notifications: () -> Unit,
+    val assistantInvoke: () -> Unit,
     val phoneUse: () -> Unit,
     val mcp: () -> Unit,
 )
@@ -121,6 +123,12 @@ fun SettingsScreen(destinations: SettingsDestinations) {
                 title = stringResource(R.string.settings_voice),
                 summary = voiceSummary(current),
                 onClick = destinations.voice,
+            ),
+            SettingsEntry(
+                icon = MaterialSymbols.Rounded.Auto_awesome,
+                title = stringResource(R.string.settings_assistant_invoke),
+                summary = stringResource(R.string.settings_assistant_invoke_summary),
+                onClick = destinations.assistantInvoke,
             ),
         )
         val capabilityEntries = listOf(

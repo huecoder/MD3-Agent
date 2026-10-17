@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -31,12 +30,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,21 +46,22 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Velocity
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
-
-enum class SheetValue { Hidden, Half, Full }
 
 class AssistantSheetState internal constructor(internal val draggable: AnchoredDraggableState<SheetValue>) {
     val value: SheetValue get() = draggable.settledValue
 
-    suspend fun expand() = draggable.animateTo(SheetValue.Full)
+    val target: SheetValue get() = draggable.targetValue
+
+    val isPlaced: Boolean get() = !draggable.offset.isNaN()
+
+    suspend fun settleAt(value: SheetValue) = draggable.animateTo(value)
 
     suspend fun hide() = draggable.animateTo(SheetValue.Hidden)
 }
@@ -74,9 +71,14 @@ fun rememberAssistantSheetState(key: Any?): AssistantSheetState =
     remember(key) { AssistantSheetState(AnchoredDraggableState(SheetValue.Hidden)) }
 
 @Composable
-fun AssistantSheet(state: AssistantSheetState, onDismissed: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
+fun AssistantSheet(
+    state: AssistantSheetState,
+    compactContentHeight: Dp?,
+    onDismissRequest: () -> Unit,
+    onDismissed: () -> Unit,
+    content: @Composable ColumnScope.(chrome: () -> Float) -> Unit,
+) {
     val draggable = state.draggable
-    val scope = rememberCoroutineScope()
     val density = LocalDensity.current
     val statusBarTop = WindowInsets.statusBars.getTop(density)
     val surface = MaterialTheme.colorScheme.surfaceContainer
@@ -85,6 +87,7 @@ fun AssistantSheet(state: AssistantSheetState, onDismissed: () -> Unit, content:
     val flingThreshold = with(density) { FLING_THRESHOLD.toPx() }
     val nestedScroll = remember(draggable, settleSpec, flingThreshold) { SheetNestedScroll(draggable, settleSpec, flingThreshold) }
     var hasOpened by remember(draggable) { mutableStateOf(false) }
+    val openingValue = if (compactContentHeight == null) SheetValue.Half else SheetValue.Compact
 
     LaunchedEffect(draggable) {
         snapshotFlow { draggable.settledValue }.first { it != SheetValue.Hidden }
@@ -93,61 +96,45 @@ fun AssistantSheet(state: AssistantSheetState, onDismissed: () -> Unit, content:
         onDismissed()
     }
 
-    val view = LocalView.current
-    val imeVisible = WindowInsets.ime.getBottom(density) > 0
-    var frameTick by remember { mutableLongStateOf(0L) }
-    val windowLocation = remember { IntArray(2) }
-    LaunchedEffect(view, imeVisible) {
-        do {
-            withFrameNanos { frameTick = it }
-        } while (imeVisible || windowLocation[1] != 0)
-    }
-    val systemPan = {
-        frameTick
-        view.getLocationInWindow(windowLocation)
-        -windowLocation[1]
-    }
-
-    BoxWithConstraints(Modifier.fillMaxSize().graphicsLayer { translationY = systemPan().toFloat() }) {
+    BoxWithConstraints(Modifier.fillMaxSize()) {
         val windowHeight = constraints.maxHeight.toFloat()
-        BoxWithConstraints(Modifier.fillMaxSize().imePadding()) {
-            val fullHeight = constraints.maxHeight.toFloat()
-            val halfHeight = minOf(windowHeight * HALF_HEIGHT_FRACTION, fullHeight * MAX_HALF_OF_AVAILABLE)
+        val compactHeight = compactContentHeight?.let { with(density) { it.toPx() } }
+        val geometry = remember(windowHeight, compactHeight) {
+            SheetGeometry(windowHeight, windowHeight * SheetGeometry.HALF_HEIGHT_FRACTION, compactHeight)
+        }
 
-            LaunchedEffect(draggable, fullHeight, halfHeight) {
-                val anchors = DraggableAnchors {
-                    SheetValue.Full at 0f
-                    SheetValue.Half at fullHeight - halfHeight
-                    SheetValue.Hidden at fullHeight
-                }
-                draggable.updateAnchors(anchors, if (hasOpened) draggable.targetValue else SheetValue.Hidden)
-                if (!hasOpened) draggable.animateTo(SheetValue.Half)
-            }
+        LaunchedEffect(draggable, geometry) {
+            draggable.updateAnchors(geometry.anchors(), if (hasOpened) draggable.targetValue else SheetValue.Hidden)
+            if (!hasOpened) draggable.animateTo(openingValue)
+        }
 
-            fun offset() = draggable.offset.takeUnless { it.isNaN() } ?: fullHeight
+        fun offset() = draggable.offset.takeUnless { it.isNaN() } ?: windowHeight
+        val chrome = { geometry.chrome(offset()) }
 
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .drawBehind { drawRect(Color.Black, alpha = SCRIM_ALPHA * (1f - offset() / fullHeight).coerceIn(0f, 1f)) }
-                    .clickable(remember { MutableInteractionSource() }, indication = null) { scope.launch { state.hide() } },
-            )
+        Box(
+            Modifier
+                .fillMaxSize()
+                .drawBehind { drawRect(Color.Black, alpha = SCRIM_ALPHA * geometry.openness(offset()) * chrome()) }
+                .clickable(remember { MutableInteractionSource() }, indication = null, onClick = onDismissRequest),
+        )
+        Box(Modifier.fillMaxSize().imePadding()) {
             Column(
                 Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
                     .layout { measurable, constraints ->
-                        val height = (fullHeight - offset()).roundToInt().coerceIn(0, constraints.maxHeight)
+                        val available = constraints.maxHeight.toFloat()
+                        val top = geometry.top(offset(), keyboard = windowHeight - available)
+                        val height = (available - top).roundToInt().coerceIn(0, constraints.maxHeight)
                         val placeable = measurable.measure(Constraints.fixed(constraints.maxWidth, height))
                         layout(placeable.width, height) { placeable.place(0, 0) }
                     }
                     .graphicsLayer {
-                        val halfOffset = fullHeight - halfHeight
-                        val towardsFull = if (halfOffset <= 0f) 1f else (1f - offset() / halfOffset).coerceIn(0f, 1f)
+                        val towardsFull = if (geometry.halfOffset <= 0f) 1f else (1f - offset() / geometry.halfOffset).coerceIn(0f, 1f)
                         shape = RoundedCornerShape(topStart = lerp(CORNER.toPx(), 0f, towardsFull), topEnd = lerp(CORNER.toPx(), 0f, towardsFull))
-                        clip = true
+                        clip = chrome() > 0f
                     }
-                    .background(surface)
+                    .drawBehind { drawRect(surface, alpha = chrome()) }
                     .clickable(remember { MutableInteractionSource() }, indication = null) {}
                     .nestedScroll(nestedScroll)
                     .anchoredDraggable(draggable, Orientation.Vertical, flingBehavior = flingBehavior)
@@ -158,21 +145,32 @@ fun AssistantSheet(state: AssistantSheetState, onDismissed: () -> Unit, content:
                     }
                     .navigationBarsPadding(),
             ) {
-                Box(
-                    Modifier
-                        .align(Alignment.CenterHorizontally)
-                        .padding(vertical = HANDLE_PADDING)
-                        .size(HANDLE_WIDTH, HANDLE_HEIGHT)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = HANDLE_ALPHA)),
-                )
+                Box(Modifier.align(Alignment.CenterHorizontally).collapsing(chrome)) {
+                    Box(
+                        Modifier
+                            .padding(vertical = HANDLE_PADDING)
+                            .size(HANDLE_WIDTH, HANDLE_HEIGHT)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = HANDLE_ALPHA)),
+                    )
+                }
                 CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
-                    content()
+                    content(chrome)
                 }
             }
         }
     }
 }
+
+fun Modifier.collapsing(progress: () -> Float): Modifier = this
+    .layout { measurable, constraints ->
+        val placeable = measurable.measure(constraints)
+        layout(placeable.width, (placeable.height * progress()).roundToInt()) { placeable.place(0, 0) }
+    }
+    .graphicsLayer {
+        alpha = progress()
+        clip = true
+    }
 
 private class SheetNestedScroll(
     private val state: AnchoredDraggableState<SheetValue>,
@@ -212,8 +210,6 @@ private class SheetNestedScroll(
     }
 }
 
-private const val HALF_HEIGHT_FRACTION = 0.45f
-private const val MAX_HALF_OF_AVAILABLE = 0.7f
 private const val SCRIM_ALPHA = 0.32f
 private const val HANDLE_ALPHA = 0.4f
 private val CORNER = 28.dp

@@ -91,16 +91,22 @@ class ConversationRunner(
         scope.launch { chats.recoverInterruptedStreams() }
     }
 
-    suspend fun startChat(text: String, attached: List<Attachment>, selection: ModelSelection? = null, agentId: String? = null): ChatEntity {
+    suspend fun startChat(
+        text: String,
+        attached: List<Attachment>,
+        selection: ModelSelection? = null,
+        agentId: String? = null,
+        screenNote: String? = null,
+    ): ChatEntity {
         val current = settings.current()
         val chosen = selection ?: current.activeSelection ?: throw NoModelConfiguredException()
         val chat = chats.createChat(titleFrom(text, attached), chosen, current.agent(agentId).id)
-        send(chat.id, text, attached)
+        send(chat.id, text, attached, screenNote)
         return chat
     }
 
-    suspend fun send(chatId: String, text: String, attached: List<Attachment>) {
-        chats.appendUserMessage(chatId, text.trim(), attached, systemPrompt.contextNote())
+    suspend fun send(chatId: String, text: String, attached: List<Attachment>, screenNote: String? = null) {
+        chats.appendUserMessage(chatId, text.trim(), attached, systemPrompt.contextNote(screenNote))
         launchReply(chatId)
     }
 

@@ -12,15 +12,14 @@ class ReadScreenTool(
 ) : Tool {
     override val spec = ToolSpec(
         name = NAME,
-        description = "Reads the text of the screen the user had open when the assistant was invoked. " +
+        description = "Reads the screen the user had open when the assistant was invoked: the app and its text and elements. " +
             "Use it when the question refers to \"this\", \"here\" or \"on the screen\".",
         parameters = objectSchema(required = emptyList()) {},
     )
 
     override suspend fun execute(arguments: JsonObject, settings: ToolSettings): ToolOutcome {
-        val snapshot = screen.latest.value
-            ?: return ToolOutcome.error("No screen captured: the assistant was not opened over another app")
-        if (snapshot.text.isBlank()) {
+        val snapshot = screen.latest.value ?: return ToolOutcome.error(NOTHING_CAPTURED)
+        if (snapshot.text.isBlank() && snapshot.elements == null) {
             return ToolOutcome.error("The app ${snapshot.packageName ?: "on screen"} provided no text (it may be protected from reading)")
         }
         val ageSeconds = TimeUnit.MILLISECONDS.toSeconds(clock() - snapshot.capturedAt)
@@ -28,13 +27,21 @@ class ReadScreenTool(
             buildString {
                 appendLine("App: ${snapshot.packageName ?: "unknown"}")
                 appendLine("Captured $ageSeconds s ago")
-                appendLine()
-                append(snapshot.text)
+                if (snapshot.text.isNotBlank()) {
+                    appendLine()
+                    append(snapshot.text)
+                }
+                snapshot.elements?.let {
+                    appendLine()
+                    appendLine("Screen elements:")
+                    append(it)
+                }
             },
         )
     }
 
     companion object {
         const val NAME = "read_screen"
+        private const val NOTHING_CAPTURED = "No screen captured: the assistant was not opened over another app, or the user turned off Use text from screen in the system assistant settings"
     }
 }

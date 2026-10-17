@@ -4,4 +4,5 @@
     <files-path name="workspace" path="workspace/" />
     <files-path name="uploads" path="uploads/" />
     <cache-path name="remote-images" path="remote-images/" />
+    <cache-path name="camera" path="camera/" />
 </paths>

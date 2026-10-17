@@ -16,6 +16,7 @@ import androidx.navigation.toRoute
 import dev.huecoder.md3agent.feature.chat.ChatScreen
 import dev.huecoder.md3agent.feature.main.MainScreen
 import dev.huecoder.md3agent.feature.settings.AgentEditorScreen
+import dev.huecoder.md3agent.feature.settings.AssistantInvokeSettingsScreen
 import dev.huecoder.md3agent.feature.settings.AgentsScreen
 import dev.huecoder.md3agent.data.files.LibraryLocation
 import dev.huecoder.md3agent.data.files.LibraryRoot
@@ -85,6 +86,7 @@ fun AppNavHost(chatToOpen: String?, onChatOpened: () -> Unit, target: LaunchTarg
                     voice = { navController.navigate(VoiceSettingsRoute) },
                     access = { navController.navigate(DeviceAccessRoute) },
                     notifications = { navController.navigate(NotificationSettingsRoute) },
+                    assistantInvoke = { navController.navigate(AssistantInvokeRoute) },
                     phoneUse = { navController.navigate(PhoneUseRoute) },
                     mcp = { navController.navigate(McpServersRoute) },
                 ),
@@ -109,6 +111,7 @@ fun AppNavHost(chatToOpen: String?, onChatOpened: () -> Unit, target: LaunchTarg
         screen<RemindersRoute>(navController) { RemindersScreen(onBack = navController::popBackStack) }
         screen<DeviceAccessRoute>(navController) { DeviceAccessScreen(onBack = navController::popBackStack) }
         screen<NotificationSettingsRoute>(navController) { NotificationSettingsScreen(onBack = navController::popBackStack) }
+        screen<AssistantInvokeRoute>(navController) { AssistantInvokeSettingsScreen(onBack = navController::popBackStack) }
         screen<PhoneUseRoute>(navController) { PhoneUseSettingsScreen(onBack = navController::popBackStack) }
         screen<AppearanceRoute>(navController) { AppearanceScreen(onBack = navController::popBackStack) }
         screen<AboutRoute>(navController) {

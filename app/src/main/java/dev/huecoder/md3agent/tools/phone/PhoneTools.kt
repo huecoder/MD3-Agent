@@ -45,6 +45,7 @@ class PhoneScreenTool(control: PhoneControl) : PhoneTool(control) {
         "Every phone call carries a 'say' phrase that the user sees next to the cursor: one short sentence, first person, in the user's language, about what you do right now, like \"Opening Settings\" or \"Scrolling to find Wi-Fi\". Plain text, no markdown, at most ${PhoneSay.MAX_CHARS} characters.",
         "Element numbers go stale as soon as the screen changes, so take them from the screen the last action returned, or address elements by 'target' (text, id or role). " +
             "Use scroll_to with a target to reach something off screen instead of scrolling blindly, wait_for with an explicit timeout_ms after anything that loads instead of guessing a pause, and 'steps' to batch a sequence you are sure about.",
+        "If the context block says the user opened you over an app, that app is already on screen: act in it, and do not close it, go home or open it again unless the user asks.",
         "If an action fails or changes nothing, do not repeat it more than twice: pick another element, scroll, or look at the pixels with ${PhoneScreenshotTool.NAME} (games, canvases and custom views have no text list).",
         "Never enter passwords or payment details, and never confirm purchases or deletions, unless the user said so in this chat.",
     ).joinToString("\n")

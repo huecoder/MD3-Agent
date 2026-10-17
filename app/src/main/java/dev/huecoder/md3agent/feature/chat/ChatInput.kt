@@ -94,6 +94,7 @@ fun ChatInput(
     attachments: List<Attachment> = emptyList(),
     isImporting: Boolean = false,
     onAttach: (() -> Unit)? = null,
+    attachIcon: ImageVector = MaterialSymbols.Rounded.Attach_file,
     onRemoveAttachment: (Attachment) -> Unit = {},
     onPasteImages: ((List<Uri>) -> Unit)? = null,
     dictation: DictationControls? = null,
@@ -118,7 +119,7 @@ fun ChatInput(
     var sentText by remember { mutableStateOf<String?>(null) }
     val leading: (() -> Unit)? = if (isDictating) dictation?.onCancel else onAttach
 
-    val leadingButton = @Composable { leading?.let { LeadingButton(isDictating, it) } }
+    val leadingButton = @Composable { leading?.let { LeadingButton(isDictating, attachIcon, it) } }
     val actionButton = @Composable {
         if (steering) {
             StopButton(onClick = { haptics.confirm(); onStop() })
@@ -222,12 +223,12 @@ private fun StopButton(onClick: () -> Unit) {
 }
 
 @Composable
-private fun LeadingButton(isDictating: Boolean, onClick: () -> Unit) {
+private fun LeadingButton(isDictating: Boolean, attachIcon: ImageVector, onClick: () -> Unit) {
     IconButton(onClick = onClick, shapes = IconButtonDefaults.shapes()) {
         if (isDictating) {
             Icon(MaterialSymbols.Rounded.Close, contentDescription = stringResource(R.string.dictation_cancel))
         } else {
-            Icon(MaterialSymbols.Rounded.Attach_file, contentDescription = stringResource(R.string.chat_attach_file))
+            Icon(attachIcon, contentDescription = stringResource(R.string.chat_attach_file))
         }
     }
 }

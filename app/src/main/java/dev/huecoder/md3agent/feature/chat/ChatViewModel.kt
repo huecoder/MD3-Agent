@@ -89,6 +89,7 @@ class ChatViewModel(
     private val catalog: ModelCatalog,
     private val appScope: CoroutineScope,
     synthesizers: (VoiceSettings, AgentProfile) -> SpeechSynthesizer,
+    private val screenNote: () -> String? = { null },
 ) : ViewModel() {
     private val chatId = MutableStateFlow(initialChatId)
     private val pendingFocus = MutableStateFlow(focusMessageId)
@@ -153,7 +154,11 @@ class ChatViewModel(
         viewModelScope.launch {
             val id = chatId.value
             try {
-                if (id == null) chatId.value = runner.startChat(text, attached, pendingSelection.value, state.value.agentId).id else runner.send(id, text, attached)
+                if (id == null) {
+                    chatId.value = runner.startChat(text, attached, pendingSelection.value, state.value.agentId, screenNote()).id
+                } else {
+                    runner.send(id, text, attached)
+                }
             } catch (e: NoModelConfiguredException) {
                 pending.update { it.copy(items = attached + it.items) }
                 _errors.value = UiText.Resource(R.string.chat_error_no_model)

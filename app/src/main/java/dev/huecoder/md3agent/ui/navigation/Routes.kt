@@ -57,6 +57,9 @@ data object DeviceAccessRoute
 data object NotificationSettingsRoute
 
 @Serializable
+data object AssistantInvokeRoute
+
+@Serializable
 data object McpServersRoute
 
 @Serializable
