@@ -33,6 +33,7 @@ data class AppSettings(
     val chat: ChatSettings,
     val voice: VoiceSettings,
     val ui: InterfaceSettings,
+    val notifications: NotificationSettings = NotificationSettings(),
 ) {
     fun provider(id: String?): ProviderProfile? = providers.firstOrNull { it.id == id }
 

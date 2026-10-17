@@ -29,6 +29,7 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Neurology
+import com.composables.icons.materialsymbols.rounded.Notification_settings
 import com.composables.icons.materialsymbols.rounded.Notifications_active
 import com.composables.icons.materialsymbols.rounded.Extension
 import com.composables.icons.materialsymbols.rounded.Touch_app
@@ -70,6 +71,7 @@ data class SettingsDestinations(
     val reminders: () -> Unit,
     val voice: () -> Unit,
     val access: () -> Unit,
+    val notifications: () -> Unit,
     val phoneUse: () -> Unit,
     val mcp: () -> Unit,
 )
@@ -133,6 +135,12 @@ fun SettingsScreen(destinations: SettingsDestinations) {
                 title = stringResource(R.string.settings_access),
                 summary = accessSummary(current, isAssistant),
                 onClick = destinations.access,
+            ),
+            SettingsEntry(
+                icon = MaterialSymbols.Rounded.Notification_settings,
+                title = stringResource(R.string.settings_notifications),
+                summary = stringResource(R.string.settings_notifications_summary),
+                onClick = destinations.notifications,
             ),
             SettingsEntry(
                 icon = MaterialSymbols.Rounded.Touch_app,

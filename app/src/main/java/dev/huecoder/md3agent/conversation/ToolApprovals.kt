@@ -26,9 +26,8 @@ class ToolApprovals {
         }
     }
 
-    fun respond(chatId: String, callId: String, decision: ApprovalDecision) {
-        waiting.value[chatId]?.takeIf { it.call.id == callId }?.decision?.complete(decision)
-    }
+    fun respond(chatId: String, callId: String, decision: ApprovalDecision): Boolean =
+        waiting.value[chatId]?.takeIf { it.call.id == callId }?.decision?.complete(decision) ?: false
 
     private class Waiting(val call: ToolCall, val decision: CompletableDeferred<ApprovalDecision>)
 }

@@ -255,6 +255,9 @@ object ChatTimeline {
         return SourceUi(title, url, host)
     }
 
-    private fun parseArguments(raw: String): JsonObject =
+    internal fun parseArguments(raw: String): JsonObject =
         runCatching { json.parseToJsonElement(raw).jsonObject }.getOrDefault(JsonObject(emptyMap()))
 }
+
+fun ToolCall.awaitingApprovalUi(): ToolCallUi =
+    ToolCallUi(id, name, ChatTimeline.parseArguments(arguments), ToolStatus.AWAITING_APPROVAL, result = null)

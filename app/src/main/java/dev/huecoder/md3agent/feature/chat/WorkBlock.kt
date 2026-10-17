@@ -178,6 +178,8 @@ internal fun readableArguments(arguments: JsonObject): String = arguments.entrie
 @Composable
 private fun ToolLook.titleText(): String = title.asString().trim()
 
+internal fun ToolCallUi.title(): UiText = ToolLook.of(this).title
+
 private data class ToolLook(val icon: ImageVector, val title: UiText) {
     companion object {
         private const val MAX_RESULT_CHARS = 3_000

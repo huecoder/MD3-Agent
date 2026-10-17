@@ -54,6 +54,9 @@ data object PhoneUseRoute
 data object DeviceAccessRoute
 
 @Serializable
+data object NotificationSettingsRoute
+
+@Serializable
 data object McpServersRoute
 
 @Serializable

@@ -423,11 +423,21 @@
         <item quantity="other">%1$d models</item>
     </plurals>
     <string name="notification_channel_work">Background replies</string>
-    <string name="notification_channel_approvals">Tool approvals</string>
+    <string name="notification_channel_approvals">Approvals and questions</string>
     <string name="notification_channel_reminders">Reminders</string>
     <string name="notification_work_text">Replies keep going while the app is closed</string>
     <string name="notification_work_stop">Stop all</string>
     <string name="notification_approval_title">The assistant is waiting for you</string>
+    <string name="notification_approval_always">Always</string>
+    <string name="notification_request_expired">This request is no longer active</string>
+    <string name="settings_notifications">Notifications</string>
+    <string name="settings_notifications_summary">Approvals from the notification or over other apps</string>
+    <string name="notifications_section_approvals">Tool approvals</string>
+    <string name="notifications_approvals">Where to ask</string>
+    <string name="notifications_approvals_notification">Notification</string>
+    <string name="notifications_approvals_overlay">Over apps</string>
+    <string name="notifications_approvals_notification_hint">Allow, Deny and Always buttons right in the notification. Tools that run commands, write files or control the phone ask to unlock the phone first.</string>
+    <string name="notifications_approvals_overlay_hint">The same panel as during phone control, drawn over other apps. It needs phone control to be on; when it is off or the phone is locked, the notification buttons are used.</string>
     <plurals name="notification_work_title">
         <item quantity="one">Working on %1$d chat</item>
         <item quantity="other">Working on %1$d chats</item>

@@ -131,6 +131,10 @@
             </intent-filter>
         </receiver>
 
+        <receiver
+            android:name=".system.notifications.NotificationActionReceiver"
+            android:exported="false" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.files"

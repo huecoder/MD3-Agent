@@ -5,17 +5,20 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.view.accessibility.AccessibilityEvent
 import dev.huecoder.md3agent.App
+import dev.huecoder.md3agent.feature.phoneuse.ApprovalOverlay
 import dev.huecoder.md3agent.feature.phoneuse.PhoneUseOverlay
 
 class PhoneControlService : AccessibilityService() {
     private val container get() = (application as App).container
     private val control: PhoneControl get() = container.phoneControl
     private var overlay: PhoneUseOverlay? = null
+    private var approvals: ApprovalOverlay? = null
 
     override fun onServiceConnected() {
         super.onServiceConnected()
         control.attach(this)
         overlay = PhoneUseOverlay(this, container).also { it.start() }
+        approvals = ApprovalOverlay(this, container).also { it.start() }
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
@@ -42,5 +45,7 @@ class PhoneControlService : AccessibilityService() {
     private fun releaseOverlay() {
         overlay?.stop()
         overlay = null
+        approvals?.stop()
+        approvals = null
     }
 }

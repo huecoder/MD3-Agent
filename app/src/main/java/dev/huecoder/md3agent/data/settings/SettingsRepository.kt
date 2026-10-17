@@ -104,6 +104,11 @@ class SettingsRepository(
         prefs.remove(Keys.LEGACY_SPEECH)
     }
 
+    suspend fun updateNotifications(transform: (NotificationSettings) -> NotificationSettings) = store.edit { prefs ->
+        val current = decodeOrDefault(prefs[Keys.NOTIFICATIONS], NotificationSettings.serializer(), NotificationSettings())
+        prefs[Keys.NOTIFICATIONS] = json.encodeToString(NotificationSettings.serializer(), transform(current))
+    }
+
     suspend fun updatePhonePanel(transform: (PhonePanelState) -> PhonePanelState) = store.edit { prefs ->
         val current = decodeOrDefault(prefs[Keys.PHONE_PANEL], PhonePanelState.serializer(), PhonePanelState())
         prefs[Keys.PHONE_PANEL] = json.encodeToString(PhonePanelState.serializer(), transform(current))
@@ -136,6 +141,7 @@ class SettingsRepository(
             chat = decodeOrDefault(prefs[Keys.CHAT], ChatSettings.serializer(), ChatSettings()),
             voice = decodeVoice(prefs, providers, activeProvider),
             ui = decodeOrDefault(prefs[Keys.INTERFACE], InterfaceSettings.serializer(), InterfaceSettings()),
+            notifications = decodeOrDefault(prefs[Keys.NOTIFICATIONS], NotificationSettings.serializer(), NotificationSettings()),
         )
     }
 
@@ -215,6 +221,7 @@ class SettingsRepository(
         val LEGACY_SPEECH = stringPreferencesKey("speech")
         val VOICE_ENCRYPTED = stringPreferencesKey("voice_encrypted")
         val PHONE_PANEL = stringPreferencesKey("phone_panel")
+        val NOTIFICATIONS = stringPreferencesKey("notifications")
     }
 
     private class LastDecoded<T> {
