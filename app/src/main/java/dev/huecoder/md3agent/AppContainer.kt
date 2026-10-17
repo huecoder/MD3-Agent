@@ -118,7 +118,7 @@ class AppContainer(context: Context) {
 
     private val networkWatch = NetworkWatch(appContext)
     val health = DeviceHealth(appContext, networkWatch, { visibility.isVisible.value }, { BackgroundWorkService.running })
-    val keepAlive = WorkKeepAlive(networkWatch, health)
+    val keepAlive = WorkKeepAlive(appContext, networkWatch, health)
 
     val completions = ChatCompletionClient(httpClients, health.streamDiagnostics())
     val modelCatalogClient = ModelCatalogClient(httpClients)
