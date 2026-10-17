@@ -265,8 +265,6 @@ private fun outputHint(voice: VoiceSettings): Int = when {
     else -> R.string.voice_settings_engine_hint_provider
 }
 
-private val CHOICE_HEIGHT = 40.dp
-
 private val INVOKE_CHOICES = listOf(
     Choice(InvokeInput.TEXT, R.string.voice_settings_invoke_text),
     Choice(InvokeInput.VOICE, R.string.voice_settings_invoke_voice),

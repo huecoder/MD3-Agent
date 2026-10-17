@@ -143,7 +143,7 @@ val ReasoningEffort?.label: Int
         ReasoningEffort.XHIGH -> R.string.reasoning_xhigh
     }
 
-private fun formatContext(tokens: Int): String = when {
+internal fun formatContext(tokens: Int): String = when {
     tokens >= MILLION -> "${(tokens / MILLION.toDouble()).let { if (it % 1.0 == 0.0) it.toInt().toString() else "%.1f".format(it) }}M"
     tokens >= THOUSAND -> "${tokens / THOUSAND}K"
     else -> tokens.toString()

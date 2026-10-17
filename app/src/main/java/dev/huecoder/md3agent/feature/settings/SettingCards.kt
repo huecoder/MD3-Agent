@@ -1,5 +1,6 @@
 package dev.huecoder.md3agent.feature.settings
 
+import androidx.annotation.StringRes
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -32,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Check
@@ -47,12 +49,14 @@ import dev.huecoder.md3agent.ui.theme.LayoutMotion
 internal fun Modifier.settingsPage(padding: PaddingValues, scroll: ScrollState = rememberScrollState()): Modifier =
     fillMaxSize()
         .verticalScroll(scroll)
-        .padding(
-            start = PAGE_SIDE_PADDING,
-            end = PAGE_SIDE_PADDING,
-            top = padding.calculateTopPadding(),
-            bottom = padding.calculateBottomPadding() + PAGE_BOTTOM_PADDING,
-        )
+        .padding(settingsPagePadding(padding))
+
+internal fun settingsPagePadding(padding: PaddingValues) = PaddingValues(
+    start = PAGE_SIDE_PADDING,
+    end = PAGE_SIDE_PADDING,
+    top = padding.calculateTopPadding(),
+    bottom = padding.calculateBottomPadding() + PAGE_BOTTOM_PADDING,
+)
 
 internal class CardGroupScope {
     val cards = mutableListOf<Pair<Any, @Composable (Shape) -> Unit>>()
@@ -203,19 +207,19 @@ internal fun FieldsCard(shape: Shape, modifier: Modifier = Modifier, content: @C
 
 internal fun CardGroupScope.foldCard(
     icon: ImageVector,
-    title: String,
+    @StringRes title: Int,
     expanded: Boolean,
     onToggle: () -> Unit,
-    summary: String? = null,
+    summary: (@Composable () -> String)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    card("$title-fold") { shape ->
+    card("fold-$title") { shape ->
         val haptics = rememberHaptics()
         val turn by animateFloatAsState(if (expanded) HALF_TURN else 0f, LayoutMotion.settle(), label = "fold-card")
         SettingCard(
             icon = icon,
-            title = title,
-            summary = summary,
+            title = stringResource(title),
+            summary = summary?.invoke(),
             shape = shape,
             onClick = {
                 haptics.tick()
@@ -224,7 +228,7 @@ internal fun CardGroupScope.foldCard(
             trailing = { Icon(MaterialSymbols.Rounded.Expand_more, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.rotate(turn)) },
         )
     }
-    if (expanded) card("$title-fold-content") { shape -> FieldsCard(shape, content = content) }
+    if (expanded) card("fold-content-$title") { shape -> FieldsCard(shape, content = content) }
 }
 
 @Composable
@@ -267,6 +271,7 @@ internal fun SliderCard(
     )
 }
 
+internal val CHOICE_HEIGHT = 40.dp
 private const val HALF_TURN = 180f
 private val PAGE_SIDE_PADDING = 16.dp
 private val PAGE_BOTTOM_PADDING = 32.dp

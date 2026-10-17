@@ -89,4 +89,3 @@ private val TYPING_CHOICES = listOf(
 private const val MILLIS_PER_SECOND = 1_000L
 private const val PREVIEW_PAUSE_MS = 1_500L
 private val PREVIEW_MIN_HEIGHT = 96.dp
-private val CHOICE_HEIGHT = 40.dp

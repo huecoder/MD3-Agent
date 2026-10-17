@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListState
@@ -49,6 +50,7 @@ import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.data.settings.ModelSelection
 import dev.huecoder.md3agent.llm.models.ModelVendor
 import dev.huecoder.md3agent.ui.components.SearchField
+import dev.huecoder.md3agent.ui.components.bottomEdgeFade
 import dev.huecoder.md3agent.ui.components.appViewModel
 import dev.huecoder.md3agent.ui.text.asString
 import dev.huecoder.md3agent.ui.components.iconRes
@@ -79,7 +81,7 @@ fun ModelPickerSheet(
             PickerTabs(tab, onSelect = { tab = it })
             when (tab) {
                 PickerTab.MODEL -> ModelTab(viewModel, model, onSelectModel, onDismiss, modelListState)
-                PickerTab.AGENTS -> AgentList(agents, selectedId = agentId, onPick = { onSelectAgent(it.id) }, modifier = Modifier.weight(1f))
+                PickerTab.AGENTS -> AgentList(agents, selectedId = agentId, onPick = { onSelectAgent(it.id) }, modifier = Modifier.weight(1f).bottomEdgeFade(color = MaterialTheme.colorScheme.surfaceContainerLow, underNavigationBar = false))
             }
         }
     }
@@ -108,7 +110,7 @@ private fun ColumnScope.ModelTab(
     val vendor by viewModel.activeVendor.collectAsStateWithLifecycle()
     val currentHere = current?.takeIf { it.providerId == state.providerId }
 
-    PickerHeader(state.totalCount, state.isRefreshing, viewModel::refresh)
+    PickerHeader(pluralStringResource(R.plurals.model_picker_count, state.totalCount, state.totalCount), state.isRefreshing, viewModel::refresh)
     if (state.providers.size > 1) {
         ChipRow {
             state.providers.forEach { provider ->
@@ -149,23 +151,23 @@ private fun ColumnScope.ModelTab(
             onSelect(viewModel.selection(row, current))
             onDismiss()
         },
-        modifier = Modifier.weight(1f),
+        modifier = Modifier.weight(1f).bottomEdgeFade(color = MaterialTheme.colorScheme.surfaceContainerLow, underNavigationBar = false),
         listState = listState,
     )
 }
 
 @Composable
-private fun PickerHeader(count: Int, isRefreshing: Boolean, onRefresh: () -> Unit) {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(start = 24.dp, end = 12.dp)) {
+internal fun PickerHeader(label: String, isRefreshing: Boolean, onRefresh: (() -> Unit)?) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(start = 24.dp, end = 12.dp)) {
         Text(
-            pluralStringResource(R.plurals.model_picker_count, count, count),
+            label,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.weight(1f),
         )
         if (isRefreshing) {
             LoadingIndicator(Modifier.size(40.dp))
-        } else {
+        } else if (onRefresh != null) {
             IconButton(onClick = onRefresh, shapes = IconButtonDefaults.shapes()) {
                 Icon(MaterialSymbols.Rounded.Refresh, contentDescription = stringResource(R.string.model_refresh))
             }
@@ -174,7 +176,7 @@ private fun PickerHeader(count: Int, isRefreshing: Boolean, onRefresh: () -> Uni
 }
 
 @Composable
-private fun ChipRow(content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit) {
+internal fun ChipRow(content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp),

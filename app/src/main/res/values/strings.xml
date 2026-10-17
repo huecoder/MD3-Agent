@@ -65,7 +65,6 @@
     <string name="tools_read_screen_summary">Text of the app the assistant was opened over</string>
     <string name="tools_show_ui_title">Buttons and reply options</string>
     <string name="tools_show_ui_summary">The model adds chips and buttons below its reply</string>
-    <string name="provider_model_id">Model ID</string>
     <string name="tools_category_web">Web</string>
     <string name="tools_category_screen">Screen and interface</string>
     <string name="tools_category_files">Files</string>
@@ -121,9 +120,7 @@
     <string name="provider_format">API format</string>
     <string name="provider_format_hint">OpenAI also covers compatible servers like OpenRouter, Ollama and LM Studio</string>
     <string name="voice_provider_format_hint">Anthropic has no voice API, so only OpenAI, Gemini and ElevenLabs are here</string>
-    <string name="provider_api_key">API key (Bearer)</string>
-    <string name="provider_fetch_models">Load models</string>
-    <string name="provider_fetch_voices">Load voices</string>
+    <string name="provider_api_key">API key</string>
     <string name="provider_voices_fetch_failed">Couldn\'t load the voice list</string>
     <string name="provider_section_headers">Extra headers</string>
     <string name="provider_secret_hide">Hide</string>
@@ -256,14 +253,11 @@
     <string name="voice_settings_engine_needs_provider">Add a voice provider first, until then the system engine is used.</string>
     <string name="voice_provider_title">Voice provider</string>
     <string name="voice_provider_title_new">New voice provider</string>
-    <string name="voice_provider_copy_from_chat">Copy address and key from a chat provider</string>
-    <string name="voice_provider_section_models">Models</string>
+    <string name="voice_provider_copy_from_chat">Copy from a chat provider</string>
+    <string name="voice_provider_section_models">Models and voice</string>
     <string name="voice_provider_transcription_model">Transcription model</string>
     <string name="voice_provider_speech_model">Speech model</string>
     <string name="voice_provider_speech_voice">Voice</string>
-    <string name="voice_provider_speech_voice_hint">alloy, nova, shimmer and so on, depends on the provider.</string>
-    <string name="voice_provider_speech_voice_hint_gemini">Kore, Puck, Charon, Aoede and so on, see the Gemini voice list.</string>
-    <string name="voice_provider_speech_voice_hint_elevenlabs">Voice ID. Tap Load voices to pick one from your ElevenLabs library by name.</string>
     <string name="chat_thinking">Thinking…</string>
     <string name="chat_speak">Read aloud</string>
     <string name="chat_stop_speaking">Stop reading</string>
@@ -475,9 +469,7 @@
     <string name="memory_api_key">API key</string>
     <string name="memory_model">Model</string>
     <string name="memory_base_url">Base URL</string>
-    <string name="memory_model_placeholder_openai" translatable="false">text-embedding-3-small</string>
     <string name="memory_base_url_placeholder_openai" translatable="false">https://api.openai.com/v1</string>
-    <string name="memory_optional_default">Leave empty for the default</string>
     <string name="memory_probe">Check</string>
     <string name="memory_probe_ok">Works, vectors have %1$d dimensions</string>
     <string name="memory_section_instant">Instant memory</string>
@@ -738,4 +730,46 @@
     <string name="files_error_share">Could not share the files</string>
     <string name="files_error_name">That name can\'t be used</string>
     <string name="typing_style">Style</string>
+    <string name="picker_search">Search or type an ID</string>
+    <string name="picker_show_all">All models</string>
+    <string name="picker_custom_hint">Custom ID</string>
+    <string name="picker_use_custom">Use “%1$s”</string>
+    <string name="picker_no_match">Nothing matches</string>
+    <string name="picker_models_empty">No models loaded. Check the address and key and refresh the list, or type a model ID above.</string>
+    <string name="picker_voices_empty">No voices loaded. Check the address and key and refresh the list, or type a voice ID above.</string>
+    <string name="picker_preview_play">Play a sample</string>
+    <string name="picker_preview_stop">Stop the sample</string>
+    <string name="picker_preview_failed">Couldn\'t play the sample</string>
+    <string name="picker_output_limit">%1$s output</string>
+    <plurals name="picker_languages">
+        <item quantity="one">%d language</item>
+        <item quantity="other">%d languages</item>
+    </plurals>
+    <string name="picker_max_characters">up to %1$s characters</string>
+    <string name="picker_cost_factor">cost ×%1$s</string>
+    <plurals name="voice_picker_count">
+        <item quantity="one">%1$d voice</item>
+        <item quantity="other">%1$d voices</item>
+    </plurals>
+    <string name="voice_pick_tab_recognition">Recognition</string>
+    <string name="voice_pick_tab_speech">Speech</string>
+    <string name="voice_pick_tab_voice">Voices</string>
+    <string name="voice_provider_copy_summary">Fills in the address and key</string>
+    <string name="provider_headers_none">None</string>
+    <plurals name="provider_headers_count">
+        <item quantity="one">%d header</item>
+        <item quantity="other">%d headers</item>
+    </plurals>
+    <string name="agent_voice_from_provider">From the voice provider</string>
+    <string name="agent_voice_reset">Use the provider\'s voice</string>
+    <string name="mcp_server_test_hint">Connects to the server and lists its tools</string>
+    <string name="memory_search_mode">Search mode</string>
+    <string name="memory_kind_off_hint">Finds memories by the words in them</string>
+    <string name="memory_kind_gemini_hint">Matches by meaning using Google embeddings</string>
+    <string name="memory_kind_openai_hint">Matches by meaning through any OpenAI-compatible server</string>
+    <string name="memory_probe_hint">Sends a test request and shows the vector size</string>
+    <string name="memory_model_not_set">Not chosen</string>
+    <string name="memory_model_default">Default</string>
+    <string name="memory_optional_default">Leave empty for the default</string>
+    <string name="memory_model_placeholder_openai">text-embedding-3-small</string>
 </resources>

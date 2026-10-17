@@ -1,12 +1,8 @@
 package dev.huecoder.md3agent.feature.settings
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -18,11 +14,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.composables.icons.materialsymbols.MaterialSymbols
+import com.composables.icons.materialsymbols.rounded.Dns
 import dev.huecoder.md3agent.App
 import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.data.settings.NetworkSettings
 import dev.huecoder.md3agent.net.DohUrl
-import dev.huecoder.md3agent.ui.components.LabeledSwitch
 import dev.huecoder.md3agent.ui.components.FormField
 import dev.huecoder.md3agent.ui.components.SaveAction
 import dev.huecoder.md3agent.ui.components.SettingsScaffold
@@ -52,35 +49,40 @@ fun NetworkSettingsScreen(onBack: () -> Unit) {
         val current = network ?: return@SettingsScaffold
         val resolvedUrl = DohUrl.parse(current.dohUrl)
         val urlError = current.dohEnabled && current.dohUrl.isNotBlank() && resolvedUrl == null
-        Column(
-            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            LabeledSwitch(
-                title = stringResource(R.string.network_doh_title),
-                summary = stringResource(R.string.network_doh_summary),
-                checked = current.dohEnabled,
-                onCheckedChange = { network = current.copy(dohEnabled = it) },
-            )
-            FormField(
-                value = current.dohUrl,
-                onValueChange = { network = current.copy(dohUrl = it) },
-                label = stringResource(R.string.network_doh_server),
-                placeholder = stringResource(R.string.network_doh_server_placeholder),
-                enabled = current.dohEnabled,
-                isError = urlError,
-                supportingText = when {
-                    urlError -> stringResource(R.string.network_doh_https_required)
-                    resolvedUrl != null -> stringResource(R.string.network_doh_resolved, resolvedUrl)
-                    else -> null
-                },
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Text(
-                stringResource(R.string.network_doh_bootstrap_note),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+        Column(Modifier.settingsPage(padding)) {
+            CardGroup {
+                card { shape ->
+                    SwitchCard(
+                        icon = MaterialSymbols.Rounded.Dns,
+                        title = stringResource(R.string.network_doh_title),
+                        summary = stringResource(R.string.network_doh_summary),
+                        checked = current.dohEnabled,
+                        onCheckedChange = { network = current.copy(dohEnabled = it) },
+                        shape = shape,
+                    )
+                }
+                card { shape ->
+                    FieldsCard(shape) {
+                        FormField(
+                            value = current.dohUrl,
+                            onValueChange = { network = current.copy(dohUrl = it) },
+                            label = stringResource(R.string.network_doh_server),
+                            placeholder = stringResource(R.string.network_doh_server_placeholder),
+                            enabled = current.dohEnabled,
+                            isError = urlError,
+                            supportingText = when {
+                                urlError -> stringResource(R.string.network_doh_https_required)
+                                resolvedUrl != null -> stringResource(R.string.network_doh_resolved, resolvedUrl)
+                                else -> null
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                }
+            }
+            SectionCaption(stringResource(R.string.network_doh_bootstrap_note), Modifier.padding(top = CAPTION_TOP))
         }
     }
 }
+
+private val CAPTION_TOP = 12.dp

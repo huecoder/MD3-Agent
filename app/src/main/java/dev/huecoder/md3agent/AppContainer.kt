@@ -84,6 +84,7 @@ import dev.huecoder.md3agent.data.settings.VoiceSettings
 import dev.huecoder.md3agent.voice.ProviderSpeechSynthesizer
 import dev.huecoder.md3agent.voice.SpeechSynthesizer
 import dev.huecoder.md3agent.voice.SystemSpeechSynthesizer
+import dev.huecoder.md3agent.voice.VoicePreviewPlayer
 import dev.huecoder.md3agent.voice.VoiceRecorder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -117,6 +118,7 @@ class AppContainer(context: Context) {
     val voiceList = VoiceListClient(httpClients)
     val modelCatalog = ModelCatalog(modelCatalogClient, File(appContext.filesDir, MODEL_CATALOG_DIR))
     val transcriptions = TranscriptionClient(httpClients)
+    val voicePreviews = VoicePreviewPlayer(httpClients, appContext.cacheDir, applicationScope)
     val systemPrompt = SystemPromptRenderer(DeviceInfoProvider(context))
 
     val screenContext = ScreenContextStore()
