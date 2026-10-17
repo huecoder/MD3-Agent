@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name" translatable="false">MD3 Agent</string>
+    <string name="app_name" translatable="false">MW AGENT</string>
     <string name="settings_title">Settings</string>
     <string name="settings_section_assistant">Assistant</string>
     <string name="settings_agent">Agents</string>
@@ -61,6 +61,8 @@
     <string name="tools_read_webpage_summary">Opens links and reads the text</string>
     <string name="tools_weather_title">Weather</string>
     <string name="tools_weather_summary">Current conditions and up to a week of forecast</string>
+    <string name="tools_location_title">Location</string>
+    <string name="tools_location_summary">Where the phone is, with the nearest street address</string>
     <string name="tools_read_screen_title">Reading the screen</string>
     <string name="tools_read_screen_summary">Text of the app the assistant was opened over</string>
     <string name="tools_show_ui_title">Buttons and reply options</string>
@@ -350,6 +352,8 @@
     <string name="permission_assistant_summary">Opens with the assist gesture or by holding the power button</string>
     <string name="permission_microphone">Microphone</string>
     <string name="permission_microphone_summary">Voice input and dictation</string>
+    <string name="permission_location">Location</string>
+    <string name="permission_location_summary">Where you are, for answers about nearby places</string>
     <string name="permission_all_files">All files access</string>
     <string name="permission_all_files_summary">Lets the assistant reach the phone storage</string>
     <string name="permission_termux_summary">Runs commands in Termux</string>
@@ -394,7 +398,7 @@
     <string name="lightbox_close">Close</string>
     <string name="lightbox_open">Open in another app</string>
     <string name="lightbox_download">Save to Downloads</string>
-    <string name="lightbox_saved">Saved to Downloads/MD3 Agent</string>
+    <string name="lightbox_saved">Saved to Downloads/MW AGENT</string>
     <string name="lightbox_save_failed">Couldn\'t save the image</string>
     <string name="lightbox_load_failed">Couldn\'t load the image</string>
     <string name="picture_unavailable">Picture not loaded</string>
@@ -555,7 +559,7 @@
     <string name="about_update_not_published">No public releases yet</string>
     <string name="about_update_unreachable">Couldn\'t reach GitHub, try again later</string>
     <string name="about_source">Source code</string>
-    <string name="about_source_summary">github.com/huecoder/md3-agent</string>
+    <string name="about_source_summary">github.com/mwdevpy/mwagent</string>
     <string name="about_license">License</string>
     <string name="about_license_summary">GNU GPL v3.0</string>
     <string name="about_third_party">Third-party assets</string>
@@ -579,8 +583,8 @@
     <string name="chat_tool_diagram">Diagram %1$s</string>
     <string name="tools_show_diagram_title">Show a diagram</string>
     <string name="tools_show_diagram_summary">Draws plans and processes as blocks with arrows</string>
-    <string name="phone_control_label">MD3 Agent phone control</string>
-    <string name="phone_control_description">Lets the MD3 Agent assistant read the screen and tap, type and scroll for you when you ask it to. Every action asks for your approval unless you allow it in the tool settings. Nothing from the screen leaves the phone except what is sent to your chosen model.</string>
+    <string name="phone_control_label">MW AGENT phone control</string>
+    <string name="phone_control_description">Lets the MW AGENT assistant read the screen and tap, type and scroll for you when you ask it to. Every action asks for your approval unless you allow it in the tool settings. Nothing from the screen leaves the phone except what is sent to your chosen model.</string>
     <string name="permission_phone_control">Phone control</string>
     <string name="permission_phone_control_summary">Accessibility service so the assistant can read the screen and tap for you</string>
     <string name="access_group_control">Phone control</string>

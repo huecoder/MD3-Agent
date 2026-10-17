@@ -71,7 +71,7 @@ jobs:
 
       - name: Check the signature
         run: |
-          apk="md3-agent-$APP_VERSION.apk"
+          apk="mw-agent-$APP_VERSION.apk"
           cp app/build/outputs/apk/release/app-release.apk "$apk"
           apksigner=$(ls -d "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -n 1)
           digest=$("$apksigner" verify --print-certs "$apk" | awk '/certificate SHA-256 digest:/ && !found {found = $NF} END {print found}')

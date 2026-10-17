@@ -60,6 +60,8 @@
     <string name="tools_read_webpage_summary">Открывает ссылки и читает текст</string>
     <string name="tools_weather_title">Погода</string>
     <string name="tools_weather_summary">Сейчас и прогноз до недели</string>
+    <string name="tools_location_title">Местоположение</string>
+    <string name="tools_location_summary">Где находится телефон, с ближайшим адресом</string>
     <string name="tools_read_screen_title">Чтение экрана</string>
     <string name="tools_read_screen_summary">Текст приложения, поверх которого вызван ассистент</string>
     <string name="tools_show_ui_title">Кнопки и варианты ответа</string>
@@ -343,6 +345,8 @@
     <string name="permission_assistant_summary">Вызов жестом или зажатием кнопки питания</string>
     <string name="permission_microphone">Микрофон</string>
     <string name="permission_microphone_summary">Голосовой ввод и диктовка</string>
+    <string name="permission_location">Местоположение</string>
+    <string name="permission_location_summary">Где вы находитесь, для ответов о местах рядом</string>
     <string name="permission_all_files">Доступ ко всем файлам</string>
     <string name="permission_all_files_summary">Агент сможет работать с памятью телефона</string>
     <string name="permission_termux_summary">Запуск команд в Termux</string>
@@ -389,7 +393,7 @@
     <string name="lightbox_close">Закрыть</string>
     <string name="lightbox_open">Открыть в другом приложении</string>
     <string name="lightbox_download">Сохранить в загрузки</string>
-    <string name="lightbox_saved">Сохранено в Загрузки/MD3 Agent</string>
+    <string name="lightbox_saved">Сохранено в Загрузки/MW AGENT</string>
     <string name="lightbox_save_failed">Не получилось сохранить картинку</string>
     <string name="lightbox_load_failed">Не получилось загрузить картинку</string>
     <string name="picture_unavailable">Картинка не загрузилась</string>
@@ -556,7 +560,7 @@
     <string name="about_update_not_published">Публичных релизов пока нет</string>
     <string name="about_update_unreachable">Не получилось достучаться до GitHub, попробуй позже</string>
     <string name="about_source">Исходный код</string>
-    <string name="about_source_summary">github.com/huecoder/md3-agent</string>
+    <string name="about_source_summary">github.com/mwdevpy/mwagent</string>
     <string name="about_license">Лицензия</string>
     <string name="about_license_summary">GNU GPL v3.0</string>
     <string name="about_third_party">Сторонние ресурсы</string>
@@ -580,8 +584,8 @@
     <string name="chat_tool_diagram">Схема %1$s</string>
     <string name="tools_show_diagram_title">Показать схему</string>
     <string name="tools_show_diagram_summary">Рисует планы и процессы блоками со стрелками</string>
-    <string name="phone_control_label">Управление телефоном MD3 Agent</string>
-    <string name="phone_control_description">Позволяет ассистенту MD3 Agent читать экран, нажимать, вводить текст и листать по вашей просьбе. Каждое действие требует подтверждения, если вы не разрешили его в настройках инструментов. С экрана ничего не уходит с телефона, кроме того что отправляется выбранной вами модели.</string>
+    <string name="phone_control_label">Управление телефоном MW AGENT</string>
+    <string name="phone_control_description">Позволяет ассистенту MW AGENT читать экран, нажимать, вводить текст и листать по вашей просьбе. Каждое действие требует подтверждения, если вы не разрешили его в настройках инструментов. С экрана ничего не уходит с телефона, кроме того что отправляется выбранной вами модели.</string>
     <string name="permission_phone_control">Управление телефоном</string>
     <string name="permission_phone_control_summary">Служба специальных возможностей, чтобы ассистент читал экран и нажимал за вас</string>
     <string name="access_group_control">Управление телефоном</string>

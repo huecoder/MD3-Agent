@@ -14,11 +14,11 @@ val signingProperties = Properties().apply {
 }
 
 android {
-    namespace = "dev.huecoder.md3agent"
+    namespace = "com.mwagent"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "dev.huecoder.md3agent"
+        applicationId = "com.mwagent"
         minSdk = 29
         targetSdk = 36
         versionCode = 10

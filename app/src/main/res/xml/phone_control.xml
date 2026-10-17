@@ -8,4 +8,4 @@
     android:canTakeScreenshot="true"
     android:description="@string/phone_control_description"
     android:notificationTimeout="100"
-    android:settingsActivity="dev.huecoder.md3agent.MainActivity" />
+    android:settingsActivity="com.mwagent.MainActivity" />

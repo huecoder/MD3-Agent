@@ -20,5 +20,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "MD3Agent"
+rootProject.name = "MWAgent"
 include(":app")

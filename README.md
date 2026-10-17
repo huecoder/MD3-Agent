@@ -1,6 +1,10 @@
 <h1 align="center">
-  <img src="docs/header.svg" alt="MD3 Agent" width="563">
+  <img src="docs/header.svg" alt="MW AGENT" width="563">
 </h1>
+
+<p align="center">
+  <b>MW AGENT</b> is a fork of <a href="https://github.com/huecoder/MD3-Agent">MD3 Agent</a> by huecoder, licensed under GPL v3 like the original. See <a href="#license">License</a>.
+</p>
 
 <p align="center">
   Open-source replacement for Gemini on Android. Summon it by gesture, bring your own API key,<br>
@@ -12,7 +16,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/huecoder/MD3-Agent/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/huecoder/MD3-Agent?style=flat-square"></a>
+  <a href="https://github.com/mwdevpy/mwagent/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/mwdevpy/mwagent?style=flat-square"></a>
   <a href="LICENSE"><img alt="License: GPL v3" src="https://img.shields.io/badge/license-GPLv3-blue?style=flat-square"></a>
   <img alt="Android 10 and up" src="https://img.shields.io/badge/Android-10%2B-3DDC84?style=flat-square&logo=android&logoColor=white">
   <img alt="Kotlin" src="https://img.shields.io/badge/Kotlin-2.4-7F52FF?style=flat-square&logo=kotlin&logoColor=white">
@@ -32,7 +36,7 @@
 
 ## What it is
 
-MD3 Agent talks to the model provider you choose and hands the model a set of tools. Ask it to check the weather, read a web page, run a Python script, set a reminder, sort a folder or tap through another app, and it does that on your phone. Every tool has an Off, Ask or Auto switch, and the risky ones ask first by default.
+MW AGENT talks to the model provider you choose and hands the model a set of tools. Ask it to check the weather, read a web page, run a Python script, set a reminder, sort a folder or tap through another app, and it does that on your phone. Every tool has an Off, Ask or Auto switch, and the risky ones ask first by default.
 
 It is only a client. There is no backend, no sign-up and no telemetry. Chats live in a local database, API keys are encrypted with the Android Keystore, and the app talks to your provider directly.
 
@@ -70,7 +74,7 @@ The project is at version 0.8, so expect some rough edges. Bug reports are welco
 
 **Tools**
 
-29 built-in tools plus any number of [MCP](https://modelcontextprotocol.io) servers. Each tool is Off, Ask or Auto, globally in Settings and per agent in the agent editor. An Ask tool pauses the reply and shows a card with the arguments: Allow, Deny, or Always allow in this session. A notification asks if the app is in the background.
+30 built-in tools plus any number of [MCP](https://modelcontextprotocol.io) servers. Each tool is Off, Ask or Auto, globally in Settings and per agent in the agent editor. An Ask tool pauses the reply and shows a card with the arguments: Allow, Deny, or Always allow in this session. A notification asks if the app is in the background.
 
 <details>
 <summary>All built-in tools</summary>
@@ -80,6 +84,7 @@ The project is at version 0.8, so expect some rough edges. Bug reports are welco
 | `web_search` | Search through DuckDuckGo (default), SearXNG or the Brave API | Auto |
 | `read_webpage` | Read a page as clean text through Jina Reader (default), directly or a reader of your own | Auto |
 | `get_weather` | Current weather and a 1 to 7 day forecast from Open-Meteo | Auto |
+| `get_location` | The phone's position with the nearest street address, from GPS or the network | Ask |
 | `read_screen` | Text of the app the assistant overlay was opened over | Auto |
 | `phone_screen` | The live screen as a numbered list of elements, through the accessibility service | Auto |
 | `phone_action` | Tap, type, scroll, swipe, press system keys, open apps | Ask |
@@ -94,7 +99,7 @@ The project is at version 0.8, so expect some rough edges. Bug reports are welco
 | `write_file` | Write or append text | Ask |
 | `send_files` | Show phone files and images in the chat | Auto |
 | `set_reminder`, `list_reminders`, `cancel_reminder` | Reminders that notify you and open the chat | Auto |
-| `set_alarm`, `set_timer` | Alarm or timer in the system clock app, needs MD3 Agent on screen | Auto |
+| `set_alarm`, `set_timer` | Alarm or timer in the system clock app, needs MW AGENT on screen | Auto |
 | `list_chats`, `read_chat`, `search_messages` | Look through your other chats | Auto |
 | `export_chat` | Save a chat as a Markdown file | Ask |
 
@@ -108,7 +113,7 @@ Tools that come from MCP servers always start as Ask.
 
 **Device access (optional)**
 - Shell modes: sandbox (default, no root), Termux, Shizuku or root.
-- Phone control through an accessibility service. It reads the screen as numbered elements and refuses to act on MD3 Agent's own screen.
+- Phone control through an accessibility service. It reads the screen as numbered elements and refuses to act on MW AGENT's own screen.
 - File scope: the app folder (default), phone storage with All files access, or root.
 - Python 3.13 through Chaquopy, bundled, standard library only.
 
@@ -119,7 +124,7 @@ Tools that come from MCP servers always start as Ask.
 
 **Voice and assistant**
 - Dictation sends your recording to a transcription endpoint of your choice (OpenAI format, Gemini or ElevenLabs). Replies can be read aloud with the system voice or a provider voice.
-- Set MD3 Agent as the default digital assistant to open a chat sheet over any app. It can read the text of the app underneath through `read_screen`.
+- Set MW AGENT as the default digital assistant to open a chat sheet over any app. It can read the text of the app underneath through `read_screen`.
 
 **Files, look and feel**
 - A Files tab with recent media, your uploads, and the files the agent creates or sends.
@@ -129,7 +134,7 @@ Tools that come from MCP servers always start as Ask.
 
 ## Install
 
-1. Download `md3-agent-<version>.apk` from the [latest release](https://github.com/huecoder/MD3-Agent/releases/latest). It needs Android 10 or newer on a 64-bit ARM phone (arm64-v8a).
+1. Download `mw-agent-<version>.apk` from the [latest release](https://github.com/mwdevpy/mwagent/releases/latest). It needs Android 10 or newer on a 64-bit ARM phone (arm64-v8a).
 2. Open the file and allow installs from that app when Android asks.
 3. In Settings, open Models and add a provider: choose the API format, paste the base URL (it is prefilled for OpenAI, Anthropic and Gemini) and your key. Then pick a model with the button at the top of a new chat.
 
@@ -137,7 +142,7 @@ If Play Protect stops the install, see [Troubleshooting](#troubleshooting).
 
 The app never updates itself. **Check for updates** in About looks at GitHub Releases only when you tap it, and hands you the download link.
 
-To check that an APK is genuine, run `apksigner verify --print-certs md3-agent-<version>.apk` and compare the SHA-256 digest of the signer certificate with this one:
+To check that an APK is genuine, run `apksigner verify --print-certs mw-agent-<version>.apk` and compare the SHA-256 digest of the signer certificate with this one:
 
 ```
 a269959f24a0b8816fbcf313dff1641a0b16a505b2acb8e8701f92a688e411e5
@@ -147,7 +152,7 @@ a269959f24a0b8816fbcf313dff1641a0b16a505b2acb8e8701f92a688e411e5
 
 **Play Protect says "App blocked to protect your device"**
 
-Play Protect blocks apps that you download with a browser, a messenger or a file manager when they declare an accessibility service, SMS access or a notification listener, because those permissions are often abused for fraud. The dialog says the app "can request access to sensitive data". MD3 Agent declares an accessibility service for its phone control tools, so it matches the rule.
+Play Protect blocks apps that you download with a browser, a messenger or a file manager when they declare an accessibility service, SMS access or a notification listener, because those permissions are often abused for fraud. The dialog says the app "can request access to sensitive data". MW AGENT declares an accessibility service for its phone control tools, so it matches the rule.
 
 The service is optional and does nothing until you switch it on in Android's accessibility settings. The block is a blanket rule for those permissions, not a finding about this app. The code is all here, and you can compare the release with the fingerprint above.
 
@@ -155,20 +160,20 @@ To install it anyway, turn off Play Protect's app scanning: open Google Play, ta
 
 **The accessibility switch is greyed out**
 
-Android restricts accessibility for apps that were installed from outside a store. Open App info for MD3 Agent, tap the three dots in the corner, choose **Allow restricted settings**, then switch the service on in Android's accessibility settings.
+Android restricts accessibility for apps that were installed from outside a store. Open App info for MW AGENT, tap the three dots in the corner, choose **Allow restricted settings**, then switch the service on in Android's accessibility settings.
 
 ## Privacy
 
 - No analytics, no crash reporting, no accounts. Chats are stored in a local database on the phone, provider keys and tool settings are encrypted with an Android Keystore key, and cloud backup is switched off.
 - Your messages, tool results and attachments go to the provider you configured. Nothing goes to the developer.
 - A few tools use public services by default, and each can be changed in Settings: DuckDuckGo for `web_search`, r.jina.ai for `read_webpage` and Open-Meteo for `get_weather`. Source pills load each site's favicon straight from that site. The update check talks to `api.github.com` when you tap it.
-- Permissions: internet, vibration, microphone (dictation), notifications, exact alarms and boot (reminders) and a foreground service (streaming in the background). Termux commands, All files access and the accessibility service for phone control are optional and stay off until you enable them. The app has no access to location, camera or contacts.
+- Permissions: internet, vibration, microphone (dictation), notifications, exact alarms and boot (reminders), location (`get_location`, asked for only when you grant it in Device access) and a foreground service (streaming in the background). Termux commands, All files access and the accessibility service for phone control are optional and stay off until you enable them. The app has no access to camera or contacts. Location is read only when a reply calls `get_location`, and that tool asks first by default. Its address lookup uses the system geocoder, which on some phones sends the coordinates to the phone maker's service.
 
 ## Build
 
 ```bash
-git clone https://github.com/huecoder/MD3-Agent.git
-cd MD3-Agent
+git clone https://github.com/mwdevpy/mwagent.git
+cd mwagent
 ./gradlew assembleDebug
 ./gradlew testDebugUnitTest
 ```
@@ -187,4 +192,8 @@ Issues and pull requests are welcome. For anything bigger than a small fix, plea
 
 ## License
 
-GNU General Public License v3.0, see [LICENSE](LICENSE). Vendor logos, the Google Sans font and other third-party assets are listed in [THIRD_PARTY.md](THIRD_PARTY.md). Vendor trademarks belong to their owners.
+GNU General Public License v3.0, see [LICENSE](LICENSE).
+
+MW AGENT is a fork of [MD3 Agent](https://github.com/huecoder/MD3-Agent) by huecoder. It is modified from the original and distributed under the same GPL v3 terms. The original project is not affiliated with this fork and is not responsible for it.
+
+Vendor logos, the Google Sans font and other third-party assets are listed in [THIRD_PARTY.md](THIRD_PARTY.md). Vendor trademarks belong to their owners.

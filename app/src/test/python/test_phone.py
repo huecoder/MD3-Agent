@@ -6,9 +6,9 @@ import threading
 import time
 import unittest
 
-sys.path.insert(0, os.environ["MD3_RUNNER_DIR"])
+sys.path.insert(0, os.environ["MW_RUNNER_DIR"])
 
-import md3_runner
+import mw_runner
 import phone
 
 
@@ -393,7 +393,7 @@ class RoutineTest(unittest.TestCase):
 
 class RunnerTest(unittest.TestCase):
     def run_script(self, code, bridge, timeout=5):
-        script = md3_runner.start(code, tempfile.gettempdir(), bridge)
+        script = mw_runner.start(code, tempfile.gettempdir(), bridge)
         return script, script.wait(timeout)
 
     def test_a_script_drives_the_phone_through_the_bridge(self):
@@ -414,7 +414,7 @@ class RunnerTest(unittest.TestCase):
     def test_stopping_ends_a_script_waiting_for_the_phone(self):
         bridge = FakeBridge()
         bridge.poll = lambda handle: None
-        script = md3_runner.start("import phone\nphone.tap('OK')\nprint('after')", tempfile.gettempdir(), bridge)
+        script = mw_runner.start("import phone\nphone.tap('OK')\nprint('after')", tempfile.gettempdir(), bridge)
         time.sleep(0.3)
 
         script.cancel()
