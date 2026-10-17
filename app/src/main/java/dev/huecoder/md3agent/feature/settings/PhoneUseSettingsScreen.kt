@@ -105,10 +105,10 @@ fun PhoneUseSettingsScreen(onBack: () -> Unit) {
                     onCheckedChange = { value -> update { it.copy(overlay = value) } },
                 )
                 LabeledSwitch(
-                    title = stringResource(R.string.phone_use_scan),
-                    summary = stringResource(R.string.phone_use_scan_summary),
-                    checked = current.scanOnStart,
-                    onCheckedChange = { value -> update { it.copy(scanOnStart = value) } },
+                    title = stringResource(R.string.phone_use_start_glow),
+                    summary = stringResource(R.string.phone_use_start_glow_summary),
+                    checked = current.startGlow,
+                    onCheckedChange = { value -> update { it.copy(startGlow = value) } },
                 )
             }
 

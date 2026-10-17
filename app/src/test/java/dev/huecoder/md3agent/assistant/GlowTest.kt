@@ -79,6 +79,14 @@ class GlowTest {
     }
 
     @Test
+    fun `a sweeping envelope lights up quickly and lasts the requested time`() {
+        val sweeping = GlowEnvelope.sweeping(2.2f)
+        assertEquals(2.2f, sweeping.durationSeconds, 0.001f)
+        assertTrue(sweeping.fadeInSeconds < GlowEnvelope.spanning(2.2f).fadeInSeconds)
+        assertEquals(1f, sweeping.at(sweeping.fadeInSeconds + sweeping.holdSeconds / 2), 0.001f)
+    }
+
+    @Test
     fun `a spanning envelope clamps the duration to the settings range`() {
         assertEquals(AssistantSettings.MIN_GLOW_SECONDS, GlowEnvelope.spanning(0f).durationSeconds, 0.001f)
         assertEquals(AssistantSettings.MAX_GLOW_SECONDS, GlowEnvelope.spanning(60f).durationSeconds, 0.001f)

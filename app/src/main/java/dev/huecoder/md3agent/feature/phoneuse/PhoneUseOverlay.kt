@@ -35,6 +35,8 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import dev.huecoder.md3agent.AppContainer
 import dev.huecoder.md3agent.MainActivity
+import dev.huecoder.md3agent.assistant.glow.EdgeGlow
+import dev.huecoder.md3agent.data.settings.AssistantGlow
 import dev.huecoder.md3agent.data.settings.AppSettings
 import dev.huecoder.md3agent.data.settings.PanelSpot
 import dev.huecoder.md3agent.data.settings.PhonePanelState
@@ -345,8 +347,22 @@ class PhoneUseOverlay(private val service: AccessibilityService, private val con
             Box(Modifier.fillMaxSize()) {
                 if (current.dimScreen) Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = DIM_SCRIM_ALPHA)))
                 CursorLayer(cursor, current, acknowledgements)
-                if (current.scanOnStart) ScanSweep()
+                if (current.startGlow) StartGlow()
             }
+        }
+
+        @Composable
+        private fun StartGlow() {
+            val look by container.assistantSettings.collectAsStateWithLifecycle()
+            val configured = look ?: return
+            EdgeGlow(
+                glow = configured.glow.takeUnless { it == AssistantGlow.OFF } ?: AssistantGlow.ACCENT,
+                grid = configured.glowGrid,
+                thickness = configured.glowThickness,
+                durationSeconds = START_GLOW_SECONDS,
+                play = true,
+                sweep = true,
+            )
         }
 
         @Composable
@@ -461,6 +477,7 @@ class PhoneUseOverlay(private val service: AccessibilityService, private val con
         const val EDGE_MARGIN_DP = 12
         const val DIP_MARGIN_DP = 32
         const val SNAP_MS = 220L
+        const val START_GLOW_SECONDS = 2.2f
         val MIN_PLATE_HEIGHT = 96.dp
     }
 }

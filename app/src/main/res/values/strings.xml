@@ -668,8 +668,8 @@
     <string name="settings_phone_use_summary">Overlay, cursor, chat and sounds</string>
     <string name="phone_use_overlay">Show the overlay</string>
     <string name="phone_use_overlay_summary">Cursor, chat and a Stop button over other apps while the agent uses the phone</string>
-    <string name="phone_use_scan">Scan effect on start</string>
-    <string name="phone_use_scan_summary">A shimmering light runs along the screen edges once when the agent takes control</string>
+    <string name="phone_use_start_glow">Glow on start</string>
+    <string name="phone_use_start_glow_summary">The edge glow of the assistant flows down the screen once when the agent takes control</string>
     <string name="phone_use_section_screen">Screen</string>
     <string name="phone_use_guard">While the agent works</string>
     <string name="phone_use_guard_block">Block touches</string>

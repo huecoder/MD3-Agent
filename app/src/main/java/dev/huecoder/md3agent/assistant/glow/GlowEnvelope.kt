@@ -23,6 +23,13 @@ data class GlowEnvelope(
     companion object {
         private const val RISE_SHARE = 0.25f
         private const val FALL_SHARE = 0.3f
+        private const val SWEEP_RISE_SECONDS = 0.2f
+        private const val SWEEP_FALL_SECONDS = 0.3f
+
+        fun sweeping(totalSeconds: Float): GlowEnvelope {
+            val total = totalSeconds.coerceAtLeast(AssistantSettings.MIN_GLOW_SECONDS)
+            return GlowEnvelope(SWEEP_RISE_SECONDS, total - SWEEP_RISE_SECONDS - SWEEP_FALL_SECONDS, SWEEP_FALL_SECONDS)
+        }
 
         fun spanning(totalSeconds: Float): GlowEnvelope {
             val total = totalSeconds.coerceIn(AssistantSettings.MIN_GLOW_SECONDS, AssistantSettings.MAX_GLOW_SECONDS)

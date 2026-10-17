@@ -29,14 +29,19 @@ internal class GlowShader {
         shader.setFloatUniform("uSat", look.saturation)
         shader.setFloatUniform("uDots", look.dots)
         shader.setFloatUniform("uThick", look.thickness)
+        shader.setFloatUniform("uSpan", SWEEP_SPAN)
     }
 
-    fun advance(seconds: Float, envelope: Float) {
+    fun advance(seconds: Float, envelope: Float, band: Float? = null) {
         shader.setFloatUniform("uTime", seconds)
         shader.setFloatUniform("uEnv", envelope)
+        shader.setFloatUniform("uSweep", if (band == null) 0f else 1f)
+        shader.setFloatUniform("uBand", band ?: 0f)
     }
 
     private companion object {
+        const val SWEEP_SPAN = 0.3f
+
         val GLOW_SOURCE = """
             uniform float2 uSize;
             uniform float3 uColor0;
@@ -56,6 +61,9 @@ internal class GlowShader {
             uniform float uSat;
             uniform float uDots;
             uniform float uThick;
+            uniform float uSweep;
+            uniform float uBand;
+            uniform float uSpan;
 
             const float TAU = 6.2831853;
             const float CORE_WIDTH = 1.8;
@@ -67,6 +75,7 @@ internal class GlowShader {
             const float BLOB_SHARPNESS = 2.0;
             const float ADDITIVE_SHARE = 0.3;
             const float DIM = 0.3;
+            const float SWEEP_GAIN = 1.3;
             const float DOT_PITCH = 5.4;
             const float DOT_COS = 0.88295;
             const float DOT_SIN = 0.46947;
@@ -137,7 +146,8 @@ internal class GlowShader {
               float blob = pow(0.5 + 0.5 * cos((around * uBlobs - uTime * uFlow * 2.0) * TAU), BLOB_SHARPNESS);
               float shimmer = mix(1.0, 0.2 + 0.8 * blob, uBlobAmt);
 
-              float gain = bias * shimmer * uEnv;
+              float lit = mix(1.0, exp(-((v - uBand) * (v - uBand)) / (uSpan * uSpan)), uSweep);
+              float gain = mix(bias, 1.0, uSweep) * shimmer * uEnv * lit * mix(1.0, SWEEP_GAIN, uSweep);
               float3 light = (haloColor * HALO_GAIN * halo + midColor * mid + coreColor * core) * gain;
 
               float raw = max(light.r, max(light.g, light.b));
@@ -145,7 +155,7 @@ internal class GlowShader {
               float3 rgb = light * (peak / max(raw, 0.0001));
               float alpha = peak * (1.0 - ADDITIVE_SHARE);
 
-              float veil = DIM * uEnv * mix(0.4, 1.0, v) * (0.3 + 0.7 * exp(-inward / (HALO_WIDTH * uThick * 1.6)));
+              float veil = DIM * uEnv * lit * mix(0.4, 1.0, v) * (0.3 + 0.7 * exp(-inward / (HALO_WIDTH * uThick * 1.6)));
               alpha = alpha + veil * (1.0 - alpha);
 
               float3 hue = rgb / max(peak, 0.0001);
