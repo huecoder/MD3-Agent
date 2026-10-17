@@ -259,5 +259,5 @@ object ChatTimeline {
         runCatching { json.parseToJsonElement(raw).jsonObject }.getOrDefault(JsonObject(emptyMap()))
 }
 
-fun ToolCall.awaitingApprovalUi(): ToolCallUi =
-    ToolCallUi(id, name, ChatTimeline.parseArguments(arguments), ToolStatus.AWAITING_APPROVAL, result = null)
+fun ToolCall.toUi(status: ToolStatus): ToolCallUi =
+    ToolCallUi(id, name, ChatTimeline.parseArguments(arguments), status, result = null)

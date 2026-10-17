@@ -14,6 +14,7 @@ import androidx.core.net.toUri
 import dev.huecoder.md3agent.MainActivity
 import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.conversation.ApprovalDecision
+import dev.huecoder.md3agent.conversation.BackgroundWorkService
 
 enum class AppChannel(val id: String, @StringRes val title: Int, val importance: Int) {
     BACKGROUND_WORK("background_work", R.string.notification_channel_work, NotificationManager.IMPORTANCE_LOW),
@@ -24,6 +25,8 @@ enum class AppChannel(val id: String, @StringRes val title: Int, val importance:
 object NotificationIds {
     const val WORK = 1001
     const val APPROVAL = 1002
+    const val OPEN_APP_REQUEST = 2
+    const val STOP_ALL_REQUEST = 1
 }
 
 object AppNotifications {
@@ -45,6 +48,13 @@ object AppNotifications {
 
     fun openChatIntent(context: Context, chatId: String?, requestCode: Int): PendingIntent =
         PendingIntent.getActivity(context, requestCode, MainActivity.chatIntent(context, chatId), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+
+    fun stopAllIntent(context: Context): PendingIntent =
+        PendingIntent.getService(
+            context, NotificationIds.STOP_ALL_REQUEST,
+            Intent(context, BackgroundWorkService::class.java).setAction(BackgroundWorkService.ACTION_STOP_ALL),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
 
     fun approvalIntent(context: Context, chatId: String, callId: String, decision: ApprovalDecision): PendingIntent {
         val intent = Intent(context, NotificationActionReceiver::class.java)

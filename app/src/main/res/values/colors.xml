@@ -2,4 +2,7 @@
 <resources>
     <color name="ic_launcher_background">#FF3C4048</color>
     <color name="ic_launcher_body">#FFC3D9F5</color>
+    <color name="notification_accent">#FF5E8BFF</color>
+    <color name="notification_accent_ask">#FFF29900</color>
+    <color name="notification_accent_done">#FF1E9E52</color>
 </resources>

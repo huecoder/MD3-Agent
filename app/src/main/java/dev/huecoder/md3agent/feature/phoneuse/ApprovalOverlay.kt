@@ -11,7 +11,8 @@ import androidx.compose.runtime.CompositionLocalProvider
 import dev.huecoder.md3agent.AppContainer
 import dev.huecoder.md3agent.data.settings.ApprovalSurface
 import dev.huecoder.md3agent.feature.chat.ToolCallUi
-import dev.huecoder.md3agent.feature.chat.awaitingApprovalUi
+import dev.huecoder.md3agent.feature.chat.ToolStatus
+import dev.huecoder.md3agent.feature.chat.toUi
 import dev.huecoder.md3agent.llm.ToolCall
 import dev.huecoder.md3agent.ui.avatar.ProvideAgentLook
 import dev.huecoder.md3agent.ui.haptics.ProvideHaptics
@@ -60,7 +61,7 @@ class ApprovalOverlay(private val service: AccessibilityService, private val con
     }
 
     private fun show(request: ApprovalRequest): OverlayWindow =
-        OverlayWindow(service, windowManager, modalParams()) { Content(request, request.call.awaitingApprovalUi()) }.also { it.show() }
+        OverlayWindow(service, windowManager, modalParams()) { Content(request, request.call.toUi(ToolStatus.AWAITING_APPROVAL)) }.also { it.show() }
 
     @Composable
     private fun Content(request: ApprovalRequest, call: ToolCallUi) {
