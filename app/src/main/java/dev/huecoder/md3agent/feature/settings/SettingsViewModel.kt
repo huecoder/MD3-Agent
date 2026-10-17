@@ -3,6 +3,7 @@ package dev.huecoder.md3agent.feature.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.huecoder.md3agent.data.settings.AppSettings
+import dev.huecoder.md3agent.data.settings.AssistantSettings
 import dev.huecoder.md3agent.data.settings.ChatSettings
 import dev.huecoder.md3agent.data.settings.InterfaceSettings
 import dev.huecoder.md3agent.data.settings.NotificationSettings
@@ -28,6 +29,10 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
 
     fun updateNotifications(transform: (NotificationSettings) -> NotificationSettings) {
         viewModelScope.launch { repository.updateNotifications(transform) }
+    }
+
+    fun updateAssistant(transform: (AssistantSettings) -> AssistantSettings) {
+        viewModelScope.launch { repository.updateAssistant(transform) }
     }
 
     fun updateVoice(transform: (VoiceSettings) -> VoiceSettings) {

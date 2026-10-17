@@ -34,6 +34,7 @@ data class AppSettings(
     val voice: VoiceSettings,
     val ui: InterfaceSettings,
     val notifications: NotificationSettings = NotificationSettings(),
+    val assistant: AssistantSettings = AssistantSettings(),
 ) {
     fun provider(id: String?): ProviderProfile? = providers.firstOrNull { it.id == id }
 
