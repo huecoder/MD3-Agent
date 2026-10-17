@@ -4,6 +4,8 @@ import android.os.Build
 import android.view.RoundedCorner
 import android.view.View
 import androidx.annotation.RequiresApi
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
@@ -40,6 +42,8 @@ fun EdgeGlow(
     play: Boolean,
     modifier: Modifier = Modifier,
     cornerRadius: Dp? = null,
+    closing: Boolean = false,
+    onFinished: () -> Unit = {},
 ) {
     if (glow == AssistantGlow.OFF || !play) return
     val envelope = remember(durationSeconds) { GlowEnvelope.spanning(durationSeconds) }
@@ -49,12 +53,19 @@ fun EdgeGlow(
     val displayCorner = cornerRadius ?: rememberDisplayCornerRadius()
     var seconds by remember { mutableFloatStateOf(0f) }
     var finished by remember { mutableStateOf(false) }
+    val closeFade = remember { Animatable(1f) }
     LaunchedEffect(envelope) {
         val start = withFrameNanos { it }
-        while (seconds < envelope.durationSeconds) {
+        while (seconds < envelope.durationSeconds && closeFade.value > 0f) {
             seconds = (withFrameNanos { it } - start) / NANOS_PER_SECOND
         }
         finished = true
+    }
+    LaunchedEffect(closing) {
+        if (closing) closeFade.animateTo(0f, tween(CLOSE_FADE_MILLIS))
+    }
+    LaunchedEffect(finished) {
+        if (finished) onFinished()
     }
     if (finished) return
     val pixelsPerDp = LocalDensity.current.density
@@ -66,7 +77,7 @@ fun EdgeGlow(
                 null
             }
             onDrawBehind {
-                val level = envelope.at(seconds)
+                val level = envelope.at(seconds) * closeFade.value
                 if (shader != null) {
                     shader.advance(seconds, level)
                     drawRect(shader.brush)
@@ -109,6 +120,7 @@ private fun DrawScope.drawLegacyGlow(stops: List<Color>, level: Float, thickness
 }
 
 private const val NANOS_PER_SECOND = 1_000_000_000f
+private const val CLOSE_FADE_MILLIS = 450
 private const val LEGACY_LAYERS = 6
 private const val LEGACY_OUTER_WIDTH = 40f
 private const val LEGACY_INNER_WIDTH = 3f

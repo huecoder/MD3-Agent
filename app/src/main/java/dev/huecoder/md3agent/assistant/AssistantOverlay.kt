@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -44,6 +45,8 @@ import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.lerp
+import androidx.compose.ui.unit.offset
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composables.icons.materialsymbols.MaterialSymbols
@@ -53,6 +56,7 @@ import dev.huecoder.md3agent.App
 import dev.huecoder.md3agent.AppContainer
 import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.assistant.glow.EdgeGlow
+import dev.huecoder.md3agent.data.settings.AssistantGlow
 import dev.huecoder.md3agent.data.settings.AssistantLayout
 import dev.huecoder.md3agent.data.settings.InvokeInput
 import dev.huecoder.md3agent.feature.chat.ChatInput
@@ -118,6 +122,8 @@ fun AssistantOverlay(
     val density = LocalDensity.current
     val menu = remember(activation) { AttachMenuState() }
     val lightbox = remember(activation) { LightboxController() }
+    var closing by remember(activation) { mutableStateOf(false) }
+    var glowDone by remember(activation) { mutableStateOf(look.glow == AssistantGlow.OFF) }
     var composerHeight by remember { mutableIntStateOf(with(density) { DEFAULT_COMPOSER_HEIGHT.roundToPx() }) }
 
     val dismiss: () -> Unit = {
@@ -151,6 +157,11 @@ fun AssistantOverlay(
         val canRecord = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
         if (wantsVoice && canRecord) dictation.onStart() else runCatching { focusRequester.requestFocus() }
     }
+    LaunchedEffect(sheet) {
+        snapshotFlow { sheet.value }.first { it != SheetValue.Hidden }
+        snapshotFlow { sheet.target }.first { it == SheetValue.Hidden }
+        closing = true
+    }
     LaunchedEffect(viewModel) {
         container.assistant.picked.collect { picked ->
             viewModel.attach(picked.uris).invokeOnCompletion { picked.markImported() }
@@ -170,18 +181,18 @@ fun AssistantOverlay(
     val composerDp = with(density) { composerHeight.toDp() }
     val navigationDp = with(density) { WindowInsets.navigationBars.getBottom(density).toDp() }
     val compactHeight = if (compact) composerDp + navigationDp + if (look.showOrb) ORB_ZONE else BARE_ZONE else null
-    val composerModifier = Modifier
-        .wrapContentHeight(Alignment.Top, unbounded = true)
-        .onSizeChanged { composerHeight = it.height }
-        .padding(horizontal = 8.dp, vertical = 4.dp)
-
     CompositionLocalProvider(LocalLightbox provides lightbox) {
         Box(Modifier.fillMaxSize()) {
             AssistantSheet(
                 state = sheet,
                 compactContentHeight = compactHeight,
                 onDismissRequest = dismiss,
-                onDismissed = onDismiss,
+                onDismissed = {
+                    scope.launch {
+                        snapshotFlow { glowDone }.first { it }
+                        onDismiss()
+                    }
+                },
             ) { chrome ->
                 OverlayHeader(
                     agentName = state.agentName,
@@ -219,6 +230,10 @@ fun AssistantOverlay(
                         )
                     }
                 }
+                val composerModifier = Modifier
+                    .wrapContentHeight(Alignment.Top, unbounded = true)
+                    .onSizeChanged { composerHeight = it.height }
+                    .composerMargins(chrome)
                 val asked = prompt
                 if (asked != null) {
                     PromptPanel(asked, onAnswer = { viewModel.answerPrompt(asked, it) }, modifier = composerModifier)
@@ -265,6 +280,8 @@ fun AssistantOverlay(
                 thickness = look.glowThickness,
                 durationSeconds = look.glowSeconds,
                 play = true,
+                closing = closing,
+                onFinished = { glowDone = true },
             )
         }
     }
@@ -289,6 +306,15 @@ private fun OverlayHeader(agentName: String, canOpen: Boolean, onOpenInApp: () -
     }
 }
 
+private fun Modifier.composerMargins(chrome: () -> Float): Modifier = layout { measurable, constraints ->
+    val card = chrome()
+    val side = lerp(COMPACT_SIDE_MARGIN, CARD_SIDE_MARGIN, card).roundToPx()
+    val top = CARD_VERTICAL_MARGIN.roundToPx()
+    val bottom = lerp(COMPACT_BOTTOM_MARGIN, CARD_VERTICAL_MARGIN, card).roundToPx()
+    val placeable = measurable.measure(constraints.offset(horizontal = -2 * side, vertical = -(top + bottom)))
+    layout(placeable.width + 2 * side, placeable.height + top + bottom) { placeable.place(side, top) }
+}
+
 private fun AppContainer.appLabel(packageName: String): String? =
     InstalledApps.list(appContext.packageManager).firstOrNull { it.packageName == packageName }?.label
 
@@ -297,4 +323,8 @@ private val DEFAULT_COMPOSER_HEIGHT = 64.dp
 private val ORB_SIZE = 56.dp
 private val ORB_GAP = 12.dp
 private val ORB_ZONE: Dp = 92.dp
+private val COMPACT_SIDE_MARGIN = 20.dp
+private val COMPACT_BOTTOM_MARGIN = 20.dp
+private val CARD_SIDE_MARGIN = 8.dp
+private val CARD_VERTICAL_MARGIN = 4.dp
 private val BARE_ZONE: Dp = 8.dp

@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -39,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -82,6 +84,8 @@ fun AssistantSheet(
     val density = LocalDensity.current
     val statusBarTop = WindowInsets.statusBars.getTop(density)
     val surface = MaterialTheme.colorScheme.surfaceContainer
+    val keyboard = WindowInsets.ime
+    val keyboardFillRamp = with(density) { KEYBOARD_FILL_RAMP.toPx() }
     val flingBehavior = AnchoredDraggableDefaults.flingBehavior(draggable, animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec())
     val settleSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()
     val flingThreshold = with(density) { FLING_THRESHOLD.toPx() }
@@ -116,6 +120,20 @@ fun AssistantSheet(
                 .fillMaxSize()
                 .drawBehind { drawRect(Color.Black, alpha = SCRIM_ALPHA * geometry.openness(offset()) * chrome()) }
                 .clickable(remember { MutableInteractionSource() }, indication = null, onClick = onDismissRequest),
+        )
+        Box(
+            Modifier.fillMaxSize().drawBehind {
+                val keyboardHeight = keyboard.getBottom(this)
+                if (keyboardHeight > 0) {
+                    val sheetHeight = size.height - keyboardHeight - geometry.top(offset(), keyboard = keyboardHeight.toFloat())
+                    drawRect(
+                        surface,
+                        topLeft = Offset(0f, size.height - keyboardHeight),
+                        size = Size(size.width, keyboardHeight.toFloat()),
+                        alpha = chrome() * (sheetHeight / keyboardFillRamp).coerceIn(0f, 1f),
+                    )
+                }
+            },
         )
         Box(Modifier.fillMaxSize().imePadding()) {
             Column(
@@ -220,3 +238,4 @@ private val HANDLE_WIDTH = 32.dp
 private val HANDLE_HEIGHT = 4.dp
 private val HANDLE_PADDING = 10.dp
 private val FLING_THRESHOLD = 125.dp
+private val KEYBOARD_FILL_RAMP = 48.dp
