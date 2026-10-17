@@ -108,6 +108,39 @@
         </service>
 
         <service
+            android:name=".system.tiles.NewChatTile"
+            android:exported="true"
+            android:icon="@drawable/ic_tile_new_chat"
+            android:label="@string/home_new_chat"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".system.tiles.FilesTile"
+            android:exported="true"
+            android:icon="@drawable/ic_tile_files"
+            android:label="@string/files_title"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".system.tiles.SettingsTile"
+            android:exported="true"
+            android:icon="@drawable/ic_tile_settings"
+            android:label="@string/settings_title"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <service
             android:name=".system.control.PhoneControlService"
             android:exported="false"
             android:label="@string/phone_control_label"

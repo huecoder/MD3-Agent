@@ -33,6 +33,7 @@ import dev.huecoder.md3agent.feature.home.HomeScreen
 import dev.huecoder.md3agent.feature.settings.SettingsDestinations
 import dev.huecoder.md3agent.feature.settings.SettingsScreen
 import dev.huecoder.md3agent.ui.components.bottomEdgeFade
+import dev.huecoder.md3agent.ui.navigation.LaunchTarget
 import dev.huecoder.md3agent.ui.haptics.rememberHaptics
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.map
@@ -42,6 +43,8 @@ import kotlin.math.sign
 
 @Composable
 fun MainScreen(
+    request: LaunchTarget?,
+    onRequestHandled: () -> Unit,
     onOpenChat: (chatId: String?) -> Unit,
     onOpenMessage: (chatId: String, messageId: String) -> Unit,
     onOpenFolder: (LibraryRoot) -> Unit,
@@ -59,6 +62,15 @@ fun MainScreen(
     var expanded by rememberSaveable { mutableStateOf(true) }
     val thresholdPx = with(LocalDensity.current) { COLLAPSE_DISTANCE.toPx() }
     val collapseOnScroll = remember(thresholdPx) { CollapseOnScroll(thresholdPx) { expanded = it } }
+
+    LaunchedEffect(request) {
+        when (request ?: return@LaunchedEffect) {
+            LaunchTarget.NEW_CHAT -> if (hasProvider) onOpenChat(null) else open(MainTab.SETTINGS)
+            LaunchTarget.FILES -> open(MainTab.FILES)
+            LaunchTarget.SETTINGS -> open(MainTab.SETTINGS)
+        }
+        onRequestHandled()
+    }
 
     LaunchedEffect(pager) {
         snapshotFlow { pager.settledPage }.drop(1).collect {

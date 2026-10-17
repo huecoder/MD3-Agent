@@ -2,6 +2,10 @@ package dev.huecoder.md3agent.ui.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
@@ -38,12 +42,19 @@ import dev.huecoder.md3agent.ui.haptics.clickHaptics
 import androidx.compose.ui.Modifier
 
 @Composable
-fun AppNavHost(chatToOpen: String?, onChatOpened: () -> Unit) {
+fun AppNavHost(chatToOpen: String?, onChatOpened: () -> Unit, target: LaunchTarget?, onTargetHandled: () -> Unit) {
     val navController = rememberNavController()
+    var homeRequest by remember { mutableStateOf<LaunchTarget?>(null) }
     LaunchedEffect(chatToOpen) {
         val chatId = chatToOpen ?: return@LaunchedEffect
         navController.navigate(ChatRoute(chatId)) { popUpTo(HomeRoute) }
         onChatOpened()
+    }
+    LaunchedEffect(target) {
+        val requested = target ?: return@LaunchedEffect
+        navController.popBackStack(HomeRoute, inclusive = false)
+        homeRequest = requested
+        onTargetHandled()
     }
     NavHost(
         navController = navController,
@@ -56,6 +67,8 @@ fun AppNavHost(chatToOpen: String?, onChatOpened: () -> Unit) {
     ) {
         screen<HomeRoute>(navController) {
             MainScreen(
+                request = homeRequest,
+                onRequestHandled = { homeRequest = null },
                 onOpenChat = { navController.navigate(ChatRoute(it)) },
                 onOpenMessage = { chatId, messageId -> navController.navigate(ChatRoute(chatId, focusMessageId = messageId)) },
                 onOpenFolder = { root -> navController.navigate(FolderRoute(root.name)) },
