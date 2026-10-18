@@ -77,7 +77,7 @@ The project is at version 0.8, so expect some rough edges. Bug reports are welco
 
 | Tool | What it does | Default |
 |---|---|---|
-| `web_search` | Search through DuckDuckGo (default), SearXNG or the Brave API | Auto |
+| `web_search` | Search through DuckDuckGo (default), SearXNG, the Brave API or any JSON search API you describe yourself, with a ready template for Exa | Auto |
 | `read_webpage` | Read a page as clean text through Jina Reader (default), directly or a reader of your own | Auto |
 | `get_weather` | Current weather and a 1 to 7 day forecast from Open-Meteo | Auto |
 | `read_screen` | Text of the app the assistant overlay was opened over | Auto |
