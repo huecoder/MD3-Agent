@@ -4,6 +4,11 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.huecoder.md3agent.assistant.AssistantRole
+import dev.huecoder.md3agent.data.models.ModelCatalog
+import dev.huecoder.md3agent.data.settings.ApiFormat
+import dev.huecoder.md3agent.data.settings.ModelSelection
+import dev.huecoder.md3agent.data.settings.ProviderProfile
+import dev.huecoder.md3agent.llm.ProviderException
 import dev.huecoder.md3agent.data.settings.AgentProfile
 import dev.huecoder.md3agent.data.settings.ModePreset
 import dev.huecoder.md3agent.data.settings.ModeSettings
@@ -34,14 +39,21 @@ data class OnboardingState(
     val currentLook: AgentLook,
     val missingPermissions: List<DevicePermission>,
     val providerName: String?,
-    val assistantHeld: Boolean,
+    val model: ModelSelection?,
 )
+
+sealed interface ConnectResult {
+    data class Verified(val models: Int) : ConnectResult
+
+    data class Unverified(val reason: String) : ConnectResult
+}
 
 class OnboardingViewModel(
     private val context: Context,
     private val settings: SettingsRepository,
     private val modeController: ModeController,
     private val probe: PermissionProbe,
+    private val catalog: ModelCatalog,
     private val retake: Boolean,
 ) : ViewModel() {
     private class Start(val hadProvider: Boolean, val assistantHeld: Boolean, val mode: ModeSettings, val agent: AgentProfile)
@@ -58,9 +70,11 @@ class OnboardingViewModel(
     private val draft = MutableStateFlow(Draft(language = AppLocale.current(context)))
     private val start = MutableStateFlow<Start?>(null)
     private val missing = MutableStateFlow(emptyList<DevicePermission>())
+    private val shownPermissions = MutableStateFlow<List<DevicePermission>?>(null)
     private val cluster = AgentCluster.random()
+    private var connectedProviderId: String? = null
 
-    val state: StateFlow<OnboardingState?> = combine(draft, start, missing, settings.settings) { current, begun, absent, all ->
+    val state: StateFlow<OnboardingState?> = combine(draft, start, missing, settings.settings, shownPermissions) { current, begun, absent, all, shown ->
         begun ?: return@combine null
         val needs = Survey.needs(current.answers)
         val recommended = Survey.recommend(current.answers)
@@ -82,9 +96,9 @@ class OnboardingViewModel(
             agentPick = current.agentPick,
             agentName = current.agentName ?: begun.agent.name,
             currentLook = AgentLook.of(begun.agent),
-            missingPermissions = absent,
+            missingPermissions = shown ?: absent,
             providerName = all.providers.firstOrNull()?.name,
-            assistantHeld = begun.assistantHeld,
+            model = all.activeSelection,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), null)
 
@@ -109,7 +123,25 @@ class OnboardingViewModel(
 
     fun pickAgent(index: Int) = draft.update { it.copy(agentPick = index) }
 
-    fun markShown(step: OnboardingStep) = draft.update { it.copy(visited = it.visited + step) }
+    fun markShown(step: OnboardingStep) {
+        draft.update { it.copy(visited = it.visited + step) }
+        if (step == OnboardingStep.PERMISSIONS && shownPermissions.value == null) shownPermissions.value = missing.value
+    }
+
+    fun selectModel(selection: ModelSelection) {
+        viewModelScope.launch { settings.setActiveSelection(selection) }
+    }
+
+    suspend fun connectProvider(format: ApiFormat, name: String, key: String): ConnectResult {
+        val id = connectedProviderId ?: settings.newProviderId().also { connectedProviderId = it }
+        val profile = ProviderProfile(id = id, name = name, baseUrl = format.defaultBaseUrl, apiKey = key.trim(), format = format)
+        settings.upsertProvider(profile)
+        return try {
+            ConnectResult.Verified(catalog.refresh(profile).size)
+        } catch (e: ProviderException) {
+            ConnectResult.Unverified(e.message.orEmpty())
+        }
+    }
 
     fun refreshPermissions() {
         viewModelScope.launch { missing.value = probe.missing(Survey.needs(draft.value.answers)) }

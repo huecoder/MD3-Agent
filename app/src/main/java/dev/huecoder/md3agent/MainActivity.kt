@@ -10,6 +10,7 @@ import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.huecoder.md3agent.ui.avatar.ProvideAgentLook
 import dev.huecoder.md3agent.ui.haptics.ProvideHaptics
+import dev.huecoder.md3agent.ui.locale.AppLocale
 import dev.huecoder.md3agent.ui.navigation.AppNavHost
 import dev.huecoder.md3agent.ui.navigation.LaunchTarget
 import dev.huecoder.md3agent.ui.theme.AssistantTheme
@@ -19,6 +20,10 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
     private val pendingChatId = MutableStateFlow<String?>(null)
     private val pendingTarget = MutableStateFlow<LaunchTarget?>(null)
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(AppLocale.wrap(newBase))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()

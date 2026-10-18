@@ -1,9 +1,12 @@
 package dev.huecoder.md3agent.feature.settings
 
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -12,14 +15,18 @@ import com.composables.icons.materialsymbols.rounded.Auto_awesome
 import com.composables.icons.materialsymbols.rounded.Numbers
 import com.composables.icons.materialsymbols.rounded.Swipe_left
 import com.composables.icons.materialsymbols.rounded.Swipe_right
+import com.composables.icons.materialsymbols.rounded.Translate
 import com.composables.icons.materialsymbols.rounded.Tune
 import com.composables.icons.materialsymbols.rounded.Vibration
 import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.data.settings.InterfaceSettings
+import dev.huecoder.md3agent.ui.components.DropdownOption
 import dev.huecoder.md3agent.ui.components.SectionHeader
 import dev.huecoder.md3agent.ui.components.SettingsScaffold
 import dev.huecoder.md3agent.ui.components.appViewModel
 import dev.huecoder.md3agent.ui.haptics.rememberHaptics
+import dev.huecoder.md3agent.ui.locale.AppLanguage
+import dev.huecoder.md3agent.ui.locale.AppLocale
 import kotlin.math.roundToInt
 
 @Composable
@@ -28,11 +35,28 @@ fun AppearanceScreen(onBack: () -> Unit) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
     val haptics = rememberHaptics()
     val swipes = swipeOptions()
+    val context = LocalContext.current
+    val activity = LocalActivity.current
+    val languages = remember { AppLanguage.entries.map { DropdownOption(it, it.nativeName) } }
 
     SettingsScaffold(stringResource(R.string.settings_appearance), onBack) { padding ->
         val current = settings ?: return@SettingsScaffold
         Column(Modifier.settingsPage(padding)) {
-            SectionHeader(stringResource(R.string.chat_settings_section_replies), topPadding = 8.dp)
+            SectionHeader(stringResource(R.string.appearance_section_language), topPadding = 8.dp)
+            CardGroup {
+                card { shape ->
+                    MenuCard(
+                        icon = MaterialSymbols.Rounded.Translate,
+                        title = stringResource(R.string.appearance_language),
+                        options = languages,
+                        selected = AppLocale.current(context),
+                        onSelect = { language -> activity?.let { AppLocale.apply(it, language) } },
+                        shape = shape,
+                    )
+                }
+            }
+
+            SectionHeader(stringResource(R.string.chat_settings_section_replies))
             CardGroup {
                 card { shape ->
                     SwitchCard(

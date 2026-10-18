@@ -85,21 +85,45 @@ fun DeviceAccessScreen(onBack: () -> Unit) {
     val fileScope by viewModel.fileScope.collectAsStateWithLifecycle()
     val permissions by viewModel.permissions.collectAsStateWithLifecycle()
     val checkingRoot by viewModel.checkingRoot.collectAsStateWithLifecycle()
+    val actionFor = rememberPermissionActions(refresh = viewModel::refresh, requestShizuku = viewModel::requestShizukuPermission, checkRoot = viewModel::checkRoot)
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refresh() }
+
+    val folds = rememberSectionFolds(*AccessSection.entries.map { it.name }.toTypedArray())
+
+    SettingsScaffold(stringResource(R.string.settings_access), onBack) { padding ->
+        val shell = shellMode ?: return@SettingsScaffold
+        val files = fileScope ?: return@SettingsScaffold
+        DeviceAccessContent(
+            state = AccessState(shell, files, permissions, checkingRoot),
+            folds = folds,
+            actionFor = actionFor,
+            onSelectShell = viewModel::selectShell,
+            onSelectFiles = viewModel::selectFiles,
+            padding = padding,
+        )
+    }
+}
+
+@Composable
+internal fun rememberPermissionActions(
+    refresh: () -> Unit,
+    requestShizuku: () -> Unit = {},
+    checkRoot: () -> Unit = {},
+): (DevicePermission, AccessStatus) -> PermissionAction? {
     val context = LocalContext.current
     var microphoneDenied by rememberSaveable { mutableStateOf(false) }
     val askMicrophone = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         microphoneDenied = !granted
-        viewModel.refresh()
+        refresh()
     }
     var notificationsDenied by rememberSaveable { mutableStateOf(false) }
     val askNotifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         notificationsDenied = !granted
-        viewModel.refresh()
+        refresh()
     }
-    val askTermux = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { viewModel.refresh() }
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refresh() }
+    val askTermux = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { refresh() }
 
-    val actionFor = { permission: DevicePermission, status: AccessStatus ->
+    return { permission, status ->
         when (permission) {
             DevicePermission.ASSISTANT -> PermissionAction(R.string.access_action_choose) { AssistantRole.openSystemPicker(context) }
             DevicePermission.MICROPHONE -> if (microphoneDenied) {
@@ -121,26 +145,11 @@ fun DeviceAccessScreen(onBack: () -> Unit) {
             }
             DevicePermission.SHIZUKU -> when (status) {
                 AccessStatus.NOT_RUNNING -> PermissionAction(R.string.access_action_open) { context.openShizuku() }
-                AccessStatus.NEEDS_PERMISSION -> PermissionAction(R.string.access_action_grant, viewModel::requestShizukuPermission)
+                AccessStatus.NEEDS_PERMISSION -> PermissionAction(R.string.access_action_grant, requestShizuku)
                 else -> null
             }
-            DevicePermission.ROOT -> PermissionAction(R.string.access_action_check, viewModel::checkRoot)
+            DevicePermission.ROOT -> PermissionAction(R.string.access_action_check, checkRoot)
         }
-    }
-
-    val folds = rememberSectionFolds(*AccessSection.entries.map { it.name }.toTypedArray())
-
-    SettingsScaffold(stringResource(R.string.settings_access), onBack) { padding ->
-        val shell = shellMode ?: return@SettingsScaffold
-        val files = fileScope ?: return@SettingsScaffold
-        DeviceAccessContent(
-            state = AccessState(shell, files, permissions, checkingRoot),
-            folds = folds,
-            actionFor = actionFor,
-            onSelectShell = viewModel::selectShell,
-            onSelectFiles = viewModel::selectFiles,
-            padding = padding,
-        )
     }
 }
 

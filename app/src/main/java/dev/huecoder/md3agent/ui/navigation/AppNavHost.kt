@@ -1,11 +1,23 @@
 package dev.huecoder.md3agent.ui.navigation
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.huecoder.md3agent.App
+import dev.huecoder.md3agent.feature.onboarding.OnboardingScreen
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
@@ -45,6 +57,21 @@ import androidx.compose.ui.Modifier
 
 @Composable
 fun AppNavHost(chatToOpen: String?, onChatOpened: () -> Unit, target: LaunchTarget?, onTargetHandled: () -> Unit) {
+    val container = (LocalContext.current.applicationContext as App).container
+    val onboarded by remember(container) { container.settings.settings.map { it.mode.onboarded }.distinctUntilChanged() }
+        .collectAsStateWithLifecycle(initialValue = null)
+    val start = remember(onboarded != null) { onboarded?.let { if (it) HomeRoute else OnboardingRoute() } }
+    if (start == null) {
+        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface))
+        return
+    }
+    AppNavGraph(start, chatToOpen, onChatOpened, target, onTargetHandled)
+}
+
+@Composable
+private fun AppNavGraph(start: Any, chatToOpen: String?, onChatOpened: () -> Unit, target: LaunchTarget?, onTargetHandled: () -> Unit) {
+    val container = (LocalContext.current.applicationContext as App).container
+    val scope = rememberCoroutineScope()
     val navController = rememberNavController()
     var homeRequest by remember { mutableStateOf<LaunchTarget?>(null) }
     LaunchedEffect(chatToOpen) {
@@ -60,7 +87,7 @@ fun AppNavHost(chatToOpen: String?, onChatOpened: () -> Unit, target: LaunchTarg
     }
     NavHost(
         navController = navController,
-        startDestination = HomeRoute,
+        startDestination = start,
         modifier = Modifier.clickHaptics(),
         enterTransition = NavTransitions.enter,
         exitTransition = NavTransitions.exit,
@@ -108,7 +135,24 @@ fun AppNavHost(chatToOpen: String?, onChatOpened: () -> Unit, target: LaunchTarg
         screen<AgentEditorRoute>(navController) { entry ->
             AgentEditorScreen(agentId = entry.toRoute<AgentEditorRoute>().agentId, onDone = navController::popBackStack)
         }
-        screen<ModeRoute>(navController) { ModeScreen(onBack = navController::popBackStack) }
+        screen<ModeRoute>(navController) {
+            ModeScreen(onBack = navController::popBackStack, onRetakeSurvey = { navController.navigate(OnboardingRoute(retake = true)) })
+        }
+        screen<OnboardingRoute>(navController) { entry ->
+            val retake = entry.toRoute<OnboardingRoute>().retake
+            OnboardingScreen(
+                retake = retake,
+                onCustomProvider = { navController.navigate(ProviderEditorRoute()) },
+                onFinished = { openChat ->
+                    if (retake) {
+                        navController.popBackStack()
+                    } else {
+                        navController.navigate(HomeRoute) { popUpTo<OnboardingRoute> { inclusive = true } }
+                        if (openChat) scope.launch { if (container.settings.current().providers.isNotEmpty()) navController.navigate(ChatRoute()) }
+                    }
+                },
+            )
+        }
         screen<MemorySettingsRoute>(navController) { MemorySettingsScreen(onBack = navController::popBackStack) }
         screen<NetworkSettingsRoute>(navController) { NetworkSettingsScreen(onBack = navController::popBackStack) }
         screen<ToolSettingsRoute>(navController) { ToolSettingsScreen(onBack = navController::popBackStack) }

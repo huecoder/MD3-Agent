@@ -16,4 +16,5 @@ object OnboardingMotion {
     const val NUDGE_SHARE = 0.06f
     val ContentPadding = 24.dp
     val BarHeight = 56.dp
+    const val DEPART_MILLIS = 480
 }

@@ -16,6 +16,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
@@ -31,11 +33,15 @@ import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.feature.onboarding.pages.AbilitiesPage
 import dev.huecoder.md3agent.feature.onboarding.pages.AboutPage
 import dev.huecoder.md3agent.feature.onboarding.pages.AgentsPage
+import dev.huecoder.md3agent.feature.onboarding.pages.AssistantPage
+import dev.huecoder.md3agent.feature.onboarding.pages.PermissionsPage
 import dev.huecoder.md3agent.feature.onboarding.pages.FirstAgentPage
+import dev.huecoder.md3agent.feature.onboarding.pages.DonePage
 import dev.huecoder.md3agent.feature.onboarding.pages.ExperiencePage
 import dev.huecoder.md3agent.feature.onboarding.pages.GoalsPage
 import dev.huecoder.md3agent.feature.onboarding.pages.ModePage
 import dev.huecoder.md3agent.feature.onboarding.pages.PlacesPage
+import dev.huecoder.md3agent.feature.onboarding.pages.ProviderPage
 import dev.huecoder.md3agent.feature.onboarding.pages.WelcomePage
 import dev.huecoder.md3agent.feature.onboarding.scene.BackdropCanvas
 import dev.huecoder.md3agent.feature.onboarding.scene.BackdropScene
@@ -51,9 +57,9 @@ import kotlinx.coroutines.launch
 import kotlin.math.abs
 
 @Composable
-fun OnboardingScreen(retake: Boolean, onFinished: (openChat: Boolean) -> Unit) {
+fun OnboardingScreen(retake: Boolean, onCustomProvider: () -> Unit, onFinished: (openChat: Boolean) -> Unit) {
     val viewModel = appViewModel(key = "onboarding-$retake") {
-        OnboardingViewModel(it.appContext, it.settings, it.mode, PermissionProbe(it.appContext, it.phoneControl, it.deviceFiles, it.shellAccess), retake)
+        OnboardingViewModel(it.appContext, it.settings, it.mode, PermissionProbe(it.appContext, it.phoneControl, it.deviceFiles, it.shellAccess), it.modelCatalog, retake)
     }
     val state by viewModel.state.collectAsStateWithLifecycle()
     val current = state ?: return
@@ -63,6 +69,7 @@ fun OnboardingScreen(retake: Boolean, onFinished: (openChat: Boolean) -> Unit) {
             state = current,
             viewModel = viewModel,
             retake = retake,
+            onCustomProvider = onCustomProvider,
             onFinished = { openChat ->
                 onFinished(openChat)
                 if (!retake) activity?.let { AppLocale.apply(it, current.language) }
@@ -72,7 +79,7 @@ fun OnboardingScreen(retake: Boolean, onFinished: (openChat: Boolean) -> Unit) {
 }
 
 @Composable
-private fun OnboardingContent(state: OnboardingState, viewModel: OnboardingViewModel, retake: Boolean, onFinished: (openChat: Boolean) -> Unit) {
+private fun OnboardingContent(state: OnboardingState, viewModel: OnboardingViewModel, retake: Boolean, onCustomProvider: () -> Unit, onFinished: (openChat: Boolean) -> Unit) {
     val steps = state.steps
     val pager = rememberPagerState { steps.size }
     val scene = remember { BackdropScene() }
@@ -85,6 +92,7 @@ private fun OnboardingContent(state: OnboardingState, viewModel: OnboardingViewM
     val lifecycleOwner = LocalLifecycleOwner.current
     val page = pager.currentPage.coerceIn(steps.indices)
     val step = steps[page]
+    var departing by remember { mutableStateOf(false) }
 
     LaunchedEffect(pager) { snapshotFlow { pager.currentPage + pager.currentPageOffsetFraction }.collect { scene.position = it } }
     LaunchedEffect(pager) { snapshotFlow { pager.settledPage }.collect { currentSteps.getOrNull(it)?.let(viewModel::markShown) } }
@@ -111,6 +119,10 @@ private fun OnboardingContent(state: OnboardingState, viewModel: OnboardingViewM
 
     fun finish(skipped: Boolean) {
         scope.launch {
+            if (!skipped && step == OnboardingStep.DONE) {
+                departing = true
+                delay(OnboardingMotion.DEPART_MILLIS.toLong())
+            }
             viewModel.complete(skipped)
             onFinished(!skipped && !retake)
         }
@@ -145,7 +157,7 @@ private fun OnboardingContent(state: OnboardingState, viewModel: OnboardingViewM
                 val arrival = remember(pager, index) { { arrivalOf(pager.offsetOf(index)) } }
                 CompositionLocalProvider(LocalPageArrival provides arrival) {
                     Box(Modifier.fillMaxSize().pageDepth(pager, index)) {
-                        StepPage(steps[index], state, viewModel)
+                        StepPage(steps[index], state, viewModel, departing, onCustomProvider, onLater = { go(page + 1) })
                     }
                 }
             }
@@ -167,7 +179,7 @@ private fun OnboardingContent(state: OnboardingState, viewModel: OnboardingViewM
 }
 
 @Composable
-private fun StepPage(step: OnboardingStep, state: OnboardingState, viewModel: OnboardingViewModel) {
+private fun StepPage(step: OnboardingStep, state: OnboardingState, viewModel: OnboardingViewModel, departing: Boolean, onCustomProvider: () -> Unit, onLater: () -> Unit) {
     when (step) {
         OnboardingStep.WELCOME -> WelcomePage(state.language, viewModel::chooseLanguage)
         OnboardingStep.ABOUT -> AboutPage()
@@ -177,8 +189,11 @@ private fun StepPage(step: OnboardingStep, state: OnboardingState, viewModel: On
         OnboardingStep.MODE -> ModePage(state, viewModel::choosePreset)
         OnboardingStep.AGENTS -> AgentsPage(state)
         OnboardingStep.ABILITIES -> AbilitiesPage()
+        OnboardingStep.DONE -> DonePage(state, departing)
+        OnboardingStep.ASSISTANT -> AssistantPage()
+        OnboardingStep.PERMISSIONS -> PermissionsPage(state, viewModel::refreshPermissions)
+        OnboardingStep.PROVIDER -> ProviderPage(state, viewModel::connectProvider, viewModel::selectModel, onCustomProvider, onLater)
         OnboardingStep.FIRST_AGENT -> FirstAgentPage(state, viewModel::pickAgent, viewModel::renameAgent)
-        else -> Unit
     }
 }
 
