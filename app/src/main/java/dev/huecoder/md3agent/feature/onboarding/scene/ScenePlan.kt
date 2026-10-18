@@ -25,13 +25,12 @@ class PoseBlend(val from: ScenePose, val to: ScenePose, val fraction: Float) {
 }
 
 object ScenePlan {
-    val topShape = AgentShape.COOKIE_12
+    val topShape = AgentShape.COOKIE_9
 
     val bottomShapes = listOf(
         AgentShape.COOKIE_6,
-        AgentShape.COOKIE_9,
-        AgentShape.COOKIE_4,
         AgentShape.COOKIE_7,
+        AgentShape.COOKIE_4,
     )
 
     fun pose(step: Int, calm: Boolean): ScenePose = ScenePose(
