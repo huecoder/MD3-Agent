@@ -51,6 +51,7 @@ fun BotAvatar(
     listeningLevel: Float? = null,
     knockout: KnockoutStage? = null,
     watchingBelow: Boolean = false,
+    lookAt: Offset = Offset.Zero,
 ) {
     val shapes = remember(restShape, workingShapes) { BotShapes.of(restShape, workingShapes) }
     val motion = remember(shapes) { BotMotion(shapes, startWorking = isWorking) }
@@ -85,13 +86,13 @@ fun BotAvatar(
         }
     }
     val isListening = listeningLevel != null
-    LaunchedEffect(motion, isListening, watchingBelow) {
+    LaunchedEffect(motion, isListening, watchingBelow, lookAt) {
         if (isListening) {
             motion.lookTo(LISTENING_GAZE, GazeSprings.Glance)
             listening.listen { level }
         } else {
             listening.stop()
-            if (watchingBelow) motion.watchBelow() else motion.lookTo(Offset.Zero, GazeSprings.Home)
+            if (watchingBelow) motion.watchBelow() else motion.lookTo(lookAt, GazeSprings.Home)
         }
     }
 

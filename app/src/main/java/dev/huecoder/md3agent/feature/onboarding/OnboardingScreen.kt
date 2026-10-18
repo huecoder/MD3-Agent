@@ -28,7 +28,10 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import dev.huecoder.md3agent.R
+import dev.huecoder.md3agent.feature.onboarding.pages.AbilitiesPage
 import dev.huecoder.md3agent.feature.onboarding.pages.AboutPage
+import dev.huecoder.md3agent.feature.onboarding.pages.AgentsPage
+import dev.huecoder.md3agent.feature.onboarding.pages.FirstAgentPage
 import dev.huecoder.md3agent.feature.onboarding.pages.ExperiencePage
 import dev.huecoder.md3agent.feature.onboarding.pages.GoalsPage
 import dev.huecoder.md3agent.feature.onboarding.pages.ModePage
@@ -172,6 +175,9 @@ private fun StepPage(step: OnboardingStep, state: OnboardingState, viewModel: On
         OnboardingStep.EXPERIENCE -> ExperiencePage(state.answers) { item -> viewModel.answer { it.toggle(item) } }
         OnboardingStep.PLACES -> PlacesPage(state.answers) { place -> viewModel.answer { it.toggle(place) } }
         OnboardingStep.MODE -> ModePage(state, viewModel::choosePreset)
+        OnboardingStep.AGENTS -> AgentsPage(state)
+        OnboardingStep.ABILITIES -> AbilitiesPage()
+        OnboardingStep.FIRST_AGENT -> FirstAgentPage(state, viewModel::pickAgent, viewModel::renameAgent)
         else -> Unit
     }
 }
