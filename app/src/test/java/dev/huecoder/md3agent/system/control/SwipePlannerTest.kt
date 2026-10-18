@@ -68,4 +68,18 @@ class SwipePlannerTest {
         assertTrue(plan.from.y in 400..1600 && plan.to.y in 400..1600)
         assertTrue(plan.from.y > plan.to.y)
     }
+
+    @Test
+    fun `the finger direction follows the dominant axis`() {
+        assertEquals(SwipeDirection.UP, plan(SwipeSpec(direction = SwipeDirection.UP)).finger)
+        assertEquals(SwipeDirection.DOWN, plan(SwipeSpec(direction = SwipeDirection.DOWN)).finger)
+        assertEquals(SwipeDirection.LEFT, plan(SwipeSpec(direction = SwipeDirection.LEFT)).finger)
+        assertEquals(SwipeDirection.RIGHT, plan(SwipeSpec(from = ScreenPoint(100, 900), to = ScreenPoint(800, 700))).finger)
+    }
+
+    @Test
+    fun `a finger moving up reveals what is further down`() {
+        assertEquals(SwipeDirection.DOWN.revealed, SwipeDirection.UP.opposite.revealed)
+        assertEquals("what is further down", SwipeDirection.UP.opposite.revealed)
+    }
 }

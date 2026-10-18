@@ -25,6 +25,7 @@ object PhoneActionSchema {
         stepsProperty()
         enumProperty("observe", "What to attach after the actions: the full screen, only the changed elements, or nothing", Observe.entries.map { it.key })
         enumProperty("on_error", "In a batch: stop on the first failed step or continue anyway", ERROR_POLICIES)
+        returnProperty()
         actionFields(documented = true)
     }
 
@@ -59,7 +60,11 @@ object PhoneActionSchema {
         booleanProperty("submit", note("Press enter after typing, a send or search button is tapped when enter does not work"))
         enumProperty(
             "direction",
-            note("scroll: where the content goes. scroll_to: which way to look first. swipe: where the finger goes, diagonals allowed"),
+            note(
+                "scroll and scroll_to: where you want to look. down reveals what is below, up goes back toward the top, left and right work sideways " +
+                    "(scroll_to: which way to search first). swipe: where the finger moves, and the content moves with it, so swipe up reveals what is below " +
+                    "and swipe down reveals what is above, diagonals allowed. scroll down does the same as swipe up",
+            ),
             SwipeDirection.entries.map { it.key },
         )
         enumProperty("key", note("System button for press"), GlobalKey.entries.map { it.key })
@@ -99,6 +104,18 @@ object PhoneActionSchema {
 }
 
 internal const val SAY = "say"
+
+internal const val RETURN_TO_CHAT = "return_to_chat"
+
+internal fun JsonObjectBuilder.returnProperty() = putJsonObject(RETURN_TO_CHAT) {
+    put("type", "boolean")
+    put(
+        "description",
+        "Pass true to take the user back to this chat when you finish: after a long task with many steps, when you collected something for them to read, " +
+            "when you could not finish, or when you need an answer. Leave it out when the screen you reached is what they asked for, like Settings, the gallery, " +
+            "an app or a switch. The latest value you pass counts",
+    )
+}
 
 internal fun JsonObjectBuilder.sayProperty(required: Boolean, documented: Boolean = true) = putJsonObject(SAY) {
     put("type", "string")

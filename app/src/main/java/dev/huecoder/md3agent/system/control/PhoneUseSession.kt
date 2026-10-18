@@ -56,10 +56,19 @@ class PhoneUseSession {
     val touchesPassing: Boolean get() = gestureAreas.value.isNotEmpty()
     val isOverlayHidden = hiding.map { it > 0 }
 
+    @Volatile
+    var opensChatWhenDone = false
+        private set
+
     fun begin(chatId: String) {
         if (activeChat.value == chatId) return
         cursorState.update { CursorState(captionToken = it.captionToken, aimToken = it.aimToken, pressToken = it.pressToken) }
+        opensChatWhenDone = false
         activeChat.value = chatId
+    }
+
+    fun openChatWhenDone(wanted: Boolean) {
+        opensChatWhenDone = wanted
     }
 
     fun end() {

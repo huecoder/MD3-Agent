@@ -35,7 +35,7 @@ object ScreenText {
         val traits = listOfNotNull(
             "tap".takeIf { element.clickable },
             "input".takeIf { element.editable },
-            element.scrollMoves.takeIf { element.scrollable }?.let { "scroll$it" } ?: "scroll".takeIf { element.scrollable },
+            "scroll ${element.scrollMoves}".trim().takeIf { element.scrollable },
             element.checked?.let { if (it) "checked" else "unchecked" },
             "focused".takeIf { element.focused },
             "partly visible".takeIf { element.partial },

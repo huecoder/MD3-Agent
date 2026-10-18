@@ -21,6 +21,7 @@ class ScreenSnapshot(
 object ScreenTree {
     private const val MAX_ELEMENTS = 160
     private const val MAX_LABEL_CHARS = 120
+    private const val MOVES_SEPARATOR = "/"
     private const val FINGERPRINT_SEED = 1125899906842597L
     private const val FINGERPRINT_PRIME = 31L
     private val WHITESPACE = Regex("""\s+""")
@@ -96,17 +97,17 @@ object ScreenTree {
 
     private fun scrollMovesOf(node: AccessibilityNodeInfo): String {
         val ids = node.actionList.map { it.id }.toSet()
-        val moves = buildString {
-            if (AccessibilityAction.ACTION_SCROLL_DOWN.id in ids) append('↓')
-            if (AccessibilityAction.ACTION_SCROLL_UP.id in ids) append('↑')
-            if (AccessibilityAction.ACTION_SCROLL_RIGHT.id in ids) append('→')
-            if (AccessibilityAction.ACTION_SCROLL_LEFT.id in ids) append('←')
-        }
-        if (moves.isNotEmpty()) return moves
-        return buildString {
-            if (AccessibilityNodeInfo.ACTION_SCROLL_FORWARD in ids) append('↓')
-            if (AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD in ids) append('↑')
-        }
+        val moves = listOfNotNull(
+            "down".takeIf { AccessibilityAction.ACTION_SCROLL_DOWN.id in ids },
+            "up".takeIf { AccessibilityAction.ACTION_SCROLL_UP.id in ids },
+            "right".takeIf { AccessibilityAction.ACTION_SCROLL_RIGHT.id in ids },
+            "left".takeIf { AccessibilityAction.ACTION_SCROLL_LEFT.id in ids },
+        )
+        if (moves.isNotEmpty()) return moves.joinToString(MOVES_SEPARATOR)
+        return listOfNotNull(
+            "down".takeIf { AccessibilityNodeInfo.ACTION_SCROLL_FORWARD in ids },
+            "up".takeIf { AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD in ids },
+        ).joinToString(MOVES_SEPARATOR)
     }
 
     private fun labelOf(node: AccessibilityNodeInfo): String {

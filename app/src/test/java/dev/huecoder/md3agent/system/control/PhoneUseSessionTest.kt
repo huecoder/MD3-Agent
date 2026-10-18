@@ -29,6 +29,19 @@ class PhoneUseSessionTest {
     }
 
     @Test
+    fun `the chat is opened after phone use only when the agent asked for it`() {
+        session.begin("chat")
+        assertFalse(session.opensChatWhenDone)
+        session.openChatWhenDone(true)
+        session.begin("chat")
+        assertTrue(session.opensChatWhenDone)
+        session.end()
+        assertTrue(session.opensChatWhenDone)
+        session.begin("chat")
+        assertFalse(session.opensChatWhenDone)
+    }
+
+    @Test
     fun `beginning the same chat again keeps the cursor`() {
         session.begin("chat")
         runBlocking { session.aim(5, 6, null) }

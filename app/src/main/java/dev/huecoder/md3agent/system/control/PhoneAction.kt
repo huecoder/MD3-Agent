@@ -16,6 +16,15 @@ enum class SwipeDirection(val key: String, val dx: Int, val dy: Int) {
     val opposite: SwipeDirection
         get() = entries.first { it.dx == -dx && it.dy == -dy }
 
+    val revealed: String
+        get() = when (this) {
+            UP -> "what is further up"
+            DOWN -> "what is further down"
+            LEFT -> "what is further left"
+            RIGHT -> "what is further right"
+            else -> "the content in that direction"
+        }
+
     companion object {
         val straight: List<SwipeDirection> = listOf(UP, DOWN, LEFT, RIGHT)
 

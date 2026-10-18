@@ -44,7 +44,7 @@ class PhoneActionSchemaTest {
 
     @Test
     fun `a step takes every action field and none of the batch controls`() {
-        val batchControls = setOf("steps", "observe", "on_error")
+        val batchControls = setOf("steps", "observe", "on_error", "return_to_chat")
 
         assertEquals(properties.keys - batchControls, stepProperties.keys)
     }

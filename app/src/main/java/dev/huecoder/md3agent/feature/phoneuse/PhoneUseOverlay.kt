@@ -119,6 +119,7 @@ class PhoneUseOverlay(private val service: AccessibilityService, private val con
     }
 
     private fun returnToChat() {
+        if (!session.opensChatWhenDone) return
         val finished = shell?.chatId?.takeIf { session.chatId.value == null } ?: return
         service.startActivity(MainActivity.chatIntent(service, finished))
     }

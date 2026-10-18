@@ -275,10 +275,10 @@ internal class PhoneExecutor(
         val screen = reader.screenSize(service)
         val box = container?.box ?: ScreenBox(0, 0, screen.x, screen.y)
         session.aim(box.centerX, box.centerY, caption)
-        if (container?.node?.let { scrollNode(it, action.direction) } == true) return ActionResult.Done("Scrolled ${action.direction.key}")
+        if (container?.node?.let { scrollNode(it, action.direction) } == true) return ActionResult.Done(scrolled(action.direction))
         val plan = SwipePlanner.inside(box, action.direction.opposite)
         return session.dragging(plan.from.x, plan.from.y, plan.to.x, plan.to.y, plan.durationMs, caption) {
-            if (swipeWithFallbacks(service, plan)) ActionResult.Done("Scrolled ${action.direction.key} with a swipe") else ActionResult.Failed("The system cancelled the gesture")
+            if (swipeWithFallbacks(service, plan)) ActionResult.Done("${scrolled(action.direction)}, done with a swipe") else ActionResult.Failed("The system cancelled the gesture")
         }
     }
 
@@ -379,9 +379,14 @@ internal class PhoneExecutor(
         val label = spec.direction?.takeUnless { it.isDiagonal }?.let { directionLabel(it) }
         val caption = if (label != null) caption(say, R.string.phone_use_swipe, label) else caption(say, R.string.phone_use_swipe_any)
         return session.dragging(plan.from.x, plan.from.y, plan.to.x, plan.to.y, plan.durationMs, caption) {
-            if (swipeWithFallbacks(service, plan)) ActionResult.Done("Swiped from ${plan.from.x},${plan.from.y} to ${plan.to.x},${plan.to.y}") else ActionResult.Failed("The system cancelled the swipe gesture")
+            if (swipeWithFallbacks(service, plan)) ActionResult.Done(swiped(plan)) else ActionResult.Failed("The system cancelled the swipe gesture")
         }
     }
+
+    private fun scrolled(direction: SwipeDirection) = "Scrolled ${direction.key}, a list under it now shows ${direction.revealed}"
+
+    private fun swiped(plan: SwipePlan) =
+        "Swiped ${plan.finger.key} from ${plan.from.x},${plan.from.y} to ${plan.to.x},${plan.to.y}: the finger moved ${plan.finger.key}, so a list under it now shows ${plan.finger.opposite.revealed}"
 
     private suspend fun swipeWithFallbacks(service: AccessibilityService, plan: SwipePlan): Boolean =
         retrying { gestures.swipe(service, plan.from, plan.to, plan.durationMs) } || injector.swipe(plan.from, plan.to, plan.durationMs)

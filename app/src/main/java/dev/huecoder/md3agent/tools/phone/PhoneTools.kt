@@ -23,6 +23,7 @@ import kotlinx.serialization.json.JsonObject
 abstract class PhoneTool(protected val control: PhoneControl) : Tool {
     override suspend fun execute(arguments: JsonObject, settings: ToolSettings, context: ToolContext): ToolOutcome {
         control.session.begin(context.chatId)
+        arguments.optionalBoolean(RETURN_TO_CHAT)?.let(control.session::openChatWhenDone)
         return execute(arguments, settings)
     }
 }
@@ -31,12 +32,13 @@ class PhoneScreenTool(control: PhoneControl) : PhoneTool(control) {
     override val spec = ToolSpec(
         name = NAME,
         description = "Reads what is on the phone screen right now as a numbered list of elements with their role, text, state and center coordinates, " +
-            "and shows which way a list can still scroll. Pass find to list only the elements that match, with their ids and bounds. " +
+            "and marks each list with the directions it can still scroll, like 'scroll down/up'; pass such a word as the direction of a scroll. Pass find to list only the elements that match, with their ids and bounds. " +
             "Call it before ${PhoneActionTool.NAME} so element numbers are fresh.",
         parameters = objectSchema(required = emptyList()) {
             booleanProperty("detailed", "Also list each element's exact bounds, view class and resource id, like a trimmed UI hierarchy dump")
             selectorProperty(FIND, "List only elements that match {text, id, role}, optional exact and index, instead of the whole screen")
             sayProperty(required = false)
+            returnProperty()
         },
     )
 
@@ -45,6 +47,11 @@ class PhoneScreenTool(control: PhoneControl) : PhoneTool(control) {
         "Every phone call carries a 'say' phrase that the user sees next to the cursor: one short sentence, first person, in the user's language, about what you do right now, like \"Opening Settings\" or \"Scrolling to find Wi-Fi\". Plain text, no markdown, at most ${PhoneSay.MAX_CHARS} characters.",
         "Element numbers go stale as soon as the screen changes, so take them from the screen the last action returned, or address elements by 'target' (text, id or role). " +
             "Use scroll_to with a target to reach something off screen instead of scrolling blindly, wait_for with an explicit timeout_ms after anything that loads instead of guessing a pause, and 'steps' to batch a sequence you are sure about.",
+        "Directions: scroll and scroll_to take where you want to look, 'down' shows what is further down the page or list and 'up' goes back toward the top. swipe takes where the finger moves, so swipe 'up' shows what is below and swipe 'down' shows what is above: scroll down and swipe up do the same thing. " +
+            "Use scroll or scroll_to for lists and pages, and swipe only for gestures like pulling a shade or paging a carousel. A list marked 'scroll down/up' has more content in both of those directions. After a scroll read the new screen: if it looks the same you reached the end, so do not repeat it.",
+        "When you finish, the user stays on the screen you left and is not taken back to this chat unless you pass return_to_chat=true on a phone call (the latest value you pass counts). " +
+            "Pass it after a long task with many steps, when you collected something the user has to read, when you could not finish, or when you need an answer or a decision. " +
+            "Do not pass it when the screen you reached is the point of the request, like opening Settings, the gallery, an app, a contact or a page, or flipping a switch: then stay there and keep your reply to one short line.",
         "If the context block says the user opened you over an app, that app is already on screen: act in it, and do not close it, go home or open it again unless the user asks.",
         "If an action fails or changes nothing, do not repeat it more than twice: pick another element, scroll, or look at the pixels with ${PhoneScreenshotTool.NAME} (games, canvases and custom views have no text list).",
         "Never enter passwords or payment details, and never confirm purchases or deletions, unless the user said so in this chat.",
@@ -77,6 +84,7 @@ class PhoneScreenshotTool(control: PhoneControl, private val attachments: Attach
             integerProperty("height", "Area height in screen pixels", minimum = 1, maximum = MAX_COORDINATE)
             booleanProperty("marks", "Draw the element numbers over tappable elements")
             sayProperty(required = false)
+            returnProperty()
         },
     )
 
@@ -123,7 +131,7 @@ class PhoneActionTool(control: PhoneControl) : PhoneTool(control) {
         description = "Performs actions on the phone and reports whether the screen changed, then lists the new screen. " +
             "Actions: ${PhoneRequestParser.ACTIONS}. Pass one with 'action', or up to ${PhoneRequestParser.MAX_STEPS} in a batch with 'steps'. " +
             "Element numbers come from the latest ${PhoneScreenTool.NAME} or $NAME result; 'target' finds an element by its text, id or role instead. " +
-            "Prefer elements and targets over coordinates.",
+            "Prefer elements and targets over coordinates. To move through a list or a page use scroll or scroll_to, and keep swipe for gestures like pulling a shade or paging a carousel.",
         parameters = PhoneActionSchema.parameters(),
     )
 
