@@ -3,6 +3,7 @@ package dev.huecoder.md3agent.ui.physics
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import org.dyn4j.dynamics.Body
+import org.dyn4j.dynamics.ContinuousDetectionMode
 import org.dyn4j.dynamics.contact.Contact
 import org.dyn4j.dynamics.joint.PinJoint
 import org.dyn4j.geometry.Convex
@@ -25,7 +26,7 @@ data class Material(val restitution: Double, val friction: Double, val density: 
 
 data class Impact(val first: Body, val second: Body, val point: Offset, val speed: Float)
 
-class PhysicsWorld(private val pixelsPerMeter: Float, gravity: Double = CARTOON_GRAVITY) {
+class PhysicsWorld(private val pixelsPerMeter: Float, gravity: Double = CARTOON_GRAVITY, stepSeconds: Double = DEFAULT_STEP_SECONDS) {
     val gravityPixels: Float = (gravity * pixelsPerMeter).toFloat()
 
     fun pointGravity(direction: Offset) {
@@ -43,6 +44,8 @@ class PhysicsWorld(private val pixelsPerMeter: Float, gravity: Double = CARTOON_
     private val world = World<Body>().apply {
         setGravity(0.0, gravity)
         settings.maximumTranslation = MAX_TRANSLATION_METERS
+        settings.stepFrequency = stepSeconds
+        settings.continuousDetectionMode = ContinuousDetectionMode.BULLETS_ONLY
     }
     private var onImpact: (Impact) -> Unit = {}
 
@@ -75,6 +78,22 @@ class PhysicsWorld(private val pixelsPerMeter: Float, gravity: Double = CARTOON_
     fun addHull(center: Offset, outline: List<Offset>, material: Material): Body {
         val hull = GiftWrap().generate(*outline.map { Vector2(it.x.meters, it.y.meters) }.toTypedArray())
         return addBody(center, Geometry.createPolygon(*hull), material)
+    }
+
+    fun addOutline(center: Offset, parts: List<List<Offset>>, size: Float, material: Material, isStatic: Boolean = false, isBullet: Boolean = false): Body =
+        Body().apply {
+            addParts(parts, size, material)
+            setMass(if (isStatic) MassType.INFINITE else MassType.NORMAL)
+            setBullet(isBullet)
+            translate(center.x.meters, center.y.meters)
+            world.addBody(this)
+        }
+
+    fun replaceOutline(body: Body, parts: List<List<Offset>>, size: Float, material: Material) {
+        val massType = body.mass.type
+        body.removeAllFixtures()
+        body.addParts(parts, size, material)
+        body.setMass(massType)
     }
 
     fun remove(body: Body) {
@@ -146,12 +165,20 @@ class PhysicsWorld(private val pixelsPerMeter: Float, gravity: Double = CARTOON_
         world.addBody(this)
     }
 
+    private fun Body.addParts(parts: List<List<Offset>>, size: Float, material: Material) {
+        parts.forEach { part ->
+            val corners = part.map { Vector2((it.x * size).meters, (it.y * size).meters) }.toTypedArray()
+            addFixture(Geometry.createPolygon(*corners), material.density, material.friction, material.restitution)
+        }
+    }
+
     private val Float.meters: Double get() = (this / pixelsPerMeter).toDouble()
 
     private fun Vector2.toPixels() = Offset((x * pixelsPerMeter).toFloat(), (y * pixelsPerMeter).toFloat())
 
     private companion object {
         const val CARTOON_GRAVITY = 24.0
+        const val DEFAULT_STEP_SECONDS = 1.0 / 60.0
         const val MAX_FRAME_SECONDS = 1f / 30f
         const val MAX_TRANSLATION_METERS = 4.0
         const val SPIN_RESPONSE = 8.0
