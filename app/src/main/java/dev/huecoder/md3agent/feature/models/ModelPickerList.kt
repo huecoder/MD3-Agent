@@ -21,6 +21,7 @@ import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -44,15 +45,16 @@ internal fun ModelList(
     modifier: Modifier = Modifier,
     listState: LazyListState = rememberLazyListState(),
 ) {
-    if (rows.isEmpty()) {
+    val ordered = remember(rows, selectedId) { rows.sortedBy { it.info.id != selectedId } }
+    if (ordered.isEmpty()) {
         Box(modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.TopCenter) {
             Text(stringResource(R.string.model_empty), color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         return
     }
     LazyColumn(state = listState, modifier = modifier, contentPadding = PickerListPadding, verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)) {
-        itemsIndexed(rows, key = { _, row -> row.info.id }) { index, row ->
-            ModelRowItem(row, isSelected = row.info.id == selectedId, index = index, count = rows.size, onClick = { onPick(row) })
+        itemsIndexed(ordered, key = { _, row -> row.info.id }) { index, row ->
+            ModelRowItem(row, isSelected = row.info.id == selectedId, index = index, count = ordered.size, onClick = { onPick(row) })
         }
     }
 }
