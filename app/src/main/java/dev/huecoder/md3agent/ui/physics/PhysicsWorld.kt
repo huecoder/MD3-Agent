@@ -15,6 +15,7 @@ import org.dyn4j.world.ContactCollisionData
 import org.dyn4j.world.World
 import org.dyn4j.world.listener.ContactListenerAdapter
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
 data class Material(val restitution: Double, val friction: Double, val density: Double = 1.0) {
     companion object {
@@ -25,6 +26,12 @@ data class Material(val restitution: Double, val friction: Double, val density: 
 }
 
 data class Impact(val first: Body, val second: Body, val point: Offset, val speed: Float)
+
+data class Spring(val frequency: Double, val damping: Double, val maxForcePerKilogram: Double) {
+    companion object {
+        val Grab = Spring(frequency = 6.0, damping = 0.7, maxForcePerKilogram = 1_500.0)
+    }
+}
 
 class PhysicsWorld(private val pixelsPerMeter: Float, gravity: Double = CARTOON_GRAVITY, stepSeconds: Double = DEFAULT_STEP_SECONDS) {
     val gravityPixels: Float = (gravity * pixelsPerMeter).toFloat()
@@ -47,6 +54,7 @@ class PhysicsWorld(private val pixelsPerMeter: Float, gravity: Double = CARTOON_
         settings.stepFrequency = stepSeconds
         settings.continuousDetectionMode = ContinuousDetectionMode.BULLETS_ONLY
     }
+    private val maxStepsPerFrame = maxOf(1, (MAX_FRAME_SECONDS / stepSeconds).roundToInt())
     private var onImpact: (Impact) -> Unit = {}
 
     init {
@@ -101,7 +109,7 @@ class PhysicsWorld(private val pixelsPerMeter: Float, gravity: Double = CARTOON_
     }
 
     fun step(seconds: Float) {
-        world.update(seconds.coerceAtMost(MAX_FRAME_SECONDS).toDouble())
+        world.update(seconds.coerceAtMost(MAX_FRAME_SECONDS).toDouble(), maxStepsPerFrame)
     }
 
     fun position(body: Body): Offset = body.worldCenter.toPixels()
@@ -126,20 +134,26 @@ class PhysicsWorld(private val pixelsPerMeter: Float, gravity: Double = CARTOON_
         body.setAtRest(false)
     }
 
+    fun place(body: Body, center: Offset, angle: Double) {
+        body.transform.setRotation(angle)
+        body.transform.setTranslation(center.x.meters, center.y.meters)
+        world.broadphaseDetector.update(body)
+    }
+
     fun driveSpin(body: Body, radiansPerSecond: Double, maxAcceleration: Double) {
         val acceleration = ((radiansPerSecond - body.angularVelocity) * SPIN_RESPONSE).coerceIn(-maxAcceleration, maxAcceleration)
         body.applyTorque(acceleration * body.mass.inertia)
     }
 
-    fun grab(body: Body, at: Offset): Grab = Grab(body, at)
+    fun grab(body: Body, at: Offset, spring: Spring = Spring.Grab): Grab = Grab(body, at, spring)
 
-    inner class Grab internal constructor(val body: Body, at: Offset) {
+    inner class Grab internal constructor(val body: Body, at: Offset, spring: Spring) {
         private val joint = PinJoint(body, Vector2(at.x.meters, at.y.meters)).apply {
             isSpringEnabled = true
             isSpringDamperEnabled = true
-            springFrequency = GRAB_FREQUENCY
-            springDampingRatio = GRAB_DAMPING
-            maximumSpringForce = GRAB_MAX_FORCE * body.mass.mass
+            springFrequency = spring.frequency
+            springDampingRatio = spring.damping
+            maximumSpringForce = spring.maxForcePerKilogram * body.mass.mass
             isMaximumSpringForceEnabled = true
         }
 
@@ -182,8 +196,5 @@ class PhysicsWorld(private val pixelsPerMeter: Float, gravity: Double = CARTOON_
         const val MAX_FRAME_SECONDS = 1f / 30f
         const val MAX_TRANSLATION_METERS = 4.0
         const val SPIN_RESPONSE = 8.0
-        const val GRAB_FREQUENCY = 6.0
-        const val GRAB_DAMPING = 0.7
-        const val GRAB_MAX_FORCE = 1_500.0
     }
 }

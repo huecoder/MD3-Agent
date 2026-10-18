@@ -84,6 +84,27 @@ class PhysicsWorldOutlineTest {
         assertTrue(distanceToOutline(touched, contour) < CONTACT_TOLERANCE)
     }
 
+    @Test
+    fun `a body placed somewhere else is hit where it now stands`() {
+        val world = world()
+        val body = world.addOutline(Offset.Zero, ShapeParts.of(AgentShape.CLOVER_4), size, Material.Soft, isStatic = true)
+        val center = Offset(900f, -300f)
+        val turn = PI / 6
+        world.place(body, center, turn)
+        val contour = scaled(ShapeParts.outline(AgentShape.CLOVER_4.polygon)).map { corner ->
+            val turned = Offset((corner.x * cos(turn) - corner.y * sin(turn)).toFloat(), (corner.x * sin(turn) + corner.y * cos(turn)).toFloat())
+            turned + center
+        }
+        val direction = Offset(cos(PI / 3).toFloat(), sin(PI / 3).toFloat())
+        val ball = world.addBall(center + direction * size, ballRadius, Material.Soft)
+        world.setVelocity(ball, direction * -FLING_SPEED)
+        val impacts = mutableListOf<Impact>()
+        world.onImpact { impacts += it }
+        repeat(MAX_FRAMES) { if (impacts.isEmpty()) world.step(FRAME_SECONDS) }
+        val touched = checkNotNull(impacts.firstOrNull()) { "the ball never hit" }.point
+        assertTrue(distanceToOutline(touched, contour) < CONTACT_TOLERANCE)
+    }
+
     private companion object {
         const val PIXELS_PER_METER = 100f
         const val STEP_SECONDS = 1.0 / 240.0
