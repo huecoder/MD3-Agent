@@ -23,7 +23,7 @@ import dev.huecoder.md3agent.ui.components.appViewModel
 
 @Composable
 fun ProviderEditorScreen(providerId: String?, onDone: () -> Unit) {
-    val viewModel = appViewModel(key = "provider-$providerId") { ProviderEditorViewModel(providerId, it.settings, it.modelCatalog) }
+    val viewModel = appViewModel(key = "provider-$providerId") { ProviderEditorViewModel(providerId, it.settings, it.modelCatalog, it.applicationScope) }
     val form by viewModel.form.collectAsStateWithLifecycle()
     val isDirty by viewModel.isDirty.collectAsStateWithLifecycle()
     var headersOpen by rememberSaveable { mutableStateOf(false) }

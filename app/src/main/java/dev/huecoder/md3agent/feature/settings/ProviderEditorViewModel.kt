@@ -9,6 +9,7 @@ import dev.huecoder.md3agent.data.settings.ProviderProfile
 import dev.huecoder.md3agent.data.settings.SettingsRepository
 import dev.huecoder.md3agent.data.models.ModelCatalog
 import dev.huecoder.md3agent.ui.text.UiText
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
@@ -44,6 +45,7 @@ class ProviderEditorViewModel(
     private val providerId: String?,
     private val settings: SettingsRepository,
     private val catalog: ModelCatalog,
+    private val appScope: CoroutineScope,
 ) : ViewModel() {
     private val draft = FormDraft<ProviderForm>(viewModelScope)
     val form: StateFlow<ProviderForm?> = draft.value
@@ -74,8 +76,10 @@ class ProviderEditorViewModel(
     fun save(onSaved: () -> Unit) {
         val current = draft.current?.takeIf { it.canSave } ?: return
         viewModelScope.launch {
-            settings.upsertProvider(current.toProfile())
+            val profile = current.toProfile()
+            settings.upsertProvider(profile)
             draft.markSaved()
+            appScope.launch { catalog.refreshQuietly(profile) }
             onSaved()
         }
     }

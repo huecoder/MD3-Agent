@@ -57,6 +57,10 @@ class ModelCatalog(
         loadIfMissing(provider.id)
         val fetchedAt = catalogs.value[provider.id]?.fetchedAt ?: 0L
         if (clock() - fetchedAt < STALE_AFTER_MS) return
+        refreshQuietly(provider)
+    }
+
+    suspend fun refreshQuietly(provider: ProviderProfile) {
         try {
             refresh(provider)
         } catch (e: ProviderException) {
