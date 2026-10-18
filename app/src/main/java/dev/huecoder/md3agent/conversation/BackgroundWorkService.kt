@@ -22,6 +22,7 @@ class BackgroundWorkService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val container get() = (application as App).container
     private lateinit var notifier: WorkNotifier
+    private var lastStartId = 0
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -35,6 +36,7 @@ class BackgroundWorkService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        lastStartId = startId
         if (intent?.action == ACTION_STOP_ALL) container.conversations.cancelAll()
         return START_NOT_STICKY
     }
@@ -48,8 +50,9 @@ class BackgroundWorkService : Service() {
     }
 
     private fun finish() {
+        if (!stopSelfResult(lastStartId)) return
+        scope.cancel()
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
-        stopSelf()
     }
 
     private fun startInForeground(notification: Notification) {

@@ -56,15 +56,15 @@ class WorkNotifier(
     fun run(scope: CoroutineScope) {
         this.scope = scope
         scope.launch {
-            container.settings.settings.map { it.notifications }.distinctUntilChanged().collect {
-                settings = it
-                render()
-            }
-        }
-        scope.launch {
-            container.conversations.activity.combine(container.visibility.isVisible) { chats, visible -> chats to visible }.collect { (chats, visible) ->
-                activity = chats
-                appVisible = visible
+            combine(
+                container.settings.settings.map { it.notifications }.distinctUntilChanged(),
+                container.conversations.activity,
+                container.visibility.isVisible,
+                ::WorkState,
+            ).collect { state ->
+                settings = state.settings
+                activity = state.activity
+                appVisible = state.appVisible
                 render()
             }
         }
@@ -239,6 +239,8 @@ class WorkNotifier(
 
     private fun manager(): NotificationManager? =
         if (AppNotifications.canPost(context)) context.getSystemService(NotificationManager::class.java) else null
+
+    private data class WorkState(val settings: NotificationSettings, val activity: Map<String, ChatActivity>, val appVisible: Boolean)
 
     private sealed interface InputNeed {
         val key: String
