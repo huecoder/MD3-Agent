@@ -50,7 +50,7 @@ object ScenePlan {
     }
 
     private const val TURN_PER_STEP = 0.55f
-    private const val CALM_INTENSITY = 0.45f
+    private const val CALM_INTENSITY = 0.32f
     private const val FULL_INTENSITY = 1f
     private val TOP_COLORS = listOf(SceneColor.PRIMARY, SceneColor.TERTIARY, SceneColor.SECONDARY)
     private val BOTTOM_COLORS = listOf(SceneColor.TERTIARY, SceneColor.SECONDARY, SceneColor.PRIMARY)

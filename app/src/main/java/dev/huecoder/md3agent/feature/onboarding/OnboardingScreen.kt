@@ -2,8 +2,8 @@ package dev.huecoder.md3agent.feature.onboarding
 
 import android.animation.ValueAnimator
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.snap
 import androidx.activity.compose.LocalActivity
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,6 +12,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -51,9 +52,11 @@ import dev.huecoder.md3agent.ui.components.appViewModel
 import dev.huecoder.md3agent.ui.haptics.rememberHaptics
 import dev.huecoder.md3agent.ui.locale.AppLocale
 import dev.huecoder.md3agent.ui.locale.LocalizedContent
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.math.abs
 
 @Composable
@@ -112,8 +115,12 @@ private fun OnboardingContent(state: OnboardingState, viewModel: OnboardingViewM
         if (target !in steps.indices || target == pager.currentPage) return
         haptics.tick()
         scope.launch {
-            if (animations) launch { scene.strike(currentPoses) { power -> haptics.impact(power) } }
-            pager.animateScrollToPage(target, animationSpec = OnboardingMotion.PageSpring)
+            if (animations && scene.canStrike) {
+                val landed = CompletableDeferred<Unit>()
+                launch { scene.strike(currentPoses) { power -> haptics.impact(power); landed.complete(Unit) } }
+                withTimeoutOrNull(OnboardingMotion.HIT_WAIT_MILLIS) { landed.await() }
+            }
+            pager.animateScrollToPage(target, animationSpec = if (animations) OnboardingMotion.PageSpring else snap())
         }
     }
 
@@ -144,7 +151,7 @@ private fun OnboardingContent(state: OnboardingState, viewModel: OnboardingViewM
         },
     )
 
-    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
+    Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
         BackdropCanvas(scene, poses, Modifier.fillMaxSize())
         Column(Modifier.fillMaxSize().safeDrawingPadding()) {
             if (step != OnboardingStep.DONE) SkipButton(onSkip = ::skip)

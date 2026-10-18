@@ -1,8 +1,10 @@
 package dev.huecoder.md3agent.feature.onboarding.pages
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
@@ -35,7 +37,9 @@ fun AgentsPage(state: OnboardingState) {
             textAlign = TextAlign.Center,
             modifier = Modifier.reveal(0),
         )
-        AgentCloud(state.cluster, interactive = true, modifier = Modifier.weight(1f).widthIn(max = CLOUD_MAX_WIDTH).fillMaxWidth().reveal(1))
+        Box(Modifier.weight(1f).fillMaxWidth().reveal(1), contentAlignment = Alignment.Center) {
+            AgentCloud(state.cluster, interactive = true, modifier = Modifier.widthIn(max = CLOUD_MAX_WIDTH).fillMaxWidth().aspectRatio(1f))
+        }
         Text(
             stringResource(R.string.onboarding_agents_body),
             style = MaterialTheme.typography.bodyLarge,
@@ -66,12 +70,14 @@ fun FirstAgentPage(state: OnboardingState, onPick: (Int) -> Unit, onName: (Strin
             textAlign = TextAlign.Center,
             modifier = Modifier.reveal(1),
         )
-        AgentCloud(
-            state.cluster,
-            selected = state.agentPick,
-            onSelect = onPick,
-            modifier = Modifier.weight(1f).widthIn(max = CLOUD_MAX_WIDTH).fillMaxWidth().reveal(2),
-        )
+        Box(Modifier.weight(1f).fillMaxWidth().reveal(2), contentAlignment = Alignment.Center) {
+            AgentCloud(
+                state.cluster,
+                selected = state.agentPick,
+                onSelect = onPick,
+                modifier = Modifier.widthIn(max = CLOUD_MAX_WIDTH).fillMaxWidth().aspectRatio(1f),
+            )
+        }
         FormField(
             value = state.agentName,
             onValueChange = onName,

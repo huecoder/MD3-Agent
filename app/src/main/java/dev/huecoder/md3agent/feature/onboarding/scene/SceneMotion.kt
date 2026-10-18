@@ -13,7 +13,7 @@ object SceneMotion {
     val BOTTOM_CENTER = Offset(0.92f, 0.86f)
 
     const val STEP_SECONDS = 1.0 / 120.0
-    const val LAUNCH_METERS_PER_SECOND = 7f
+    const val LAUNCH_METERS_PER_SECOND = 10f
     const val LAUNCH_SPIN = 0.5f
     const val STRIKE_TIMEOUT_SECONDS = 1.2f
     const val RETURN_TIMEOUT_SECONDS = 4f

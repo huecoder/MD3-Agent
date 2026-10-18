@@ -17,4 +17,5 @@ object OnboardingMotion {
     val ContentPadding = 24.dp
     val BarHeight = 56.dp
     const val DEPART_MILLIS = 480
+    const val HIT_WAIT_MILLIS = 420L
 }

@@ -54,7 +54,7 @@ fun OnboardingBar(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier.fillMaxWidth().padding(horizontal = OnboardingMotion.ContentPadding), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        LinearWavyProgressIndicator(progress = progress, modifier = Modifier.fillMaxWidth())
+        LinearWavyProgressIndicator(progress = progress, amplitude = { WAVE_AMPLITUDE }, modifier = Modifier.fillMaxWidth())
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
             when (leading) {
                 BarLeading.BACK -> RoundButton(onBack) { Icon(MaterialSymbols.Rounded.Arrow_back, contentDescription = stringResource(R.string.common_back)) }
@@ -108,3 +108,5 @@ private fun LanguageButton(language: AppLanguage, onLanguage: (AppLanguage) -> U
         }
     }
 }
+
+private const val WAVE_AMPLITUDE = 1f

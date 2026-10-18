@@ -8,6 +8,8 @@ class ModeController(private val settings: SettingsRepository) {
         val before = settings.current().mode
         val after = transform(before)
         settings.updateMode { after }
-        settings.updateTools { it.followingMode(before, after) }
+        if (before.phoneControl != after.phoneControl || before.shellAndFiles != after.shellAndFiles) {
+            settings.updateTools { it.followingMode(before, after) }
+        }
     }
 }

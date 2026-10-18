@@ -35,6 +35,8 @@ class BackdropScene {
     private var physics: BackdropPhysics? = null
     private var squashSpeed = 0f
 
+    val canStrike: Boolean get() = physics?.phase == BackdropPhysics.Phase.REST
+
     fun morph(from: AgentShape, to: AgentShape): Morph = morphs.getOrPut(from to to) { Morph(from.polygon, to.polygon) }
 
     suspend fun prepare(next: SceneStage, firstShape: AgentShape) {
