@@ -31,6 +31,7 @@ class WebSearcher(private val httpClients: HttpClientProvider) {
             SearchBackend.HTML_SCRAPE -> scrapeHtml(query)
             SearchBackend.SEARXNG -> searxng(query, settings)
             SearchBackend.BRAVE_API -> braveApi(query, settings)
+            SearchBackend.CUSTOM -> customApi(query, count, settings)
         }
         return hits.distinctBy { it.url }.take(count)
     }
@@ -75,6 +76,12 @@ class WebSearcher(private val httpClients: HttpClientProvider) {
         val web = json.parseToJsonElement(body).jsonObject["web"] as? JsonObject ?: return emptyList()
         val results = web["results"] as? JsonArray ?: return emptyList()
         return results.mapNotNull { (it as? JsonObject)?.toHit(titleKey = "title", urlKey = "url", snippetKey = "description") }
+    }
+
+    private suspend fun customApi(query: String, count: Int, settings: SearchSettings): List<SearchHit> {
+        val request = CustomSearchApi.request(settings.custom, query, count)
+        val body = httpClients.current().fetchText(request)
+        return CustomSearchApi.hits(json.parseToJsonElement(body), settings.custom)
     }
 
     private fun JsonObject.toHit(titleKey: String, urlKey: String, snippetKey: String): SearchHit? {

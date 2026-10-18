@@ -24,8 +24,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.huecoder.md3agent.App
 import dev.huecoder.md3agent.R
+import dev.huecoder.md3agent.data.settings.CustomSearch
 import dev.huecoder.md3agent.data.settings.FetchBackend
 import dev.huecoder.md3agent.data.settings.FetchSettings
+import dev.huecoder.md3agent.data.settings.HeaderEntry
 import dev.huecoder.md3agent.data.settings.SearchBackend
 import dev.huecoder.md3agent.data.settings.SearchSettings
 import dev.huecoder.md3agent.data.settings.ToolSettings
@@ -87,7 +89,7 @@ fun ToolSettingsScreen(onBack: () -> Unit) {
                     sectionModifier = { category -> anchors.anchor(category) },
                 ) { category ->
                     if (category == ToolCategory.WEB) {
-                        CardGroup(Modifier.padding(top = SERVICE_GROUP_GAP)) { searchServiceCards(current.search) { tools = current.copy(search = it) } }
+                        CardGroup(Modifier.padding(top = SERVICE_GROUP_GAP)) { searchServiceCards(current.search, folds) { tools = current.copy(search = it) } }
                         CardGroup(Modifier.padding(top = SERVICE_GROUP_GAP)) { fetchServiceCards(current.fetch) { tools = current.copy(fetch = it) } }
                         CardGroup(Modifier.padding(top = SERVICE_GROUP_GAP)) { weatherServiceCards(current.weather) { tools = current.copy(weather = it) } }
                     }
@@ -103,12 +105,24 @@ private fun SearchSettings.isComplete(): Boolean = when (backend) {
     SearchBackend.HTML_SCRAPE -> true
     SearchBackend.SEARXNG -> searxngUrl.isNotBlank()
     SearchBackend.BRAVE_API -> apiKey.isNotBlank()
+    SearchBackend.CUSTOM -> custom.isComplete
 }
 
 private fun ToolSettings.trimmed() = copy(
-    search = search.copy(searxngUrl = search.searxngUrl.trim(), apiKey = search.apiKey.trim()),
+    search = search.copy(searxngUrl = search.searxngUrl.trim(), apiKey = search.apiKey.trim(), custom = search.custom.trimmed()),
     weather = weather.copy(forecastUrl = weather.forecastUrl.trim(), geocodingUrl = weather.geocodingUrl.trim()),
     fetch = fetch.copy(jinaApiKey = fetch.jinaApiKey.trim(), customUrl = fetch.customUrl.trim(), customApiKey = fetch.customApiKey.trim()),
+)
+
+private fun CustomSearch.trimmed() = copy(
+    url = url.trim(),
+    apiKey = apiKey.trim(),
+    headers = headers.filter { it.name.isNotBlank() }.map { HeaderEntry(it.name.trim(), it.value.trim()) },
+    body = body.trim(),
+    resultsPath = resultsPath.trim(),
+    titleField = titleField.trim(),
+    linkField = linkField.trim(),
+    snippetFields = snippetFields.trim(),
 )
 
 private val SPY_OFFSET = 96.dp

@@ -106,6 +106,22 @@
     <string name="tools_search_backend_html_hint">Parses DuckDuckGo HTML results. Works right away, but sometimes hits a captcha.</string>
     <string name="tools_search_backend_searxng_hint">Your own or a public instance. JSON format must be enabled in its settings.</string>
     <string name="tools_search_backend_brave_hint">Official API with a key: stable and captcha-free.</string>
+    <string name="tools_search_backend_custom">Custom</string>
+    <string name="tools_search_backend_custom_hint">Any search API that answers with JSON, like Exa. Describe the request once and the agent uses it for web search.</string>
+    <string name="tools_search_custom_templates">Templates</string>
+    <string name="tools_search_custom_templates_hint">Fill in the request for a known service. Your key is kept.</string>
+    <string name="tools_search_custom_url">Request URL</string>
+    <string name="tools_search_custom_url_placeholder" translatable="false">https://api.exa.ai/search</string>
+    <string name="tools_search_custom_placeholders">{query}, {count} and {key} work in the URL, the body and header values.</string>
+    <string name="tools_search_method_get" translatable="false">GET</string>
+    <string name="tools_search_method_post" translatable="false">POST</string>
+    <string name="tools_search_custom_body">Request body (JSON)</string>
+    <string name="tools_search_custom_response">Response format</string>
+    <string name="tools_search_custom_response_summary">Results are read from “%1$s”</string>
+    <string name="tools_search_custom_results_path">List of results, path in the response</string>
+    <string name="tools_search_custom_title_field">Title field</string>
+    <string name="tools_search_custom_link_field">Link field</string>
+    <string name="tools_search_custom_snippet_fields">Snippet fields, the first one with text is used</string>
     <string name="provider_base_url_invalid">Expected an address like https://host/v1</string>
     <string name="provider_models_fetch_failed">Couldn\'t load the model list</string>
     <string name="provider_title">Provider</string>
