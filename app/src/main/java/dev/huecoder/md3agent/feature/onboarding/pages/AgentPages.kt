@@ -20,9 +20,15 @@ import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.feature.onboarding.AgentCloud
 import dev.huecoder.md3agent.feature.onboarding.OnboardingMotion
 import dev.huecoder.md3agent.feature.onboarding.OnboardingState
-import dev.huecoder.md3agent.feature.onboarding.SettingsHint
+import dev.huecoder.md3agent.feature.onboarding.PageScaffold
 import dev.huecoder.md3agent.feature.onboarding.reveal
+import dev.huecoder.md3agent.data.chat.ChatTint
+import dev.huecoder.md3agent.data.settings.AgentShape
+import dev.huecoder.md3agent.feature.settings.AgentShapePicker
+import dev.huecoder.md3agent.feature.settings.AgentTintPicker
+import dev.huecoder.md3agent.ui.components.AgentAvatar
 import dev.huecoder.md3agent.ui.components.FormField
+import dev.huecoder.md3agent.ui.components.SectionHeader
 
 @Composable
 fun AgentsPage(state: OnboardingState) {
@@ -51,32 +57,14 @@ fun AgentsPage(state: OnboardingState) {
 }
 
 @Composable
-fun FirstAgentPage(state: OnboardingState, onPick: (Int) -> Unit, onName: (String) -> Unit) {
-    Column(
-        modifier = Modifier.fillMaxSize().padding(horizontal = OnboardingMotion.ContentPadding, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
+fun FirstAgentPage(state: OnboardingState, onShape: (AgentShape) -> Unit, onTint: (ChatTint) -> Unit, onName: (String) -> Unit) {
+    PageScaffold(
+        title = stringResource(R.string.onboarding_first_title),
+        body = stringResource(R.string.onboarding_first_body),
+        hint = stringResource(R.string.onboarding_changeable),
     ) {
-        Text(
-            stringResource(R.string.onboarding_first_title),
-            style = MaterialTheme.typography.headlineLargeEmphasized,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.reveal(0),
-        )
-        Text(
-            stringResource(R.string.onboarding_first_body),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.reveal(1),
-        )
-        Box(Modifier.weight(1f).fillMaxWidth().reveal(2), contentAlignment = Alignment.Center) {
-            AgentCloud(
-                state.cluster,
-                selected = state.agentPick,
-                onSelect = onPick,
-                modifier = Modifier.widthIn(max = CLOUD_MAX_WIDTH).fillMaxWidth().aspectRatio(1f),
-            )
+        Box(Modifier.fillMaxWidth().padding(vertical = 8.dp).reveal(2), contentAlignment = Alignment.Center) {
+            AgentAvatar(isWorking = false, size = PREVIEW_SIZE, look = state.look, interactive = true)
         }
         FormField(
             value = state.agentName,
@@ -84,8 +72,16 @@ fun FirstAgentPage(state: OnboardingState, onPick: (Int) -> Unit, onName: (Strin
             label = stringResource(R.string.onboarding_first_name),
             modifier = Modifier.fillMaxWidth().reveal(3),
         )
-        SettingsHint(modifier = Modifier.reveal(4))
+        Column(Modifier.reveal(4), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            SectionHeader(stringResource(R.string.agent_shape))
+            AgentShapePicker(selected = { it == state.look.shape }, tint = state.look.tint, onToggle = onShape)
+        }
+        Column(Modifier.reveal(5), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            SectionHeader(stringResource(R.string.agent_color))
+            AgentTintPicker(selected = state.look.tint, onSelect = onTint)
+        }
     }
 }
 
 private val CLOUD_MAX_WIDTH = 360.dp
+private val PREVIEW_SIZE = 120.dp

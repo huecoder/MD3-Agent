@@ -10,15 +10,16 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 
 @Composable
-fun SceneFrame(modifier: Modifier = Modifier, content: @Composable BoxScope.() -> Unit) {
+fun SceneFrame(modifier: Modifier = Modifier, height: Dp = SCENE_HEIGHT, content: @Composable BoxScope.() -> Unit) {
     Box(
         modifier
             .fillMaxWidth()
-            .height(SCENE_HEIGHT)
+            .height(height)
             .clip(RoundedCornerShape(SCENE_CORNER))
             .background(MaterialTheme.colorScheme.surfaceContainerLow),
         content = content,

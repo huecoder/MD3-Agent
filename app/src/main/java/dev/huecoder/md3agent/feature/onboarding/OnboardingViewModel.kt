@@ -4,12 +4,14 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.huecoder.md3agent.assistant.AssistantRole
+import dev.huecoder.md3agent.data.chat.ChatTint
 import dev.huecoder.md3agent.data.models.ModelCatalog
 import dev.huecoder.md3agent.data.settings.ApiFormat
 import dev.huecoder.md3agent.data.settings.ModelSelection
 import dev.huecoder.md3agent.data.settings.ProviderProfile
 import dev.huecoder.md3agent.llm.ProviderException
 import dev.huecoder.md3agent.data.settings.AgentProfile
+import dev.huecoder.md3agent.data.settings.AgentShape
 import dev.huecoder.md3agent.data.settings.ModePreset
 import dev.huecoder.md3agent.data.settings.ModeSettings
 import dev.huecoder.md3agent.data.settings.SettingsRepository
@@ -34,9 +36,8 @@ data class OnboardingState(
     val needs: SurveyNeeds,
     val language: AppLanguage,
     val cluster: List<AgentLook>,
-    val agentPick: Int?,
     val agentName: String,
-    val currentLook: AgentLook,
+    val look: AgentLook,
     val missingPermissions: List<DevicePermission>,
     val providerName: String?,
     val model: ModelSelection?,
@@ -64,7 +65,8 @@ class OnboardingViewModel(
         val language: AppLanguage,
         val visited: Set<OnboardingStep> = emptySet(),
         val agentName: String? = null,
-        val agentPick: Int? = null,
+        val agentShape: AgentShape? = null,
+        val agentTint: ChatTint? = null,
     )
 
     private val draft = MutableStateFlow(Draft(language = AppLocale.current(context)))
@@ -93,9 +95,8 @@ class OnboardingViewModel(
             needs = needs,
             language = current.language,
             cluster = cluster,
-            agentPick = current.agentPick,
             agentName = current.agentName ?: begun.agent.name,
-            currentLook = AgentLook.of(begun.agent),
+            look = AgentLook(current.agentShape ?: begun.agent.shape, current.agentTint ?: begun.agent.tint),
             missingPermissions = shown ?: absent,
             providerName = all.providers.firstOrNull()?.name,
             model = all.activeSelection,
@@ -121,7 +122,9 @@ class OnboardingViewModel(
 
     fun renameAgent(name: String) = draft.update { it.copy(agentName = name) }
 
-    fun pickAgent(index: Int) = draft.update { it.copy(agentPick = index) }
+    fun pickShape(shape: AgentShape) = draft.update { it.copy(agentShape = shape) }
+
+    fun pickTint(tint: ChatTint) = draft.update { it.copy(agentTint = tint) }
 
     fun markShown(step: OnboardingStep) {
         draft.update { it.copy(visited = it.visited + step) }
@@ -157,15 +160,8 @@ class OnboardingViewModel(
         modeController.update { it.with(chosen, phoneControl = current.needs.phoneControl).copy(onboarded = true) }
         if (retake || OnboardingStep.FIRST_AGENT !in draft.value.visited) return
         settings.updateAgents { agents ->
-            val look = current.agentPick?.let(current.cluster::getOrNull)
             val active = agents.active
-            agents.upsert(
-                active.copy(
-                    name = current.agentName.trim().ifEmpty { active.name },
-                    shape = look?.shape ?: active.shape,
-                    tint = look?.tint ?: active.tint,
-                ),
-            )
+            agents.upsert(active.copy(name = current.agentName.trim().ifEmpty { active.name }, shape = current.look.shape, tint = current.look.tint))
         }
     }
 

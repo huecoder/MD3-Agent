@@ -78,7 +78,13 @@ fun AgentCloud(
         Canvas(Modifier.size(side)) {
             val radius = sidePx * GLOW_RADIUS * breath
             drawCircle(
-                brush = Brush.radialGradient(listOf(glow.copy(alpha = GLOW_ALPHA), Color.Transparent), center, radius),
+                brush = Brush.radialGradient(
+                    0f to glow.copy(alpha = GLOW_ALPHA),
+                    GLOW_MIDDLE_AT to glow.copy(alpha = GLOW_ALPHA * GLOW_MIDDLE),
+                    1f to Color.Transparent,
+                    center = center,
+                    radius = radius,
+                ),
                 radius = radius,
                 center = center,
             )
@@ -124,10 +130,12 @@ fun AgentCloud(
 private const val TWO_PI = (2 * PI).toFloat()
 private const val DRIFT_MILLIS = 9_000
 private const val BREATH_MILLIS = 3_200
-private const val BREATH_MIN = 0.92f
-private const val BREATH_MAX = 1.08f
-private const val GLOW_RADIUS = 0.62f
-private const val GLOW_ALPHA = 0.42f
+private const val BREATH_MIN = 0.86f
+private const val BREATH_MAX = 1f
+private const val GLOW_RADIUS = 0.5f
+private const val GLOW_ALPHA = 0.16f
+private const val GLOW_MIDDLE = 0.4f
+private const val GLOW_MIDDLE_AT = 0.55f
 private const val MIN_PULL = 0.001f
 private const val LOOK_REACH = 0.85f
 private const val BOB_SKEW = 1.3f

@@ -10,9 +10,9 @@ class ScenePlanTest {
     private val poses = (0..3).map { ScenePlan.pose(it, calm = it % 2 == 1) }
 
     @Test
-    fun `neighbouring steps differ in shape and colors`() {
+    fun `neighbouring steps differ in scenery and colors`() {
         poses.zipWithNext().forEach { (first, second) ->
-            assertNotEquals(first.bottomShape, second.bottomShape)
+            assertNotEquals(first.scenery.map { it.shape }, second.scenery.map { it.shape })
             assertNotEquals(first.topColor, second.topColor)
         }
     }
@@ -23,13 +23,7 @@ class ScenePlanTest {
         assertSame(poses[1], blend.from)
         assertSame(poses[2], blend.to)
         assertEquals(0.25f, blend.fraction, 1e-6f)
-        assertEquals(poses[1].bottomTurn + (poses[2].bottomTurn - poses[1].bottomTurn) * 0.25f, blend.bottomTurn, 1e-6f)
-    }
-
-    @Test
-    fun `the bottom shape changes at the middle of a step`() {
-        assertEquals(poses[0].bottomShape, ScenePlan.blend(poses, 0.49f).bottomShape)
-        assertEquals(poses[1].bottomShape, ScenePlan.blend(poses, 0.5f).bottomShape)
+        assertEquals(poses[1].intensity + (poses[2].intensity - poses[1].intensity) * 0.25f, blend.intensity, 1e-6f)
     }
 
     @Test

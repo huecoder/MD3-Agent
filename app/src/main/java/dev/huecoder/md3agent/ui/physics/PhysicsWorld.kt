@@ -140,6 +140,15 @@ class PhysicsWorld(private val pixelsPerMeter: Float, gravity: Double = CARTOON_
         world.broadphaseDetector.update(body)
     }
 
+    fun keepOnLine(body: Body, anchor: Offset, direction: Offset) {
+        val offset = origin(body) - anchor
+        val lateral = offset - direction * (offset.x * direction.x + offset.y * direction.y)
+        body.translate(-lateral.x.meters, -lateral.y.meters)
+        val velocity = velocity(body)
+        setVelocity(body, direction * (velocity.x * direction.x + velocity.y * direction.y))
+        world.broadphaseDetector.update(body)
+    }
+
     fun driveSpin(body: Body, radiansPerSecond: Double, maxAcceleration: Double) {
         val acceleration = ((radiansPerSecond - body.angularVelocity) * SPIN_RESPONSE).coerceIn(-maxAcceleration, maxAcceleration)
         body.applyTorque(acceleration * body.mass.inertia)

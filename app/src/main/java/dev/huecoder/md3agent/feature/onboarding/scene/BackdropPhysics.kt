@@ -4,105 +4,49 @@ import androidx.compose.ui.geometry.Offset
 import dev.huecoder.md3agent.data.settings.AgentShape
 import dev.huecoder.md3agent.ui.physics.PhysicsWorld
 import dev.huecoder.md3agent.ui.physics.ShapeParts
-import kotlin.math.PI
-import kotlin.math.abs
+import kotlin.random.Random
 
-class BackdropPhysics(private val stage: SceneStage, topShape: AgentShape, bottomShape: AgentShape) {
-    enum class Phase { REST, STRIKE, RETURN }
-
-    class Hit(val point: Offset, val speed: Float, val topCenter: Offset, val topAngle: Float)
+class BackdropPhysics(private val stage: SceneStage, topShape: AgentShape, bottomShape: AgentShape, private val random: Random = Random) {
+    class Hit(val point: Offset, val metersPerSecond: Float, val topCenter: Offset, val topAngle: Float)
 
     private val pixelsPerMeter = stage.base / SceneMotion.METERS_ACROSS_BASE
-    private val world = PhysicsWorld(pixelsPerMeter, gravity = 0.0, stepSeconds = SceneMotion.STEP_SECONDS)
+    private val world = PhysicsWorld(pixelsPerMeter, gravity = SceneMotion.GRAVITY, stepSeconds = SceneMotion.STEP_SECONDS)
+    private val fall = (stage.bottomCenter - stage.home).let { it / it.getDistance() }
     private val hits = ArrayList<Hit>()
-    private var tether: PhysicsWorld.Grab? = null
-    private var phaseSeconds = 0f
-    private var settledSeconds = 0f
+    private var quietSeconds = 0f
 
-    private val top = world.addOutline(stage.home, ShapeParts.of(topShape), stage.topSize, SceneMotion.TopMaterial, isBullet = true)
-    private val bottom = world.addOutline(stage.bottomCenter, ShapeParts.of(bottomShape), stage.bottomSize, SceneMotion.BottomMaterial, isStatic = true)
-
-    var phase = Phase.REST
-        private set
-
-    var bottomShape = bottomShape
-        private set
+    private val top = world.addOutline(stage.home, ShapeParts.of(topShape), stage.topSize, SceneMotion.BounceMaterial, isBullet = true)
 
     val topCenter: Offset get() = world.origin(top)
 
     val topAngle: Float get() = world.angle(top)
 
     init {
-        world.onImpact { hits += Hit(it.point, it.speed, world.origin(top), world.angle(top)) }
+        world.addOutline(stage.bottomCenter, ShapeParts.of(bottomShape), stage.bottomSize, SceneMotion.BounceMaterial, isStatic = true)
+        world.pointGravity(fall)
+        top.angularDamping = SceneMotion.SPIN_DAMPING
+        world.onImpact { hits += Hit(it.point, it.speed / pixelsPerMeter, world.origin(top), world.angle(top)) }
     }
 
-    fun reshapeBottom(shape: AgentShape) {
-        if (shape == bottomShape) return
-        bottomShape = shape
-        world.replaceOutline(bottom, ShapeParts.of(shape), stage.bottomSize, SceneMotion.BottomMaterial)
-    }
-
-    fun turnBottom(radians: Float) {
-        world.place(bottom, stage.bottomCenter, radians.toDouble())
-    }
-
-    fun strike() {
-        if (phase != Phase.REST) return
-        val direction = (stage.bottomCenter - stage.home).let { it / it.getDistance() }
-        world.place(top, stage.home, 0.0)
-        world.setVelocity(top, direction * SceneMotion.LAUNCH_METERS_PER_SECOND * pixelsPerMeter)
-        top.angularVelocity = SceneMotion.LAUNCH_SPIN.toDouble()
-        enter(Phase.STRIKE)
-    }
-
-    fun step(seconds: Float, onHit: (Hit) -> Unit): Boolean {
-        if (phase == Phase.REST) return false
-        phaseSeconds += seconds
-        if (phase == Phase.RETURN) {
-            tether?.moveTo(stage.home)
-            world.driveSpin(top, -wrapped(topAngle) * SceneMotion.ANGLE_GAIN, SceneMotion.MAX_SPIN_ACCELERATION)
-        }
+    fun step(seconds: Float, onHit: (Hit) -> Unit) {
         world.step(seconds)
-        hits.maxByOrNull { it.speed }?.let(onHit)
-        val struck = hits.isNotEmpty()
+        world.keepOnLine(top, stage.home, fall)
+        val strongest = hits.maxByOrNull { it.metersPerSecond }
         hits.clear()
-        when {
-            phase == Phase.STRIKE && (struck || phaseSeconds > SceneMotion.STRIKE_TIMEOUT_SECONDS) -> beginReturn()
-            phase == Phase.RETURN -> trackSettling(seconds)
-        }
-        return phase != Phase.REST
+        strongest?.let(onHit)
+        if (hasSettled(strongest, seconds)) jump()
     }
 
-    fun rest() {
-        tether?.release()
-        tether = null
-        world.place(top, stage.home, 0.0)
-        world.setVelocity(top, Offset.Zero)
-        top.angularVelocity = 0.0
-        enter(Phase.REST)
+    private fun hasSettled(strongest: Hit?, seconds: Float): Boolean {
+        val metersPerSecond = world.velocity(top).getDistance() / pixelsPerMeter
+        quietSeconds = if (metersPerSecond < SceneMotion.QUIET_METERS_PER_SECOND) quietSeconds + seconds else 0f
+        return quietSeconds >= SceneMotion.QUIET_HOLD_SECONDS || (strongest != null && strongest.metersPerSecond < SceneMotion.SETTLED_HIT_METERS_PER_SECOND)
     }
 
-    private fun beginReturn() {
-        tether = world.grab(top, world.origin(top), SceneMotion.ReturnSpring)
-        enter(Phase.RETURN)
-    }
-
-    private fun trackSettling(seconds: Float) {
-        val near = (topCenter - stage.home).getDistance() < stage.base * SceneMotion.SETTLE_DISTANCE_SHARE
-        val slow = world.velocity(top).getDistance() / pixelsPerMeter < SceneMotion.SETTLE_METERS_PER_SECOND &&
-            abs(top.angularVelocity) < SceneMotion.SETTLE_SPIN
-        settledSeconds = if (near && slow) settledSeconds + seconds else 0f
-        if (settledSeconds >= SceneMotion.SETTLE_HOLD_SECONDS || phaseSeconds > SceneMotion.RETURN_TIMEOUT_SECONDS) rest()
-    }
-
-    private fun enter(next: Phase) {
-        phase = next
-        phaseSeconds = 0f
-        settledSeconds = 0f
-    }
-
-    private fun wrapped(angle: Float): Double {
-        val turn = 2 * PI
-        return ((angle + PI) % turn + turn) % turn - PI
+    private fun jump() {
+        quietSeconds = 0f
+        val spread = 1f + random.nextFloat() * 2 * SceneMotion.JUMP_SPREAD - SceneMotion.JUMP_SPREAD
+        world.setVelocity(top, fall * -(SceneMotion.JUMP_METERS_PER_SECOND * spread * pixelsPerMeter))
+        top.angularVelocity = (random.nextFloat() * 2 - 1) * SceneMotion.JUMP_SPIN.toDouble()
     }
 }

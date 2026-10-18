@@ -935,7 +935,7 @@
     <string name="onboarding_agents_body">Each has its own character, voice and set of skills</string>
     <string name="onboarding_agent_option">Look option %1$d</string>
     <string name="onboarding_first_title">Your first agent</string>
-    <string name="onboarding_first_body">Tap the look you like, or keep the current one.</string>
+    <string name="onboarding_first_body">Pick a look and a name. It\'s the same editor as in Settings.</string>
     <string name="onboarding_first_name">Name</string>
     <string name="onboarding_scene_ask_question">What should I cook tonight?</string>
     <string name="onboarding_scene_ask_answer">Tomato basil pasta: 15 minutes, and everything is already in your kitchen.</string>
@@ -999,4 +999,6 @@
     <string name="appearance_language">App language</string>
     <string name="mode_retake">Take the quiz again</string>
     <string name="mode_retake_summary">Three questions help pick a mode</string>
+    <string name="about_onboarding">Retake onboarding</string>
+    <string name="about_onboarding_summary">Go through the intro and setup again</string>
 </resources>

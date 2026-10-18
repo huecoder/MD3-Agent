@@ -24,7 +24,7 @@ data object NetworkSettingsRoute
 data object ModeRoute
 
 @Serializable
-data class OnboardingRoute(val retake: Boolean = false)
+data class OnboardingRoute(val retake: Boolean = false, val replay: Boolean = false)
 
 @Serializable
 data object MemorySettingsRoute

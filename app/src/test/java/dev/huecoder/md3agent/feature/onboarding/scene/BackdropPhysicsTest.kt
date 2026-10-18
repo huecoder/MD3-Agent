@@ -5,30 +5,29 @@ import dev.huecoder.md3agent.data.settings.AgentShape
 import dev.huecoder.md3agent.ui.avatar.polygon
 import dev.huecoder.md3agent.ui.physics.ShapeParts
 import dev.huecoder.md3agent.ui.physics.distanceToOutline
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
+import kotlin.random.Random
 
 class BackdropPhysicsTest {
     private val stage = SceneStage(1080f, 2400f)
+    private val fall = (stage.bottomCenter - stage.home).let { it / it.getDistance() }
 
-    private class Strike(val hit: BackdropPhysics.Hit, val seconds: Float)
+    private class Jump(val time: Float, val hit: BackdropPhysics.Hit)
 
-    private fun run(bottom: AgentShape, turn: Float): Strike {
-        val physics = BackdropPhysics(stage, ScenePlan.topShape, bottom)
-        physics.turnBottom(turn)
-        physics.strike()
-        var hit: BackdropPhysics.Hit? = null
-        var seconds = 0f
-        while (physics.step(FRAME) { if (hit == null) hit = it } && seconds < LIMIT) {
-            seconds += FRAME
+    private fun simulate(seconds: Float, seed: Int = 1, onFrame: (BackdropPhysics) -> Unit = {}): List<Jump> {
+        val physics = BackdropPhysics(stage, ScenePlan.topShape, ScenePlan.bottomShape, Random(seed))
+        val jumps = ArrayList<Jump>()
+        var time = 0f
+        while (time < seconds) {
+            physics.step(FRAME) { jumps += Jump(time, it) }
+            onFrame(physics)
+            time += FRAME
         }
-        assertEquals("$bottom never settled", BackdropPhysics.Phase.REST, physics.phase)
-        assertEquals(stage.home.x, physics.topCenter.x, 0.5f)
-        assertEquals(stage.home.y, physics.topCenter.y, 0.5f)
-        return Strike(checkNotNull(hit) { "$bottom was never hit" }, seconds)
+        return jumps
     }
 
     private fun contour(shape: AgentShape, size: Float, center: Offset, turn: Float): List<Offset> =
@@ -39,41 +38,47 @@ class BackdropPhysicsTest {
         }
 
     @Test
-    fun `the top shape lands on the contour of every bottom shape and comes home`() {
-        ScenePlan.bottomShapes.forEachIndexed { step, shape ->
-            val turn = ScenePlan.pose(step, calm = false).bottomTurn
-            val strike = run(shape, turn)
-            val bottomContour = contour(shape, stage.bottomSize, stage.bottomCenter, turn)
-            val topContour = contour(ScenePlan.topShape, stage.topSize, strike.hit.topCenter, strike.hit.topAngle)
-            val onBottom = distanceToOutline(strike.hit.point, bottomContour)
-            val onTop = distanceToOutline(strike.hit.point, topContour)
-            assertTrue("$shape: contact ${onBottom}px from the bottom contour", onBottom < TOUCH_TOLERANCE)
-            assertTrue("$shape: contact ${onTop}px from the top contour", onTop < TOUCH_TOLERANCE)
-            assertTrue("$shape: took ${strike.seconds}s", strike.seconds < SLOWEST_STRIKE)
+    fun `the top shape keeps jumping for minutes without stopping`() {
+        (1..3).forEach { seed ->
+            val strong = simulate(MINUTE, seed).filter { it.hit.metersPerSecond > STRONG_HIT }
+            (0 until MINUTE.toInt() step WINDOW).forEach { start ->
+                val inWindow = strong.count { it.time >= start && it.time < start + WINDOW }
+                assertTrue("seed $seed: only $inWindow hits between ${start}s and ${start + WINDOW}s", inWindow >= MIN_HITS_PER_WINDOW)
+            }
         }
     }
 
     @Test
-    fun `a strike that has already started is not restarted`() {
-        val physics = BackdropPhysics(stage, ScenePlan.topShape, ScenePlan.bottomShapes.first())
-        physics.strike()
-        repeat(10) { physics.step(FRAME) {} }
-        val before = physics.topCenter
-        physics.strike()
-        assertEquals(before, physics.topCenter)
+    fun `the top shape stays on its line and near the home`() {
+        simulate(MINUTE) { physics ->
+            val offset = physics.topCenter - stage.home
+            val along = offset.x * fall.x + offset.y * fall.y
+            val lateral = (offset - fall * along).getDistance()
+            assertTrue("drifted ${lateral}px off the line", lateral < LINE_TOLERANCE)
+            assertTrue("went ${along}px along the line", abs(along) < stage.base * REACH)
+        }
     }
 
     @Test
-    fun `reshaping the bottom keeps it in the same place`() {
-        val physics = BackdropPhysics(stage, ScenePlan.topShape, AgentShape.COOKIE_6)
-        physics.reshapeBottom(AgentShape.COOKIE_4)
-        assertEquals(AgentShape.COOKIE_4, physics.bottomShape)
+    fun `every first contact lies on the contours of both shapes`() {
+        (1..5).forEach { seed ->
+            val hit = checkNotNull(simulate(FIRST_LANDING, seed).firstOrNull()) { "seed $seed never landed" }.hit
+            val bottom = contour(ScenePlan.bottomShape, stage.bottomSize, stage.bottomCenter, 0f)
+            val top = contour(ScenePlan.topShape, stage.topSize, hit.topCenter, hit.topAngle)
+            assertTrue("seed $seed: ${distanceToOutline(hit.point, bottom)}px from the bottom", distanceToOutline(hit.point, bottom) < TOUCH_TOLERANCE)
+            assertTrue("seed $seed: ${distanceToOutline(hit.point, top)}px from the top", distanceToOutline(hit.point, top) < TOUCH_TOLERANCE)
+        }
     }
 
     private companion object {
         const val FRAME = 1f / 60f
-        const val LIMIT = 8f
+        const val MINUTE = 60f
+        const val WINDOW = 10
+        const val MIN_HITS_PER_WINDOW = 3
+        const val STRONG_HIT = 2f
+        const val FIRST_LANDING = 3f
+        const val LINE_TOLERANCE = 2f
+        const val REACH = 1.2f
         const val TOUCH_TOLERANCE = 3f
-        const val SLOWEST_STRIKE = 5f
     }
 }

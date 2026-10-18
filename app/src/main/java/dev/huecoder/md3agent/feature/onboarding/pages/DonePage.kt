@@ -44,7 +44,6 @@ import dev.huecoder.md3agent.ui.components.AgentAvatar
 
 @Composable
 fun DonePage(state: OnboardingState, departing: Boolean) {
-    val look = state.agentPick?.let(state.cluster::getOrNull) ?: state.currentLook
     val context = LocalContext.current
     val assistantHeld = remember { AssistantRole.isHeld(context) }
     val lift by animateFloatAsState(if (departing) 1f else 0f, tween(OnboardingMotion.DEPART_MILLIS, easing = FastOutSlowInEasing), label = "depart")
@@ -65,7 +64,7 @@ fun DonePage(state: OnboardingState, departing: Boolean) {
                     alpha = 1f - lift
                 },
         ) {
-            AgentAvatar(isWorking = false, size = AVATAR_SIZE, look = look, interactive = true)
+            AgentAvatar(isWorking = false, size = AVATAR_SIZE, look = state.look, interactive = true)
         }
         Text(stringResource(R.string.onboarding_done_title), style = MaterialTheme.typography.headlineLargeEmphasized, textAlign = TextAlign.Center, modifier = Modifier.reveal(1))
         Surface(shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surfaceContainer, modifier = Modifier.fillMaxWidth().reveal(2)) {

@@ -943,7 +943,7 @@
     <string name="onboarding_agents_body">У каждого свой характер, голос и набор умений</string>
     <string name="onboarding_agent_option">Вариант внешности %1$d</string>
     <string name="onboarding_first_title">Ваш первый агент</string>
-    <string name="onboarding_first_body">Выберите внешность, которая нравится, или оставьте текущую.</string>
+    <string name="onboarding_first_body">Выберите внешность и имя. Это тот же редактор, что и в настройках.</string>
     <string name="onboarding_first_name">Имя</string>
     <string name="onboarding_scene_ask_question">Что приготовить на ужин?</string>
     <string name="onboarding_scene_ask_answer">Паста с томатами и базиликом: 15 минут, и всё уже есть на кухне.</string>
@@ -1007,4 +1007,6 @@
     <string name="appearance_language">Язык приложения</string>
     <string name="mode_retake">Пройти опрос заново</string>
     <string name="mode_retake_summary">Три вопроса помогут подобрать режим</string>
+    <string name="about_onboarding">Пройти онбординг снова</string>
+    <string name="about_onboarding_summary">Заново пройти знакомство и настройку</string>
 </resources>

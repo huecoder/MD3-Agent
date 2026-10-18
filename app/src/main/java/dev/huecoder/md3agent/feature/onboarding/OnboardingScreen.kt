@@ -4,7 +4,6 @@ import android.animation.ValueAnimator
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.snap
 import androidx.activity.compose.LocalActivity
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeDrawingPadding
@@ -24,7 +23,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -46,18 +44,13 @@ import dev.huecoder.md3agent.feature.onboarding.pages.ProviderPage
 import dev.huecoder.md3agent.feature.onboarding.pages.WelcomePage
 import dev.huecoder.md3agent.feature.onboarding.scene.BackdropCanvas
 import dev.huecoder.md3agent.feature.onboarding.scene.BackdropScene
-import dev.huecoder.md3agent.feature.onboarding.scene.SceneMotion
 import dev.huecoder.md3agent.feature.onboarding.scene.ScenePlan
 import dev.huecoder.md3agent.ui.components.appViewModel
 import dev.huecoder.md3agent.ui.haptics.rememberHaptics
 import dev.huecoder.md3agent.ui.locale.AppLocale
 import dev.huecoder.md3agent.ui.locale.LocalizedContent
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
-import kotlin.math.abs
 
 @Composable
 fun OnboardingScreen(retake: Boolean, onCustomProvider: () -> Unit, onFinished: (openChat: Boolean) -> Unit) {
@@ -87,7 +80,6 @@ private fun OnboardingContent(state: OnboardingState, viewModel: OnboardingViewM
     val pager = rememberPagerState { steps.size }
     val scene = remember { BackdropScene() }
     val poses = remember(steps) { steps.mapIndexed { index, step -> ScenePlan.pose(index, step.calm) } }
-    val currentPoses by rememberUpdatedState(poses)
     val currentSteps by rememberUpdatedState(steps)
     val scope = rememberCoroutineScope()
     val haptics = rememberHaptics()
@@ -99,29 +91,15 @@ private fun OnboardingContent(state: OnboardingState, viewModel: OnboardingViewM
 
     LaunchedEffect(pager) { snapshotFlow { pager.currentPage + pager.currentPageOffsetFraction }.collect { scene.position = it } }
     LaunchedEffect(pager) { snapshotFlow { pager.settledPage }.collect { currentSteps.getOrNull(it)?.let(viewModel::markShown) } }
-    LaunchedEffect(animations, scene, pager) {
-        if (!animations) return@LaunchedEffect
-        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-            snapshotFlow { currentSteps.getOrNull(pager.settledPage) == OnboardingStep.WELCOME && !pager.isScrollInProgress }.collectLatest { onWelcome ->
-                while (onWelcome) {
-                    delay(SceneMotion.IDLE_STRIKE_MILLIS)
-                    scene.strike(currentPoses) {}
-                }
-            }
-        }
+    LaunchedEffect(animations, scene, scene.stage) {
+        if (!animations || scene.stage == null) return@LaunchedEffect
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) { scene.run() }
     }
 
     fun go(target: Int) {
         if (target !in steps.indices || target == pager.currentPage) return
         haptics.tick()
-        scope.launch {
-            if (animations && scene.canStrike) {
-                val landed = CompletableDeferred<Unit>()
-                launch { scene.strike(currentPoses) { power -> haptics.impact(power); landed.complete(Unit) } }
-                withTimeoutOrNull(OnboardingMotion.HIT_WAIT_MILLIS) { landed.await() }
-            }
-            pager.animateScrollToPage(target, animationSpec = if (animations) OnboardingMotion.PageSpring else snap())
-        }
+        scope.launch { pager.animateScrollToPage(target, animationSpec = if (animations) OnboardingMotion.PageSpring else snap()) }
     }
 
     fun finish(skipped: Boolean) {
@@ -153,34 +131,35 @@ private fun OnboardingContent(state: OnboardingState, viewModel: OnboardingViewM
 
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
         BackdropCanvas(scene, poses, Modifier.fillMaxSize())
-        Column(Modifier.fillMaxSize().safeDrawingPadding()) {
-            if (step != OnboardingStep.DONE) SkipButton(onSkip = ::skip)
-            HorizontalPager(
-                state = pager,
-                userScrollEnabled = step != OnboardingStep.WELCOME,
-                key = { steps[it].name },
-                modifier = Modifier.weight(1f),
-            ) { index ->
-                val arrival = remember(pager, index) { { arrivalOf(pager.offsetOf(index)) } }
-                CompositionLocalProvider(LocalPageArrival provides arrival) {
-                    Box(Modifier.fillMaxSize().pageDepth(pager, index)) {
+        DeliberateTouch {
+            Column(Modifier.fillMaxSize().safeDrawingPadding()) {
+                if (step != OnboardingStep.DONE) SkipButton(onSkip = ::skip)
+                HorizontalPager(
+                    state = pager,
+                    userScrollEnabled = step != OnboardingStep.WELCOME,
+                    flingBehavior = rememberDeliberateFling(pager),
+                    key = { steps[it].name },
+                    modifier = Modifier.weight(1f),
+                ) { index ->
+                    val offset = remember(pager, index) { { pager.offsetOf(index) } }
+                    CompositionLocalProvider(LocalPageOffset provides offset) {
                         StepPage(steps[index], state, viewModel, departing, onCustomProvider, onLater = { go(page + 1) })
                     }
                 }
+                OnboardingBar(
+                    progress = { ((scene.position + 1f) / steps.size).coerceIn(0f, 1f) },
+                    leading = when {
+                        page > 0 -> BarLeading.BACK
+                        retake -> BarLeading.NONE
+                        else -> BarLeading.LANGUAGE
+                    },
+                    language = state.language,
+                    pillLabel = pillLabel,
+                    onBack = { go(page - 1) },
+                    onLanguage = viewModel::chooseLanguage,
+                    onPill = { if (page == steps.lastIndex) finish(skipped = false) else go(page + 1) },
+                )
             }
-            OnboardingBar(
-                progress = { ((scene.position + 1f) / steps.size).coerceIn(0f, 1f) },
-                leading = when {
-                    page > 0 -> BarLeading.BACK
-                    retake -> BarLeading.NONE
-                    else -> BarLeading.LANGUAGE
-                },
-                language = state.language,
-                pillLabel = pillLabel,
-                onBack = { go(page - 1) },
-                onLanguage = viewModel::chooseLanguage,
-                onPill = { if (page == steps.lastIndex) finish(skipped = false) else go(page + 1) },
-            )
         }
     }
 }
@@ -200,18 +179,8 @@ private fun StepPage(step: OnboardingStep, state: OnboardingState, viewModel: On
         OnboardingStep.ASSISTANT -> AssistantPage()
         OnboardingStep.PERMISSIONS -> PermissionsPage(state, viewModel::refreshPermissions)
         OnboardingStep.PROVIDER -> ProviderPage(state, viewModel::connectProvider, viewModel::selectModel, onCustomProvider, onLater)
-        OnboardingStep.FIRST_AGENT -> FirstAgentPage(state, viewModel::pickAgent, viewModel::renameAgent)
+        OnboardingStep.FIRST_AGENT -> FirstAgentPage(state, viewModel::pickShape, viewModel::pickTint, viewModel::renameAgent)
     }
 }
 
 private fun PagerState.offsetOf(page: Int): Float = page - currentPage - currentPageOffsetFraction
-
-private fun Modifier.pageDepth(pager: PagerState, page: Int): Modifier = graphicsLayer {
-    val offset = pager.offsetOf(page)
-    val distance = abs(offset).coerceAtMost(1f)
-    translationX = -offset * size.width * OnboardingMotion.PARALLAX
-    alpha = 1f - distance
-    val scale = 1f - OnboardingMotion.PAGE_SHRINK * distance
-    scaleX = scale
-    scaleY = scale
-}

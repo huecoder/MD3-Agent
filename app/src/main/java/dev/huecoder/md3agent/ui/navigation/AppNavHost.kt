@@ -139,12 +139,12 @@ private fun AppNavGraph(start: Any, chatToOpen: String?, onChatOpened: () -> Uni
             ModeScreen(onBack = navController::popBackStack, onRetakeSurvey = { navController.navigate(OnboardingRoute(retake = true)) })
         }
         screen<OnboardingRoute>(navController) { entry ->
-            val retake = entry.toRoute<OnboardingRoute>().retake
+            val route = entry.toRoute<OnboardingRoute>()
             OnboardingScreen(
-                retake = retake,
+                retake = route.retake,
                 onCustomProvider = { navController.navigate(ProviderEditorRoute()) },
                 onFinished = { openChat ->
-                    if (retake) {
+                    if (route.retake || route.replay) {
                         navController.popBackStack()
                     } else {
                         navController.navigate(HomeRoute) { popUpTo<OnboardingRoute> { inclusive = true } }
@@ -163,7 +163,11 @@ private fun AppNavGraph(start: Any, chatToOpen: String?, onChatOpened: () -> Uni
         screen<PhoneUseRoute>(navController) { PhoneUseSettingsScreen(onBack = navController::popBackStack) }
         screen<AppearanceRoute>(navController) { AppearanceScreen(onBack = navController::popBackStack) }
         screen<AboutRoute>(navController) {
-            AboutScreen(onBack = navController::popBackStack, onSecret = { navController.navigate(PlaygroundRoute) })
+            AboutScreen(
+                onBack = navController::popBackStack,
+                onSecret = { navController.navigate(PlaygroundRoute) },
+                onOnboarding = { navController.navigate(OnboardingRoute(replay = true)) },
+            )
         }
         screen<PlaygroundRoute>(navController) { PlaygroundScreen() }
         screen<MediaRoute>(navController) { MediaScreen(onBack = navController::popBackStack) }

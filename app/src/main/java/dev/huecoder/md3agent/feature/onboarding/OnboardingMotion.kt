@@ -5,17 +5,15 @@ import androidx.compose.animation.core.spring
 import androidx.compose.ui.unit.dp
 
 object OnboardingMotion {
-    const val PARALLAX = 0.24f
-    const val PAGE_SHRINK = 0.04f
     const val STAGGER = 0.12f
-    val REVEAL_DISTANCE = 26.dp
-    val PageSpring = spring<Float>(dampingRatio = 0.82f, stiffness = Spring.StiffnessLow)
-    val SnapSpring = spring<Float>(dampingRatio = 0.86f, stiffness = 320f)
-    const val SWIPE_COMMIT_SHARE = 0.18f
-    const val LANGUAGE_PULL = 0.5f
-    const val NUDGE_SHARE = 0.06f
+    val TRAIL = 72.dp
+    val PageSpring = spring<Float>(dampingRatio = 0.9f, stiffness = 260f)
+    val SnapSpring = spring<Float>(dampingRatio = 0.86f, stiffness = Spring.StiffnessMediumLow)
+    const val SNAP_THRESHOLD = 0.4f
+    const val SLOP_SCALE = 1.7f
+    val FLING_MIN = 700.dp
+    val NUDGE = 36.dp
     val ContentPadding = 24.dp
     val BarHeight = 56.dp
     const val DEPART_MILLIS = 480
-    const val HIT_WAIT_MILLIS = 420L
 }
