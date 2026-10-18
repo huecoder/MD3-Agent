@@ -61,7 +61,6 @@ import dev.huecoder.md3agent.data.settings.AssistantLayout
 import dev.huecoder.md3agent.data.settings.InvokeInput
 import dev.huecoder.md3agent.feature.chat.ChatInput
 import dev.huecoder.md3agent.feature.chat.ChatViewModel
-import dev.huecoder.md3agent.feature.chat.EmptyConversation
 import dev.huecoder.md3agent.feature.chat.MessageList
 import dev.huecoder.md3agent.feature.chat.PromptPanel
 import dev.huecoder.md3agent.feature.chat.SendEntrance
@@ -71,7 +70,6 @@ import dev.huecoder.md3agent.feature.chat.lightbox.LocalLightbox
 import dev.huecoder.md3agent.feature.chat.appendDictated
 import dev.huecoder.md3agent.feature.chat.rememberDictationControls
 import dev.huecoder.md3agent.system.control.InstalledApps
-import dev.huecoder.md3agent.ui.components.AgentAvatar
 import dev.huecoder.md3agent.ui.components.appViewModel
 import dev.huecoder.md3agent.ui.text.UiText
 import dev.huecoder.md3agent.ui.text.resolve
@@ -173,9 +171,9 @@ fun AssistantOverlay(
             viewModel.consumeError()
         }
     }
-    val hasMessages = state.messages.isNotEmpty()
-    LaunchedEffect(compact, hasMessages) {
-        if (compact && hasMessages && sheet.target == SheetValue.Compact) sheet.settleAt(SheetValue.Half)
+    val expandSpec = MaterialTheme.motionScheme.fastSpatialSpec<Float>()
+    val expandFromCompact: () -> Unit = {
+        if (compact && sheet.target == SheetValue.Compact) scope.launch { sheet.settleAt(SheetValue.Half, expandSpec) }
     }
 
     val composerDp = with(density) { composerHeight.toDp() }
@@ -202,18 +200,7 @@ fun AssistantOverlay(
                 )
                 Conversation {
                     if (state.messages.isEmpty()) {
-                        when {
-                            !compact -> EmptyConversation(
-                                Modifier.align(Alignment.Center),
-                                avatarSize = EMPTY_AVATAR_SIZE,
-                                style = MaterialTheme.typography.headlineSmallEmphasized,
-                            )
-                            look.showOrb -> AgentAvatar(
-                                isWorking = false,
-                                size = ORB_SIZE,
-                                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = ORB_GAP).graphicsLayer { alpha = 1f - chrome() },
-                            )
-                        }
+                        AssistantIntro(chrome, restsAtBottom = compact && look.showOrb, modifier = Modifier.fillMaxSize())
                     } else {
                         MessageList(
                             messages = state.messages,
@@ -247,6 +234,7 @@ fun AssistantOverlay(
                             sendEntrance.arm()
                             viewModel.send(input)
                             input = ""
+                            expandFromCompact()
                         },
                         onStop = viewModel::stop,
                         attachments = state.pendingAttachments,
@@ -318,10 +306,7 @@ private fun Modifier.composerMargins(chrome: () -> Float): Modifier = layout { m
 private fun AppContainer.appLabel(packageName: String): String? =
     InstalledApps.list(appContext.packageManager).firstOrNull { it.packageName == packageName }?.label
 
-private val EMPTY_AVATAR_SIZE = 64.dp
 private val DEFAULT_COMPOSER_HEIGHT = 64.dp
-private val ORB_SIZE = 56.dp
-private val ORB_GAP = 12.dp
 private val ORB_ZONE: Dp = 92.dp
 private val COMPACT_SIDE_MARGIN = 20.dp
 private val COMPACT_BOTTOM_MARGIN = 20.dp

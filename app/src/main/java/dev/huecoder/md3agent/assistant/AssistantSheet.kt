@@ -63,7 +63,7 @@ class AssistantSheetState internal constructor(internal val draggable: AnchoredD
 
     val isPlaced: Boolean get() = !draggable.offset.isNaN()
 
-    suspend fun settleAt(value: SheetValue) = draggable.animateTo(value)
+    suspend fun settleAt(value: SheetValue, spec: AnimationSpec<Float>) = draggable.animateTo(value, spec)
 
     suspend fun hide() = draggable.animateTo(SheetValue.Hidden)
 }
