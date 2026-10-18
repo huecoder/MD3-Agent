@@ -883,4 +883,23 @@
     <string name="assistant_invoke_seconds">%1$.1f с</string>
     <string name="assistant_invoke_system_title">Белая рамка по краям</string>
     <string name="assistant_invoke_system_hint">Некоторые прошивки рисуют её для сторонних ассистентов, пока система читает экран. Пропадает, если в системных настройках ассистента выключить «Использовать текст с экрана», но тогда агент не получит текст экрана.</string>
+    <string name="settings_mode">Режим</string>
+    <string name="settings_agent_single">Агент</string>
+    <string name="mode_everyday">Повседневный</string>
+    <string name="mode_both">И то и другое</string>
+    <string name="mode_developer">Я разберусь</string>
+    <string name="mode_custom">Свой набор</string>
+    <string name="mode_everyday_summary">Чат и ассистент, ничего лишнего</string>
+    <string name="mode_both_summary">Как повседневный, но продвинутое под рукой</string>
+    <string name="mode_developer_summary">Всё включено</string>
+    <string name="mode_hint">Выберите, что показывать в приложении. Скрытое не удаляется: включите переключатель, и оно вернётся. Управление телефоном и шелл заодно отключают свои инструменты.</string>
+    <string name="mode_switches">Что включено</string>
+    <string name="mode_phone_control">Управление телефоном</string>
+    <string name="mode_phone_control_summary">Ассистент нажимает и вводит текст за вас в других приложениях</string>
+    <string name="mode_shell_and_files">Шелл и файлы</string>
+    <string name="mode_shell_and_files_summary">Команды, скрипты и доступ к файлам вне приложения</string>
+    <string name="mode_mcp">MCP-серверы</string>
+    <string name="mode_mcp_summary">Внешние инструменты. Уже добавленные серверы продолжают работать, пока раздел скрыт</string>
+    <string name="mode_multiple_agents">Несколько агентов</string>
+    <string name="mode_multiple_agents_summary">Отдельные характеры, у каждого свой промпт, голос и инструменты</string>
 </resources>

@@ -114,6 +114,11 @@ class SettingsRepository(
         prefs[Keys.ASSISTANT] = json.encodeToString(AssistantSettings.serializer(), transform(current))
     }
 
+    suspend fun updateMode(transform: (ModeSettings) -> ModeSettings) = store.edit { prefs ->
+        val current = decodeOrDefault(prefs[Keys.MODE], ModeSettings.serializer(), ModeSettings())
+        prefs[Keys.MODE] = json.encodeToString(ModeSettings.serializer(), transform(current))
+    }
+
     suspend fun updatePhonePanel(transform: (PhonePanelState) -> PhonePanelState) = store.edit { prefs ->
         val current = decodeOrDefault(prefs[Keys.PHONE_PANEL], PhonePanelState.serializer(), PhonePanelState())
         prefs[Keys.PHONE_PANEL] = json.encodeToString(PhonePanelState.serializer(), transform(current))
@@ -148,6 +153,7 @@ class SettingsRepository(
             ui = decodeOrDefault(prefs[Keys.INTERFACE], InterfaceSettings.serializer(), InterfaceSettings()),
             notifications = decodeOrDefault(prefs[Keys.NOTIFICATIONS], NotificationSettings.serializer(), NotificationSettings()),
             assistant = decodeOrDefault(prefs[Keys.ASSISTANT], AssistantSettings.serializer(), AssistantSettings()),
+            mode = decodeOrDefault(prefs[Keys.MODE], ModeSettings.serializer(), ModeSettings()),
         )
     }
 
@@ -229,6 +235,7 @@ class SettingsRepository(
         val PHONE_PANEL = stringPreferencesKey("phone_panel")
         val NOTIFICATIONS = stringPreferencesKey("notifications")
         val ASSISTANT = stringPreferencesKey("assistant")
+        val MODE = stringPreferencesKey("mode")
     }
 
     private class LastDecoded<T> {

@@ -65,6 +65,11 @@ class ModelPickerViewModel(
         .distinctUntilChanged()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), emptyList())
 
+    val showsAgents: StateFlow<Boolean> = settings.settings
+        .map { it.mode.multipleAgents }
+        .distinctUntilChanged()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), true)
+
     private val providers = settings.settings.map { it.providers }
 
     private val provider = combine(providers, providerId) { list, id -> list.firstOrNull { it.id == id } ?: list.firstOrNull() }

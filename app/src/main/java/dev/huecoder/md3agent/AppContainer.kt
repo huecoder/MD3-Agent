@@ -32,6 +32,7 @@ import dev.huecoder.md3agent.tools.memory.MemorySaveTool
 import dev.huecoder.md3agent.tools.memory.MemorySearchTool
 import dev.huecoder.md3agent.tools.memory.MemoryUpdateTool
 import dev.huecoder.md3agent.data.settings.AssistantSettings
+import dev.huecoder.md3agent.feature.mode.ModeController
 import dev.huecoder.md3agent.data.settings.ShellMode
 import dev.huecoder.md3agent.data.settings.SecretCipher
 import dev.huecoder.md3agent.data.settings.SettingsRepository
@@ -112,6 +113,7 @@ class AppContainer(context: Context) {
     val assistant = AssistantPresence()
 
     val settings = SettingsRepository(context, SecretCipher(), applicationScope)
+    val mode = ModeController(settings)
     val assistantSettings: StateFlow<AssistantSettings?> = settings.settings.map { it.assistant }.distinctUntilChanged()
         .stateIn(applicationScope, SharingStarted.Eagerly, null)
     val hapticEngine = HapticEngine(appContext)

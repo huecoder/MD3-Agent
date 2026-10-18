@@ -21,6 +21,9 @@ data class AgentEditorRoute(val agentId: String? = null)
 data object NetworkSettingsRoute
 
 @Serializable
+data object ModeRoute
+
+@Serializable
 data object MemorySettingsRoute
 
 @Serializable

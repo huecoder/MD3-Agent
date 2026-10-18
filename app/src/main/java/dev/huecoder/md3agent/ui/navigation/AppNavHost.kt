@@ -15,6 +15,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import dev.huecoder.md3agent.feature.chat.ChatScreen
 import dev.huecoder.md3agent.feature.main.MainScreen
+import dev.huecoder.md3agent.feature.mode.ModeScreen
 import dev.huecoder.md3agent.feature.settings.AgentEditorScreen
 import dev.huecoder.md3agent.feature.settings.AssistantInvokeSettingsScreen
 import dev.huecoder.md3agent.feature.settings.AgentsScreen
@@ -89,6 +90,8 @@ fun AppNavHost(chatToOpen: String?, onChatOpened: () -> Unit, target: LaunchTarg
                     assistantInvoke = { navController.navigate(AssistantInvokeRoute) },
                     phoneUse = { navController.navigate(PhoneUseRoute) },
                     mcp = { navController.navigate(McpServersRoute) },
+                    mode = { navController.navigate(ModeRoute) },
+                    editAgent = { navController.navigate(AgentEditorRoute(it)) },
                 ),
             )
         }
@@ -105,6 +108,7 @@ fun AppNavHost(chatToOpen: String?, onChatOpened: () -> Unit, target: LaunchTarg
         screen<AgentEditorRoute>(navController) { entry ->
             AgentEditorScreen(agentId = entry.toRoute<AgentEditorRoute>().agentId, onDone = navController::popBackStack)
         }
+        screen<ModeRoute>(navController) { ModeScreen(onBack = navController::popBackStack) }
         screen<MemorySettingsRoute>(navController) { MemorySettingsScreen(onBack = navController::popBackStack) }
         screen<NetworkSettingsRoute>(navController) { NetworkSettingsScreen(onBack = navController::popBackStack) }
         screen<ToolSettingsRoute>(navController) { ToolSettingsScreen(onBack = navController::popBackStack) }

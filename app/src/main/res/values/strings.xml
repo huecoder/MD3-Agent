@@ -875,4 +875,23 @@
     <string name="assistant_invoke_seconds">%1$.1f s</string>
     <string name="assistant_invoke_system_title">White frame on the edges</string>
     <string name="assistant_invoke_system_hint">Some firmwares draw it for third-party assistants while the system reads the screen. It goes away if Use text from screen is off in the system assistant settings, but then the agent does not get the screen text.</string>
+    <string name="settings_mode">Mode</string>
+    <string name="settings_agent_single">Agent</string>
+    <string name="mode_everyday">Everyday</string>
+    <string name="mode_both">A bit of both</string>
+    <string name="mode_developer">I\'ll figure it out</string>
+    <string name="mode_custom">Custom set</string>
+    <string name="mode_everyday_summary">Chat and assistant, nothing extra</string>
+    <string name="mode_both_summary">Like everyday, with the advanced things at hand</string>
+    <string name="mode_developer_summary">Everything is on</string>
+    <string name="mode_hint">Choose what the app shows. Hidden things are not deleted: turn the switch back on and they return. Phone control and shell also switch off their tools.</string>
+    <string name="mode_switches">What is on</string>
+    <string name="mode_phone_control">Phone control</string>
+    <string name="mode_phone_control_summary">The assistant taps and types for you in other apps</string>
+    <string name="mode_shell_and_files">Shell and files</string>
+    <string name="mode_shell_and_files_summary">Commands, scripts and access to files outside the app</string>
+    <string name="mode_mcp">MCP servers</string>
+    <string name="mode_mcp_summary">Outside tools. Servers you already added keep working while this is hidden</string>
+    <string name="mode_multiple_agents">Several agents</string>
+    <string name="mode_multiple_agents_summary">Separate characters, each with its own prompt, voice and tools</string>
 </resources>

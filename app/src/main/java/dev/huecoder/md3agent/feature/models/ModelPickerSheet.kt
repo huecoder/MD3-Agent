@@ -72,14 +72,15 @@ fun ModelPickerSheet(
 ) {
     val viewModel = appViewModel(key = "model-picker") { ModelPickerViewModel(model?.providerId, it.settings, it.modelCatalog) }
     val agents by viewModel.agents.collectAsStateWithLifecycle()
+    val showsAgents by viewModel.showsAgents.collectAsStateWithLifecycle()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var tab by rememberSaveable { mutableStateOf(PickerTab.MODEL) }
     val modelListState = rememberLazyListState()
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState, containerColor = MaterialTheme.colorScheme.surfaceContainerLow, modifier = Modifier.clickHaptics()) {
         Column(Modifier.fillMaxWidth().fillMaxHeight(SHEET_HEIGHT_FRACTION)) {
-            PickerTabs(tab, onSelect = { tab = it })
-            when (tab) {
+            if (showsAgents) PickerTabs(tab, onSelect = { tab = it })
+            when (if (showsAgents) tab else PickerTab.MODEL) {
                 PickerTab.MODEL -> ModelTab(viewModel, model, onSelectModel, onDismiss, modelListState)
                 PickerTab.AGENTS -> AgentList(agents, selectedId = agentId, onPick = { onSelectAgent(it.id) }, modifier = Modifier.weight(1f).bottomEdgeFade(color = MaterialTheme.colorScheme.surfaceContainerLow, underNavigationBar = false))
             }

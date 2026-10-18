@@ -43,6 +43,8 @@ import com.composables.icons.materialsymbols.rounded.Handyman
 import com.composables.icons.materialsymbols.rounded.Shield_person
 import com.composables.icons.materialsymbols.rounded.Hub
 import com.composables.icons.materialsymbols.rounded.Mic
+import com.composables.icons.materialsymbols.rounded.Tune
+import dev.huecoder.md3agent.feature.mode.titleRes
 import dev.huecoder.md3agent.App
 import dev.huecoder.md3agent.BuildConfig
 import dev.huecoder.md3agent.R
@@ -76,6 +78,8 @@ data class SettingsDestinations(
     val assistantInvoke: () -> Unit,
     val phoneUse: () -> Unit,
     val mcp: () -> Unit,
+    val mode: () -> Unit,
+    val editAgent: (agentId: String?) -> Unit,
 )
 
 @Composable
@@ -104,13 +108,19 @@ fun SettingsScreen(destinations: SettingsDestinations) {
                 summary = stringResource(R.string.settings_appearance_summary),
                 onClick = destinations.appearance,
             ),
+            SettingsEntry(
+                icon = MaterialSymbols.Rounded.Tune,
+                title = stringResource(R.string.settings_mode),
+                summary = stringResource(current.mode.preset?.titleRes ?: R.string.mode_custom),
+                onClick = destinations.mode,
+            ),
         )
         val assistantEntries = listOf(
             SettingsEntry(
                 icon = MaterialSymbols.Rounded.Face,
-                title = stringResource(R.string.settings_agent),
+                title = stringResource(if (current.mode.multipleAgents) R.string.settings_agent else R.string.settings_agent_single),
                 summary = stringResource(R.string.settings_agent_summary, current.agents.active.name),
-                onClick = destinations.agent,
+                onClick = if (current.mode.multipleAgents) destinations.agent else ({ destinations.editAgent(current.agents.active.id) }),
             ),
             SettingsEntry(
                 icon = MaterialSymbols.Rounded.Neurology,
@@ -131,7 +141,7 @@ fun SettingsScreen(destinations: SettingsDestinations) {
                 onClick = destinations.assistantInvoke,
             ),
         )
-        val capabilityEntries = listOf(
+        val capabilityEntries = listOfNotNull(
             SettingsEntry(
                 icon = MaterialSymbols.Rounded.Handyman,
                 title = stringResource(R.string.settings_tools),
@@ -143,7 +153,7 @@ fun SettingsScreen(destinations: SettingsDestinations) {
                 title = stringResource(R.string.settings_access),
                 summary = accessSummary(current, isAssistant),
                 onClick = destinations.access,
-            ),
+            ).takeIf { current.mode.shellAndFiles },
             SettingsEntry(
                 icon = MaterialSymbols.Rounded.Notification_settings,
                 title = stringResource(R.string.settings_notifications),
@@ -155,13 +165,13 @@ fun SettingsScreen(destinations: SettingsDestinations) {
                 title = stringResource(R.string.settings_phone_use),
                 summary = stringResource(R.string.settings_phone_use_summary),
                 onClick = destinations.phoneUse,
-            ),
+            ).takeIf { current.mode.phoneControl },
             SettingsEntry(
                 icon = MaterialSymbols.Rounded.Extension,
                 title = stringResource(R.string.settings_mcp),
                 summary = mcpSummary(current),
                 onClick = destinations.mcp,
-            ),
+            ).takeIf { current.mode.mcp },
             SettingsEntry(
                 icon = MaterialSymbols.Rounded.Notifications_active,
                 title = stringResource(R.string.settings_reminders),
