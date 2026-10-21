@@ -141,7 +141,11 @@ private fun AppNavGraph(start: Any, chatToOpen: String?, onChatOpened: () -> Uni
             AgentEditorScreen(agentId = entry.toRoute<AgentEditorRoute>().agentId, onDone = navController::popBackStack)
         }
         screen<ModeRoute>(navController) {
-            ModeScreen(onBack = navController::popBackStack, onRetakeSurvey = { navController.navigate(OnboardingRoute(retake = true)) })
+            ModeScreen(
+                onBack = navController::popBackStack,
+                onRetakeSurvey = { navController.navigate(OnboardingRoute(retake = true)) },
+                onRetakeOnboarding = { navController.navigate(OnboardingRoute(replay = true)) },
+            )
         }
         screen<OnboardingRoute>(navController) { entry ->
             val route = entry.toRoute<OnboardingRoute>()
@@ -171,7 +175,6 @@ private fun AppNavGraph(start: Any, chatToOpen: String?, onChatOpened: () -> Uni
             AboutScreen(
                 onBack = navController::popBackStack,
                 onSecret = { navController.navigate(PlaygroundRoute) },
-                onOnboarding = { navController.navigate(OnboardingRoute(replay = true)) },
             )
         }
         screen<PlaygroundRoute>(navController) { PlaygroundScreen() }

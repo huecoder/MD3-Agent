@@ -42,7 +42,6 @@ import com.composables.icons.materialsymbols.rounded.Code
 import com.composables.icons.materialsymbols.rounded.Gavel
 import com.composables.icons.materialsymbols.rounded.Open_in_new
 import com.composables.icons.materialsymbols.rounded.Package_2
-import com.composables.icons.materialsymbols.rounded.Refresh
 import com.composables.icons.materialsymbols.rounded.System_update
 import dev.huecoder.md3agent.BuildConfig
 import dev.huecoder.md3agent.R
@@ -54,7 +53,7 @@ import dev.huecoder.md3agent.ui.components.appViewModel
 import dev.huecoder.md3agent.ui.components.groupedListColors
 
 @Composable
-fun AboutScreen(onBack: () -> Unit, onSecret: () -> Unit, onOnboarding: () -> Unit) {
+fun AboutScreen(onBack: () -> Unit, onSecret: () -> Unit) {
     val viewModel = appViewModel { AboutViewModel(it.updates) }
     val check by viewModel.check.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -64,7 +63,7 @@ fun AboutScreen(onBack: () -> Unit, onSecret: () -> Unit, onOnboarding: () -> Un
         AboutLink(MaterialSymbols.Rounded.Gavel, R.string.about_license, R.string.about_license_summary, "${UpdateChecker.REPOSITORY_URL}/blob/main/LICENSE"),
         AboutLink(MaterialSymbols.Rounded.Package_2, R.string.about_third_party, R.string.about_third_party_summary, "${UpdateChecker.REPOSITORY_URL}/blob/main/THIRD_PARTY.md"),
     )
-    val total = links.size + 2
+    val total = links.size + 1
 
     SettingsScaffold(stringResource(R.string.settings_about), onBack) { padding ->
         Column(
@@ -89,17 +88,10 @@ fun AboutScreen(onBack: () -> Unit, onSecret: () -> Unit, onOnboarding: () -> Un
                     style = MaterialTheme.typography.titleMediumEmphasized,
                 )
             }
-            SegmentedListItem(
-                onClick = onOnboarding,
-                shapes = ListItemDefaults.segmentedShapes(1, total),
-                colors = groupedListColors(),
-                leadingContent = { ShapeBadge(MaterialSymbols.Rounded.Refresh) },
-                supportingContent = { Text(stringResource(R.string.about_onboarding_summary)) },
-            ) { Text(stringResource(R.string.about_onboarding), style = MaterialTheme.typography.titleMediumEmphasized) }
             links.forEachIndexed { index, link ->
                 SegmentedListItem(
                     onClick = { context.openUrl(link.url) },
-                    shapes = ListItemDefaults.segmentedShapes(index + 2, total),
+                    shapes = ListItemDefaults.segmentedShapes(index + 1, total),
                     colors = groupedListColors(),
                     leadingContent = { ShapeBadge(link.icon) },
                     supportingContent = { Text(stringResource(link.summary)) },

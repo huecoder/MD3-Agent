@@ -18,6 +18,7 @@ import com.composables.icons.materialsymbols.rounded.Chevron_right
 import com.composables.icons.materialsymbols.rounded.Extension
 import com.composables.icons.materialsymbols.rounded.Groups
 import com.composables.icons.materialsymbols.rounded.Layers
+import com.composables.icons.materialsymbols.rounded.Refresh
 import com.composables.icons.materialsymbols.rounded.Terminal
 import com.composables.icons.materialsymbols.rounded.Tips_and_updates
 import com.composables.icons.materialsymbols.rounded.Touch_app
@@ -34,7 +35,7 @@ import dev.huecoder.md3agent.ui.components.SettingsScaffold
 import dev.huecoder.md3agent.ui.components.appViewModel
 
 @Composable
-fun ModeScreen(onBack: () -> Unit, onRetakeSurvey: () -> Unit) {
+fun ModeScreen(onBack: () -> Unit, onRetakeSurvey: () -> Unit, onRetakeOnboarding: () -> Unit) {
     val viewModel = appViewModel { ModeViewModel(it.mode, it.settings) }
     val mode by viewModel.mode.collectAsStateWithLifecycle()
 
@@ -79,6 +80,16 @@ fun ModeScreen(onBack: () -> Unit, onRetakeSurvey: () -> Unit) {
                         summary = stringResource(R.string.mode_retake_summary),
                         shape = shape,
                         onClick = onRetakeSurvey,
+                        trailing = { Icon(MaterialSymbols.Rounded.Chevron_right, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+                    )
+                }
+                card { shape ->
+                    SettingCard(
+                        icon = MaterialSymbols.Rounded.Refresh,
+                        title = stringResource(R.string.mode_onboarding),
+                        summary = stringResource(R.string.mode_onboarding_summary),
+                        shape = shape,
+                        onClick = onRetakeOnboarding,
                         trailing = { Icon(MaterialSymbols.Rounded.Chevron_right, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                     )
                 }

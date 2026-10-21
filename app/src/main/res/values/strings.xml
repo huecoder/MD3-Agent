@@ -1030,8 +1030,8 @@
     <string name="appearance_language">App language</string>
     <string name="mode_retake">Take the quiz again</string>
     <string name="mode_retake_summary">Three questions help pick a mode</string>
-    <string name="about_onboarding">Retake onboarding</string>
-    <string name="about_onboarding_summary">Go through the intro and setup again</string>
+    <string name="mode_onboarding">Retake onboarding</string>
+    <string name="mode_onboarding_summary">Go through the intro and setup again</string>
     <string name="handoff_header">Needs you</string>
     <string name="handoff_done">Done</string>
     <string name="handoff_cannot">Can\'t</string>
