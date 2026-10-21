@@ -32,6 +32,7 @@ import dev.huecoder.md3agent.App
 import dev.huecoder.md3agent.feature.home.HomeScreen
 import dev.huecoder.md3agent.feature.settings.SettingsDestinations
 import dev.huecoder.md3agent.feature.settings.SettingsScreen
+import dev.huecoder.md3agent.ui.components.appViewModel
 import dev.huecoder.md3agent.ui.components.bottomEdgeFade
 import dev.huecoder.md3agent.ui.navigation.LaunchTarget
 import dev.huecoder.md3agent.ui.haptics.rememberHaptics
@@ -59,6 +60,8 @@ fun MainScreen(
     val haptics = rememberHaptics()
     val tab = MainTab.entries[pager.targetPage]
     val open = { target: MainTab -> scope.launch { pager.animateScrollToPage(target.ordinal) } }
+    val updatePrompt = appViewModel { UpdatePromptViewModel(it.updates, it.settings) }
+    val updateOffer by updatePrompt.offer.collectAsStateWithLifecycle()
     var expanded by rememberSaveable { mutableStateOf(true) }
     val thresholdPx = with(LocalDensity.current) { COLLAPSE_DISTANCE.toPx() }
     val collapseOnScroll = remember(thresholdPx) { CollapseOnScroll(thresholdPx) { expanded = it } }
@@ -80,6 +83,8 @@ fun MainScreen(
     }
 
     BackHandler(enabled = tab != MainTab.CHATS) { open(MainTab.CHATS) }
+
+    updateOffer?.let { UpdatePromptDialog(it, updatePrompt::dismiss) }
 
     Box(Modifier.fillMaxSize().nestedScroll(collapseOnScroll)) {
         HorizontalPager(state = pager, key = { MainTab.entries[it] }, modifier = Modifier.fillMaxSize().bottomEdgeFade()) { page ->

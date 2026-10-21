@@ -1060,4 +1060,9 @@
     <string name="assistant_invoke_lock_off_hint">Ничего не спрашивается, любой с заблокированным телефоном в руках получит всего ассистента</string>
     <string name="lock_auth_title">Подтвердите, что это вы</string>
     <string name="lock_auth_subtitle">Телефон заблокирован, ассистент хочет продолжить</string>
+    <string name="update_prompt_title">Доступно обновление</string>
+    <string name="update_prompt_body">Вышла версия %1$s. Скачайте её прямо отсюда и установите поверх текущей.</string>
+    <string name="update_prompt_changelog">Что нового на GitHub</string>
+    <string name="update_prompt_install">Обновить</string>
+    <string name="update_prompt_later">Позже</string>
 </resources>

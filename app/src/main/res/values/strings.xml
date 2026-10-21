@@ -1056,4 +1056,9 @@
     <string name="assistant_invoke_lock_off_hint">Nothing is asked, anyone holding the locked phone gets the whole assistant</string>
     <string name="lock_auth_title">Confirm it\'s you</string>
     <string name="lock_auth_subtitle">The phone is locked and the assistant wants to go on</string>
+    <string name="update_prompt_title">Update available</string>
+    <string name="update_prompt_body">Version %1$s is out. Download it right here and install over the current one.</string>
+    <string name="update_prompt_changelog">What\'s new on GitHub</string>
+    <string name="update_prompt_install">Update</string>
+    <string name="update_prompt_later">Later</string>
 </resources>
