@@ -1,6 +1,7 @@
 package dev.huecoder.md3agent.feature.models
 
 import androidx.annotation.StringRes
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -18,6 +19,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.FilledTonalIconToggleButton
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LoadingIndicator
@@ -37,7 +39,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -45,6 +46,7 @@ import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Image
 import com.composables.icons.materialsymbols.rounded.Neurology
 import com.composables.icons.materialsymbols.rounded.Refresh
+import com.composables.icons.materialsymbols.rounded.Tune
 import com.composables.icons.materialsymbols.rounded.Visibility
 import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.data.settings.ModelSelection
@@ -111,7 +113,6 @@ private fun ColumnScope.ModelTab(
     val vendor by viewModel.activeVendor.collectAsStateWithLifecycle()
     val currentHere = current?.takeIf { it.providerId == state.providerId } ?: state.remembered
 
-    PickerHeader(pluralStringResource(R.plurals.model_picker_count, state.totalCount, state.totalCount), state.isRefreshing, viewModel::refresh)
     if (state.providers.size > 1) {
         ChipRow {
             state.providers.forEach { provider ->
@@ -123,13 +124,27 @@ private fun ColumnScope.ModelTab(
             }
         }
     }
-    SearchField(query, viewModel::search, stringResource(R.string.model_search), Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
-    ChipRow {
-        CapabilityChip(CapabilityFilter.VISION in capabilities, MaterialSymbols.Rounded.Visibility, R.string.model_filter_vision) { viewModel.toggle(CapabilityFilter.VISION) }
-        CapabilityChip(CapabilityFilter.REASONING in capabilities, MaterialSymbols.Rounded.Neurology, R.string.model_filter_reasoning) { viewModel.toggle(CapabilityFilter.REASONING) }
-        CapabilityChip(CapabilityFilter.IMAGES in capabilities, MaterialSymbols.Rounded.Image, R.string.model_filter_images) { viewModel.toggle(CapabilityFilter.IMAGES) }
-        if (state.vendors.isNotEmpty()) VerticalDivider(Modifier.padding(vertical = 8.dp).size(width = 1.dp, height = 24.dp).align(Alignment.CenterVertically))
-        state.vendors.forEach { item -> VendorChip(item, item == vendor) { viewModel.toggle(item) } }
+    var filtersOpen by rememberSaveable { mutableStateOf(false) }
+    val filtersActive = capabilities.isNotEmpty() || vendor != null
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+        SearchField(query, viewModel::search, stringResource(R.string.model_search), Modifier.weight(1f))
+        FilledTonalIconToggleButton(checked = filtersOpen || filtersActive, onCheckedChange = { filtersOpen = !filtersOpen }) {
+            Icon(MaterialSymbols.Rounded.Tune, contentDescription = stringResource(R.string.model_filters))
+        }
+        if (state.isRefreshing) {
+            LoadingIndicator(Modifier.size(48.dp))
+        } else {
+            IconButton(onClick = viewModel::refresh) { Icon(MaterialSymbols.Rounded.Refresh, contentDescription = stringResource(R.string.model_refresh)) }
+        }
+    }
+    AnimatedVisibility(filtersOpen || filtersActive) {
+        ChipRow {
+            CapabilityChip(CapabilityFilter.VISION in capabilities, MaterialSymbols.Rounded.Visibility, R.string.model_filter_vision) { viewModel.toggle(CapabilityFilter.VISION) }
+            CapabilityChip(CapabilityFilter.REASONING in capabilities, MaterialSymbols.Rounded.Neurology, R.string.model_filter_reasoning) { viewModel.toggle(CapabilityFilter.REASONING) }
+            CapabilityChip(CapabilityFilter.IMAGES in capabilities, MaterialSymbols.Rounded.Image, R.string.model_filter_images) { viewModel.toggle(CapabilityFilter.IMAGES) }
+            if (state.vendors.isNotEmpty()) VerticalDivider(Modifier.padding(vertical = 8.dp).size(width = 1.dp, height = 24.dp).align(Alignment.CenterVertically))
+            state.vendors.forEach { item -> VendorChip(item, item == vendor) { viewModel.toggle(item) } }
+        }
     }
     state.error?.let {
         Text(it.asString(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp))

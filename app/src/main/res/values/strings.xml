@@ -454,6 +454,7 @@
     <string name="model_search">Search by name, company or id</string>
     <string name="common_search_clear">Clear search</string>
     <string name="model_refresh">Refresh the model list</string>
+    <string name="model_filters">Filters</string>
     <string name="model_filter_vision">Vision</string>
     <string name="model_filter_reasoning">Reasoning</string>
     <string name="model_filter_images">Image generation</string>

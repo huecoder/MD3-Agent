@@ -442,6 +442,7 @@
     <string name="model_search">Поиск по имени, компании или id</string>
     <string name="common_search_clear">Очистить поиск</string>
     <string name="model_refresh">Обновить список моделей</string>
+    <string name="model_filters">Фильтры</string>
     <string name="model_filter_vision">Зрение</string>
     <string name="model_filter_reasoning">Рассуждения</string>
     <string name="model_filter_images">Генерация картинок</string>
