@@ -23,7 +23,7 @@ object PhoneActionSchema {
         enumProperty(ACTION, "What to do", PhoneRequestParser.ACTION_NAMES)
         sayProperty(required = false)
         stepsProperty()
-        enumProperty("observe", "What to attach after the actions: the full screen, only the changed elements, or nothing", Observe.entries.map { it.key })
+        enumProperty("observe", "What to attach after the actions: the full screen, only the changed elements (default, the whole screen after a move to another screen), the changed elements plus a screenshot, or nothing", Observe.entries.map { it.key })
         enumProperty("on_error", "In a batch: stop on the first failed step or continue anyway", ERROR_POLICIES)
         returnProperty()
         actionFields(documented = true)

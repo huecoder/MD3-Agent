@@ -59,6 +59,32 @@ class TurnAssemblerTest {
     }
 
     @Test
+    fun `a cut off answer goes on as an assistant turn followed by a request to continue`() {
+        val call = ToolCall("call_1", "web_search", "{}")
+        val history = listOf(
+            row(MessageRole.USER, "найди"),
+            row(MessageRole.ASSISTANT, calls = listOf(call)),
+            row(MessageRole.TOOL, "результат", toolCallId = "call_1"),
+        )
+
+        val turns = TurnAssembler.assemble("sys", history, emptyMap(), continuing = "Вот что нашёл: первый")
+
+        assertEquals(
+            listOf(ChatTurn.Role.SYSTEM, ChatTurn.Role.USER, ChatTurn.Role.ASSISTANT, ChatTurn.Role.TOOL, ChatTurn.Role.ASSISTANT, ChatTurn.Role.USER),
+            turns.map { it.role },
+        )
+        assertEquals("Вот что нашёл: первый", turns[4].content)
+        assertTrue(turns.last().cacheBreakpoint)
+    }
+
+    @Test
+    fun `nothing is added when there is no cut off answer`() {
+        val history = listOf(row(MessageRole.USER, "привет"))
+
+        assertEquals(assemble(history), TurnAssembler.assemble("sys", history, emptyMap(), continuing = "  "))
+    }
+
+    @Test
     fun `unanswered calls are dropped and an empty assistant turn disappears`() {
         val turns = assemble(
             listOf(

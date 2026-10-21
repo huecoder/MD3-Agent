@@ -14,14 +14,19 @@ class ScreenSnapshot(
     val probe: ScreenProbe,
     internal val nodes: Map<Int, AccessibilityNodeInfo>,
 ) {
+    val isSparse: Boolean get() = elements.size < SPARSE_ELEMENTS
+
     fun describe(detailed: Boolean = false, find: ElementSelector? = null): String =
         ScreenText.describe(packageName, screenWidth, screenHeight, cutouts, elements, hidden, detailed, find)
 }
+
+private const val SPARSE_ELEMENTS = 3
 
 object ScreenTree {
     private const val MAX_ELEMENTS = 160
     private const val MAX_LABEL_CHARS = 120
     private const val MOVES_SEPARATOR = "/"
+    private const val PROGRESS_CLASS = "ProgressBar"
     private const val FINGERPRINT_SEED = 1125899906842597L
     private const val FINGERPRINT_PRIME = 31L
     private val WHITESPACE = Regex("""\s+""")
@@ -31,8 +36,10 @@ object ScreenTree {
         val nodes = mutableMapOf<Int, AccessibilityNodeInfo>()
         val labels = mutableListOf<String>()
         var hidden = 0
+        var loading = false
         var fingerprint = FINGERPRINT_SEED
         walk(root, Rect(0, 0, screenWidth, screenHeight)) { node, full, clipped ->
+            if (isProgress(node)) loading = true
             val label = labelOf(node)
             if (label.isNotEmpty()) labels += label
             fingerprint = mix(fingerprint, label.hashCode(), clipped.left, clipped.top, clipped.right, clipped.bottom, flagsOf(node))
@@ -61,18 +68,20 @@ object ScreenTree {
             nodes[number] = node
         }
         val packageName = root?.packageName?.toString()
-        return ScreenSnapshot(packageName, elements, hidden, screenWidth, screenHeight, cutouts, ScreenProbe(packageName, fingerprint, labels), nodes)
+        return ScreenSnapshot(packageName, elements, hidden, screenWidth, screenHeight, cutouts, ScreenProbe(packageName, fingerprint, labels, loading), nodes)
     }
 
     fun probe(root: AccessibilityNodeInfo?, screenWidth: Int, screenHeight: Int): ScreenProbe {
         val labels = mutableListOf<String>()
+        var loading = false
         var fingerprint = FINGERPRINT_SEED
         walk(root, Rect(0, 0, screenWidth, screenHeight)) { node, _, clipped ->
+            if (isProgress(node)) loading = true
             val label = labelOf(node)
             if (label.isNotEmpty()) labels += label
             fingerprint = mix(fingerprint, label.hashCode(), clipped.left, clipped.top, clipped.right, clipped.bottom, flagsOf(node))
         }
-        return ScreenProbe(root?.packageName?.toString(), fingerprint, labels)
+        return ScreenProbe(root?.packageName?.toString(), fingerprint, labels, loading)
     }
 
     fun findAnywhere(root: AccessibilityNodeInfo?, text: String): List<AccessibilityNodeInfo> =
@@ -89,6 +98,8 @@ object ScreenTree {
         }
         root?.let(::go)
     }
+
+    private fun isProgress(node: AccessibilityNodeInfo): Boolean = node.className?.toString()?.endsWith(PROGRESS_CLASS) == true
 
     private fun mix(seed: Long, vararg parts: Int): Long = parts.fold(seed) { acc, part -> acc * FINGERPRINT_PRIME + part }
 

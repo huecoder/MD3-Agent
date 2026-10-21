@@ -197,6 +197,7 @@ enum class CursorShape { BIBATA_MODERN, BIBATA_ORIGINAL, ROUNDED }
 data class PhoneUseSettings(
     val overlay: Boolean = true,
     val startGlow: Boolean = true,
+    val helpSound: Boolean = true,
     val touchGuard: TouchGuard = TouchGuard.BLOCK,
     val keepAwake: Boolean = true,
     val dimScreen: Boolean = false,

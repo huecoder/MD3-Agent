@@ -81,6 +81,7 @@ sealed interface PhoneAction {
 enum class Observe(val key: String) {
     SCREEN("screen"),
     CHANGES("changes"),
+    SCREENSHOT("screenshot"),
     NONE("none"),
     ;
 
@@ -93,7 +94,7 @@ data class PhoneStep(val action: PhoneAction, val say: String? = null)
 
 data class PhoneRequest(
     val steps: List<PhoneStep>,
-    val observe: Observe = Observe.SCREEN,
+    val observe: Observe = Observe.CHANGES,
     val stopOnError: Boolean = true,
 )
 
@@ -117,6 +118,8 @@ data class PhoneReport(
     val screenChanged: Boolean?,
     val observed: String?,
     val hint: String?,
+    val observe: Observe = Observe.SCREEN,
+    val sparseScreen: Boolean = false,
 ) {
     val failed: Boolean get() = steps.any { it.failed }
 
@@ -126,7 +129,7 @@ data class PhoneReport(
         } else {
             steps.forEachIndexed { index, step -> appendLine("${index + 1}. ${step.title} → ${step.text}") }
         }
-        screenChanged?.let { append("\nScreen changed: ").append(if (it) "yes" else "no") }
+        screenChanged?.takeIf { observe == Observe.SCREEN || observe == Observe.NONE }?.let { append("\nScreen changed: ").append(if (it) "yes" else "no") }
         hint?.let { append("\n").append(it) }
         observed?.let { append("\n\n").append(it) }
     }.trim()

@@ -19,6 +19,7 @@ import dev.huecoder.md3agent.llm.ChatCompletionClient
 import dev.huecoder.md3agent.llm.ChatTurn
 import dev.huecoder.md3agent.llm.CompletionOptions
 import dev.huecoder.md3agent.llm.models.ModelFamily
+import dev.huecoder.md3agent.llm.models.ModelInfo
 import dev.huecoder.md3agent.llm.models.ModelOutput
 import dev.huecoder.md3agent.llm.models.ReasoningEffort
 import dev.huecoder.md3agent.data.models.ModelCatalog
@@ -46,6 +47,7 @@ import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.emitAll
@@ -73,6 +75,7 @@ class ConversationRunner(
     private val generatedImages: GeneratedImages,
     private val memories: MemoryStore,
     private val scope: CoroutineScope,
+    private val gate: ToolGate = ToolGate.Open,
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
     private val jobs = ConcurrentHashMap<String, Job>()
@@ -110,6 +113,11 @@ class ConversationRunner(
         launchReply(chatId)
     }
 
+    suspend fun edit(chatId: String, messageId: String, text: String, added: List<Attachment>) {
+        chats.editUserMessage(messageId, text, added) ?: return
+        launchReply(chatId)
+    }
+
     suspend fun regenerate(assistantMessage: MessageEntity) {
         cancel(assistantMessage.chatId)
         val history = chats.history(assistantMessage.chatId)
@@ -117,6 +125,8 @@ class ConversationRunner(
         chats.truncateAfter(prompt)
         launchReply(assistantMessage.chatId)
     }
+
+    fun continueReply(chatId: String) = launchReply(chatId, resuming = true)
 
     fun cancel(chatId: String) {
         jobs.remove(chatId)?.cancel()
@@ -126,25 +136,37 @@ class ConversationRunner(
         jobs.keys.toList().forEach(::cancel)
     }
 
-    private fun launchReply(chatId: String) {
+    private fun launchReply(chatId: String, resuming: Boolean = false) {
         cancel(chatId)
-        val job = scope.launch(start = CoroutineStart.LAZY) { generateReply(chatId) }
+        val job = scope.launch(start = CoroutineStart.LAZY) { generateReply(chatId, resuming) }
         jobs[chatId] = job
         job.invokeOnCompletion { jobs.remove(chatId, job) }
         job.start()
     }
 
-    private suspend fun generateReply(chatId: String) {
+    private suspend fun generateReply(chatId: String, resuming: Boolean) {
         val current = settings.current()
         val model = resolveModel(chatId, current) ?: return chats.save(errorMessage(chatId, NO_MODEL_SELECTED))
         val agent = current.agents.forChat(chats.chat(chatId)?.agentId)
         val toolSettings = agent.tools(current.tools)
         try {
+            var failedRound = if (resuming) chats.history(chatId).lastOrNull()?.takeIf(::isFailedRound) else null
+            var failures = 0
             while (true) {
-                val round = streamRound(chatId, model, agent, toolSettings) ?: return
-                if (round.toolCalls.isEmpty()) return labelLater(chatId, model, current)
-                val endsTurn = runTools(chatId, round, toolSettings)
-                if (endsTurn) return
+                when (val outcome = streamRound(chatId, model, agent, toolSettings, failedRound)) {
+                    is RoundOutcome.Failed -> {
+                        val plan = retryPlan(outcome.failure, ++failures) ?: return
+                        failedRound = outcome.row
+                        waitBeforeRetry(chatId, outcome, failures, plan)
+                    }
+                    is RoundOutcome.Finished -> {
+                        failures = 0
+                        failedRound = null
+                        if (outcome.draft.toolCalls.isEmpty()) return labelLater(chatId, model, current)
+                        val endsTurn = runTools(chatId, outcome.draft, toolSettings)
+                        if (endsTurn) return
+                    }
+                }
             }
         } finally {
             val self = currentCoroutineContext()[Job]
@@ -152,11 +174,27 @@ class ConversationRunner(
         }
     }
 
+    private fun isFailedRound(message: MessageEntity) = message.role == MessageRole.ASSISTANT && message.status == MessageStatus.ERROR
+
+    private suspend fun retryPlan(failure: Exception, attempt: Int): ReplyRetry.Plan? =
+        ReplyRetry.plan(failure, attempt)?.takeIf { settings.current().chat.autoRetry }
+
+    private suspend fun waitBeforeRetry(chatId: String, failed: RoundOutcome.Failed, attempt: Int, plan: ReplyRetry.Plan) {
+        publish(chatId, failed.draft.copy(retry = RetryWait(attempt, plan.limit, clock() + plan.delayMs, failed.error)))
+        delay(plan.delayMs)
+    }
+
     private fun labelLater(chatId: String, model: ResolvedModel, current: AppSettings) {
         if (current.chat.autoTitle) scope.launch { titler.labelIfNeeded(chatId, model) }
     }
 
-    private suspend fun streamRound(chatId: String, model: ResolvedModel, agent: AgentProfile, toolSettings: ToolSettings): StreamingDraft? {
+    private suspend fun streamRound(
+        chatId: String,
+        model: ResolvedModel,
+        agent: AgentProfile,
+        toolSettings: ToolSettings,
+        resumed: MessageEntity?,
+    ): RoundOutcome {
         tools.awaitReady()
         val info = catalog.infoLoaded(model.provider.id, model.modelId)
         val traits = info.traits
@@ -166,12 +204,13 @@ class ConversationRunner(
             output = traits.output,
             explicitCaching = info.family == ModelFamily.CLAUDE,
         )
-        val toolSpecs = if (traits.output == ModelOutput.IMAGE || info.toolUse == false) emptyList() else tools.specs(toolSettings)
-        val turns = buildTurns(agent, toolSettings, chats.history(chatId))
+        val toolSpecs = toolSpecsFor(info, toolSettings)
+        val message = resumed?.let { chats.reopen(it, model.modelId) } ?: chats.startAssistantMessage(chatId, model.modelId)
+        val written = resumed?.content.orEmpty()
+        val turns = buildTurns(agent, toolSettings, chats.history(chatId).filterNot { it.id == message.id }, continuing = written)
         val prompt = promptFingerprint(turns, toolSpecs)
-        val message = chats.startAssistantMessage(chatId, model.modelId)
         val accumulator = ToolCallAccumulator()
-        var draft = StreamingDraft(message.id, content = "", reasoning = "", toolCalls = emptyList(), runningCallIds = emptySet(), awaitingCallId = null, usage = null)
+        var draft = StreamingDraft(message.id, content = written, reasoning = "", toolCalls = emptyList(), runningCallIds = emptySet(), awaitingCallId = null, usage = null)
         publish(chatId, draft)
         try {
             streamResilient(model, turns, toolSpecs, options).collect { event ->
@@ -187,21 +226,34 @@ class ConversationRunner(
                 publish(chatId, draft)
             }
             persist(message, draft, MessageStatus.COMPLETE, errorText = null, trace = reasoningTrace(model, prompt, draft))
-            return draft
+            return RoundOutcome.Finished(draft)
         } catch (e: CancellationException) {
             withContext(NonCancellable) { persist(message, draft, MessageStatus.CANCELLED, errorText = null, trace = reasoningTrace(model, prompt, draft)) }
             throw e
         } catch (e: Exception) {
-            persist(message, draft, MessageStatus.ERROR, errorText = ReplyErrors.encode(e), trace = null)
-            return null
+            val error = ReplyErrors.encode(e)
+            return RoundOutcome.Failed(draft, persist(message, draft, MessageStatus.ERROR, errorText = error, trace = null), e, error)
         }
     }
+
+    suspend fun previewPrompt(chatId: String): PromptPreview? {
+        val current = settings.current()
+        val model = resolveModel(chatId, current) ?: return null
+        val agent = current.agents.forChat(chats.chat(chatId)?.agentId)
+        val toolSettings = agent.tools(current.tools)
+        tools.awaitReady()
+        val info = catalog.infoLoaded(model.provider.id, model.modelId)
+        return PromptPreview(buildTurns(agent, toolSettings, chats.history(chatId), continuing = ""), toolSpecsFor(info, toolSettings))
+    }
+
+    private fun toolSpecsFor(info: ModelInfo, toolSettings: ToolSettings): List<ToolSpec> =
+        if (info.traits.output == ModelOutput.IMAGE || info.toolUse == false) emptyList() else tools.specs(toolSettings)
 
     private suspend fun runTools(chatId: String, round: StreamingDraft, toolSettings: ToolSettings): Boolean {
         for (call in round.toolCalls) {
             val outcome = if (isApproved(chatId, round, call, toolSettings)) {
                 publish(chatId, round.copy(runningCallIds = setOf(call.id)))
-                tools.run(call, toolSettings, ToolContext(chatId))
+                if (gate.admit(call.name)) tools.run(call, toolSettings, ToolContext(chatId)) else ToolOutcome.error(LOCKED_REFUSAL)
             } else {
                 ToolOutcome.denied()
             }
@@ -216,12 +268,12 @@ class ConversationRunner(
         return approvals.request(chatId, call)
     }
 
-    private suspend fun buildTurns(agent: AgentProfile, toolSettings: ToolSettings, history: List<MessageEntity>): List<ChatTurn> {
+    private suspend fun buildTurns(agent: AgentProfile, toolSettings: ToolSettings, history: List<MessageEntity>, continuing: String): List<ChatTurn> {
         val contents = mutableMapOf<String, AttachmentContent>()
         history.flatMap { Attachment.decode(it.attachmentsJson) }.forEach { attachment ->
             attachments.contentFor(attachment)?.let { contents[attachment.id] = it }
         }
-        return TurnAssembler.assemble(systemPrompt.render(agent, tools.promptNotes(toolSettings), memories.instant()), history, contents)
+        return TurnAssembler.assemble(systemPrompt.render(agent, tools.promptNotes(toolSettings), if (gate.privateContextAllowed()) memories.instant() else emptyList()), history, contents, continuing)
     }
 
     private suspend fun resolveModel(chatId: String, current: AppSettings): ResolvedModel? {
@@ -251,23 +303,23 @@ class ConversationRunner(
     private fun reasoningTrace(model: ResolvedModel, prompt: String, draft: StreamingDraft): ReasoningTrace? =
         draft.reasoningBlocks.takeIf { it.isNotEmpty() }?.let { ReasoningTrace(model.provider.format, model.modelId, prompt, it) }
 
-    private suspend fun persist(message: MessageEntity, draft: StreamingDraft, status: MessageStatus, errorText: String?, trace: ReasoningTrace?) {
+    private suspend fun persist(message: MessageEntity, draft: StreamingDraft, status: MessageStatus, errorText: String?, trace: ReasoningTrace?): MessageEntity {
         val images = if (draft.images.isEmpty()) emptyList() else generatedImages.store(draft.images)
-        chats.save(
-            message.copy(
-                attachmentsJson = Attachment.encode(images),
-                content = draft.content,
-                reasoning = draft.reasoning.ifEmpty { null },
-                reasoningTraceJson = trace?.let(TurnAssembler::encodeTrace),
-                status = status,
-                errorText = errorText,
-                toolCallsJson = TurnAssembler.encodeToolCalls(draft.toolCalls),
-                finishedAt = clock(),
-                promptTokens = draft.usage?.promptTokens,
-                completionTokens = draft.usage?.completionTokens,
-                cachedTokens = draft.usage?.cachedTokens?.takeIf { it > 0 },
-            ),
+        val saved = message.copy(
+            attachmentsJson = Attachment.encode(images),
+            content = draft.content,
+            reasoning = draft.reasoning.ifEmpty { null },
+            reasoningTraceJson = trace?.let(TurnAssembler::encodeTrace),
+            status = status,
+            errorText = errorText,
+            toolCallsJson = TurnAssembler.encodeToolCalls(draft.toolCalls),
+            finishedAt = clock(),
+            promptTokens = draft.usage?.promptTokens,
+            completionTokens = draft.usage?.completionTokens,
+            cachedTokens = draft.usage?.cachedTokens?.takeIf { it > 0 },
         )
+        chats.save(saved)
+        return saved
     }
 
     private suspend fun errorMessage(chatId: String, text: String): MessageEntity =
@@ -283,6 +335,7 @@ class ConversationRunner(
     private companion object {
         const val TITLE_MAX_CHARS = 48
         const val NO_MODEL_SELECTED = "No model selected. Add a provider in settings."
+        const val LOCKED_REFUSAL = "The phone is locked and the user did not confirm it, so this tool did not run. Do not retry it; tell the user to unlock the phone or confirm when asked, then try again."
         val WHITESPACE = Regex("""\s+""")
     }
 }
@@ -306,7 +359,18 @@ data class StreamingDraft(
     val usage: TokenUsage?,
     val images: List<String> = emptyList(),
     val reasoningBlocks: List<ReasoningBlock> = emptyList(),
+    val retry: RetryWait? = null,
 )
+
+data class RetryWait(val attempt: Int, val limit: Int, val resumesAt: Long, val error: String)
+
+private sealed interface RoundOutcome {
+    class Finished(val draft: StreamingDraft) : RoundOutcome
+
+    class Failed(val draft: StreamingDraft, val row: MessageEntity, val failure: Exception, val error: String) : RoundOutcome
+}
+
+data class PromptPreview(val turns: List<ChatTurn>, val tools: List<ToolSpec>)
 
 data class ResolvedModel(val provider: ProviderProfile, val modelId: String, val reasoningEffort: ReasoningEffort?)
 

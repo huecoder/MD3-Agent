@@ -1,6 +1,7 @@
 package dev.huecoder.md3agent.system.control
 
 import android.accessibilityservice.AccessibilityService
+import android.app.KeyguardManager
 import android.content.ComponentName
 import android.content.Context
 import android.graphics.Rect
@@ -44,6 +45,13 @@ class PhoneControl(private val context: Context, private val assistant: Assistan
         val snapshot = reader.snapshot(active)
         if (snapshot.packageName == context.packageName) return null
         return FrontScreen(snapshot.packageName, snapshot.describe().linesWithin(maxChars))
+    }
+
+    fun isLocked(): Boolean = context.getSystemService(KeyguardManager::class.java).isKeyguardLocked
+
+    suspend fun awaitCondition(condition: WaitCondition, timeoutMs: Long): WaitOutcome? {
+        val active = service.value ?: return null
+        return executor.awaitCondition(active, condition, timeoutMs)
     }
 
     override fun begin(chatId: String) = session.begin(chatId)

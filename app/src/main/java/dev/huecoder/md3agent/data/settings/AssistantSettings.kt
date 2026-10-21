@@ -10,6 +10,7 @@ data class AssistantSettings(
     val glowGrid: Boolean = false,
     val glowThickness: Float = DEFAULT_GLOW_THICKNESS,
     val glowSeconds: Float = DEFAULT_GLOW_SECONDS,
+    val lockGuard: LockGuard = LockGuard.BIOMETRIC,
 ) {
     companion object {
         const val MIN_GLOW_THICKNESS = 0.3f
@@ -26,3 +27,6 @@ enum class AssistantLayout { PANEL, COMPACT }
 
 @Serializable
 enum class AssistantGlow { OFF, ACCENT, RAINBOW }
+
+@Serializable
+enum class LockGuard { OFF, BIOMETRIC, UNLOCK }

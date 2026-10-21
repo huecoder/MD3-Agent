@@ -41,7 +41,7 @@ object PhoneRequestParser {
     private const val TARGET = "target"
 
     fun parse(arguments: JsonObject): PhoneRequest {
-        val observe = arguments.optionalString("observe")?.let { Observe.of(it) ?: throw ToolArgumentException("observe must be screen, changes or none") } ?: Observe.SCREEN
+        val observe = arguments.optionalString("observe")?.let { Observe.of(it) ?: throw ToolArgumentException("observe must be screen, changes or none") } ?: Observe.CHANGES
         val stopOnError = when (arguments.optionalString("on_error")) {
             null, "stop" -> true
             "continue" -> false

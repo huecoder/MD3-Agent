@@ -18,6 +18,7 @@ data class UserQuestion(
     val options: List<QuestionOption>,
     val multiSelect: Boolean,
     val allowCustom: Boolean,
+    val handoff: Boolean = false,
 ) : UserPrompt
 
 data class FormRequest(val source: String, val message: String, val fields: List<FormField>) : UserPrompt

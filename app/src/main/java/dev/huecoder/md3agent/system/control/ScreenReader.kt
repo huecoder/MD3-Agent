@@ -1,6 +1,7 @@
 package dev.huecoder.md3agent.system.control
 
 import android.accessibilityservice.AccessibilityService
+import android.app.KeyguardManager
 import android.content.Context
 import android.graphics.Point
 import android.os.Build
@@ -13,6 +14,11 @@ internal class ScreenReader(private val context: Context, private val assistant:
     @Volatile
     var last: ScreenSnapshot? = null
         private set
+
+    private companion object {
+        const val LOCKED_NOTE = "the phone is locked."
+        const val KEYBOARD_NOTE = "the keyboard is open and covers the bottom of the screen."
+    }
 
     fun screenSize(service: AccessibilityService): Point = service.getSystemService(WindowManager::class.java).realDisplaySize()
 
@@ -37,6 +43,13 @@ internal class ScreenReader(private val context: Context, private val assistant:
             if (fallback == null) fallback = root
         }
         return fallback
+    }
+
+    fun state(service: AccessibilityService): String? {
+        val locked = context.getSystemService(KeyguardManager::class.java).isKeyguardLocked
+        val keyboard = service.windows.any { it.type == AccessibilityWindowInfo.TYPE_INPUT_METHOD }
+        val notes = listOfNotNull(LOCKED_NOTE.takeIf { locked }, KEYBOARD_NOTE.takeIf { keyboard })
+        return notes.takeIf { it.isNotEmpty() }?.joinToString(" ", prefix = "State: ")
     }
 
     fun isOwnAppInFront(service: AccessibilityService): Boolean = frontRoot(service)?.packageName == context.packageName

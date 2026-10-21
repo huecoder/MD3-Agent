@@ -32,6 +32,7 @@ import com.composables.icons.materialsymbols.rounded.Forum
 import com.composables.icons.materialsymbols.rounded.Article
 import com.composables.icons.materialsymbols.rounded.File_save
 import com.composables.icons.materialsymbols.rounded.Phone_android
+import com.composables.icons.materialsymbols.rounded.Front_hand
 import com.composables.icons.materialsymbols.rounded.Touch_app
 import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.mcp.McpTool
@@ -60,6 +61,7 @@ import dev.huecoder.md3agent.tools.reminders.SetReminderTool
 import dev.huecoder.md3agent.tools.reminders.SetTimerTool
 import dev.huecoder.md3agent.tools.phone.PhoneActionTool
 import dev.huecoder.md3agent.tools.phone.PhoneScreenTool
+import dev.huecoder.md3agent.tools.phone.PhoneHandoffTool
 import dev.huecoder.md3agent.tools.phone.PhoneScreenshotTool
 import dev.huecoder.md3agent.tools.system.RunCommandTool
 import dev.huecoder.md3agent.tools.system.RunPythonTool
@@ -113,6 +115,7 @@ object ToolCatalog {
         PhoneScreenTool.NAME to known(ToolCategory.PHONE, MaterialSymbols.Rounded.Phone_android, R.string.tools_phone_screen_title, R.string.tools_phone_screen_summary),
         PhoneScreenshotTool.NAME to known(ToolCategory.PHONE, MaterialSymbols.Rounded.Screenshot_monitor, R.string.tools_phone_screenshot_title, R.string.tools_phone_screenshot_summary),
         PhoneActionTool.NAME to known(ToolCategory.PHONE, MaterialSymbols.Rounded.Touch_app, R.string.tools_phone_action_title, R.string.tools_phone_action_summary),
+        PhoneHandoffTool.NAME to known(ToolCategory.PHONE, MaterialSymbols.Rounded.Front_hand, R.string.tools_phone_handoff_title, R.string.tools_phone_handoff_summary),
         RunCommandTool.NAME to known(ToolCategory.SYSTEM, MaterialSymbols.Rounded.Terminal, R.string.tools_run_command_title, R.string.tools_run_command_summary),
         RunPythonTool.NAME to known(ToolCategory.SYSTEM, MaterialSymbols.Rounded.Code, R.string.tools_run_python_title, R.string.tools_run_python_summary),
         ListFilesTool.NAME to known(ToolCategory.FILES, MaterialSymbols.Rounded.Folder_open, R.string.tools_list_files_title, R.string.tools_list_files_summary),

@@ -4,6 +4,7 @@ import dev.huecoder.md3agent.data.attachments.AttachmentStore
 import dev.huecoder.md3agent.data.settings.ToolPermission
 import dev.huecoder.md3agent.data.settings.ToolSettings
 import dev.huecoder.md3agent.llm.ToolSpec
+import dev.huecoder.md3agent.system.control.Observe
 import dev.huecoder.md3agent.system.control.PhoneControl
 import dev.huecoder.md3agent.system.control.PhoneSay
 import dev.huecoder.md3agent.system.control.ScreenRegion
@@ -43,7 +44,9 @@ class PhoneScreenTool(control: PhoneControl) : PhoneTool(control) {
     )
 
     override fun promptNote(settings: ToolSettings) = listOf(
-        "You can operate the phone. Work in a loop: look with $NAME, act with ${PhoneActionTool.NAME} (it returns the new screen), read that screen, repeat until the goal is reached.",
+        "You can operate the phone. Work in a loop: look with $NAME, act with ${PhoneActionTool.NAME}, read what it returns, repeat until the goal is reached. " +
+            "An action returns only what changed (new, changed and gone elements, '+N changed' when more changed than is listed), or the whole screen after open_app, home, back or any move to another screen: do not call $NAME again to check the result. " +
+            "Call $NAME only when you see '+N changed', 'numbers moved' or need the elements you cannot see in the result. Pass observe=screenshot to get a picture with the result, it also arrives by itself when the app exposes almost no elements (games, maps, canvases).",
         "Every phone call carries a 'say' phrase that the user sees next to the cursor: one short sentence, first person, in the user's language, about what you do right now, like \"Opening Settings\" or \"Scrolling to find Wi-Fi\". Plain text, no markdown, at most ${PhoneSay.MAX_CHARS} characters.",
         "Element numbers go stale as soon as the screen changes, so take them from the screen the last action returned, or address elements by 'target' (text, id or role). " +
             "Use scroll_to with a target to reach something off screen instead of scrolling blindly, wait_for with an explicit timeout_ms after anything that loads instead of guessing a pause, and 'steps' to batch a sequence you are sure about.",
@@ -96,7 +99,7 @@ class PhoneScreenshotTool(control: PhoneControl, private val attachments: Attach
             is ScreenshotResult.Captured -> result
         }
         val file = attachments.importBytes(FILE_NAME, captured.jpeg, forModel = true)
-        return ToolOutcome(describe(captured), attachments = listOf(file))
+        return ToolOutcome(describeScreenshot(captured), attachments = listOf(file))
     }
 
     private fun region(arguments: JsonObject): ScreenRegion {
@@ -106,29 +109,19 @@ class PhoneScreenshotTool(control: PhoneControl, private val attachments: Attach
         return ScreenRegion.Area(arguments.optionalInt("x") ?: 0, arguments.optionalInt("y") ?: 0, width, height)
     }
 
-    private fun describe(captured: ScreenshotResult.Captured): String {
-        val area = captured.region
-        val scaleNote = if (captured.scale < 1f) {
-            " The picture is scaled to ${"%.0f".format(captured.scale * PERCENT)}%: a point at (px, py) in it is at (${area.left} + px / ${"%.3f".format(captured.scale)}, ${area.top} + py / ${"%.3f".format(captured.scale)}) on the screen."
-        } else {
-            " A point at (px, py) in the picture is at (${area.left} + px, ${area.top} + py) on the screen."
-        }
-        return "Screenshot of the area ${area.left},${area.top} to ${area.right},${area.bottom}.$scaleNote"
-    }
-
     companion object {
         const val NAME = "phone_screenshot"
         private const val FILE_NAME = "screenshot.jpg"
         private const val MAX_ELEMENT = 500
         private const val MAX_COORDINATE = 10_000
-        private const val PERCENT = 100
     }
 }
 
-class PhoneActionTool(control: PhoneControl) : PhoneTool(control) {
+class PhoneActionTool(control: PhoneControl, private val attachments: AttachmentStore) : PhoneTool(control) {
     override val spec = ToolSpec(
         name = NAME,
-        description = "Performs actions on the phone and reports whether the screen changed, then lists the new screen. " +
+        description = "Performs actions on the phone, then reports what changed on the screen: new, changed and gone elements, with '+N changed' when more changed than fits. " +
+            "After open_app, home, back or any action that moves to another screen it returns the whole screen like ${PhoneScreenTool.NAME}, so you do not need to read it again. " +
             "Actions: ${PhoneRequestParser.ACTIONS}. Pass one with 'action', or up to ${PhoneRequestParser.MAX_STEPS} in a batch with 'steps'. " +
             "Element numbers come from the latest ${PhoneScreenTool.NAME} or $NAME result; 'target' finds an element by its text, id or role instead. " +
             "Prefer elements and targets over coordinates. To move through a list or a page use scroll or scroll_to, and keep swipe for gestures like pulling a shade or paging a carousel.",
@@ -141,15 +134,39 @@ class PhoneActionTool(control: PhoneControl) : PhoneTool(control) {
 
     override suspend fun execute(arguments: JsonObject, settings: ToolSettings): ToolOutcome {
         if (!control.isReady()) return ToolOutcome.error(PhoneControl.NOT_CONNECTED)
-        val report = control.run(PhoneRequestParser.parse(arguments)) ?: return ToolOutcome.error(PhoneControl.NOT_CONNECTED)
+        val request = PhoneRequestParser.parse(arguments)
+        val report = control.run(request) ?: return ToolOutcome.error(PhoneControl.NOT_CONNECTED)
         val text = report.render()
-        return if (report.failed) ToolOutcome.error(text) else ToolOutcome(text)
+        if (report.failed) return ToolOutcome.error(text)
+        val wantsPicture = request.observe == Observe.SCREENSHOT || (report.sparseScreen && request.observe != Observe.NONE)
+        return if (wantsPicture) withScreenshot(text) else ToolOutcome(text)
+    }
+
+    private suspend fun withScreenshot(text: String): ToolOutcome = when (val result = control.screenshot(ScreenRegion.Full, marks = true)) {
+        is ScreenshotResult.Failed -> ToolOutcome("$text\n\nNo screenshot: ${result.reason}")
+        is ScreenshotResult.Captured -> {
+            val file = attachments.importBytes(SCREENSHOT_FILE_NAME, result.jpeg, forModel = true)
+            ToolOutcome("$text\n\n${describeScreenshot(result)}", attachments = listOf(file))
+        }
     }
 
     companion object {
         const val NAME = "phone_action"
         private const val TIMEOUT_MS = 120_000L
+        private const val SCREENSHOT_FILE_NAME = "screenshot.jpg"
     }
 }
+
+private fun describeScreenshot(captured: ScreenshotResult.Captured): String {
+    val area = captured.region
+    val scaleNote = if (captured.scale < 1f) {
+        " The picture is scaled to ${"%.0f".format(captured.scale * SHOT_PERCENT)}%: a point at (px, py) in it is at (${area.left} + px / ${"%.3f".format(captured.scale)}, ${area.top} + py / ${"%.3f".format(captured.scale)}) on the screen."
+    } else {
+        " A point at (px, py) in the picture is at (${area.left} + px, ${area.top} + py) on the screen."
+    }
+    return "Screenshot of the area ${area.left},${area.top} to ${area.right},${area.bottom}.$scaleNote"
+}
+
+private const val SHOT_PERCENT = 100
 
 private fun JsonObject.sayOrNull(): String? = PhoneSay.clean(optionalString(SAY))

@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Expand_more
 import dev.huecoder.md3agent.R
+import dev.huecoder.md3agent.conversation.PromptAnswer
 import dev.huecoder.md3agent.data.settings.PhoneUseSettings
 import dev.huecoder.md3agent.feature.chat.ChatInput
 import dev.huecoder.md3agent.feature.chat.ChatItem
@@ -89,6 +90,8 @@ fun PhonePanel(
     status: String?,
     plateMaxHeight: Dp,
     actions: PanelActions,
+    help: HelpAsk? = null,
+    onHelpAnswer: (PromptAnswer) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var input by rememberSaveable { mutableStateOf("") }
@@ -107,6 +110,7 @@ fun PhonePanel(
     }
 
     Column(modifier.graphicsLayer { alpha = dip }, verticalArrangement = Arrangement.spacedBy(PANEL_GAP)) {
+        help?.let { HelpCard(it, onHelpAnswer) }
         Surface(
             shape = MaterialTheme.shapes.extraLarge,
             color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = opacity),
@@ -211,6 +215,13 @@ private fun PlateLog(state: ChatUiState, modifier: Modifier) {
                             is ReplyPart.Error -> Text(part.text.asString(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
                             is ReplyPart.Media, is ReplyPart.Chart, is ReplyPart.Diagram -> Unit
                         }
+                    }
+                    item.retry?.let { retry ->
+                        Text(
+                            stringResource(R.string.chat_retry_now, retry.attempt, retry.limit),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
                     }
                 }
             }

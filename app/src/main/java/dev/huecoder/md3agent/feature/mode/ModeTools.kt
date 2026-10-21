@@ -4,12 +4,13 @@ import dev.huecoder.md3agent.data.settings.ModeSettings
 import dev.huecoder.md3agent.data.settings.ToolPermission
 import dev.huecoder.md3agent.data.settings.ToolSettings
 import dev.huecoder.md3agent.tools.phone.PhoneActionTool
+import dev.huecoder.md3agent.tools.phone.PhoneHandoffTool
 import dev.huecoder.md3agent.tools.phone.PhoneScreenTool
 import dev.huecoder.md3agent.tools.phone.PhoneScreenshotTool
 import dev.huecoder.md3agent.tools.system.RunCommandTool
 import dev.huecoder.md3agent.tools.system.RunPythonTool
 
-private val PHONE_CONTROL_TOOLS = setOf(PhoneScreenTool.NAME, PhoneScreenshotTool.NAME, PhoneActionTool.NAME)
+private val PHONE_CONTROL_TOOLS = setOf(PhoneScreenTool.NAME, PhoneScreenshotTool.NAME, PhoneActionTool.NAME, PhoneHandoffTool.NAME)
 private val SHELL_AND_FILES_TOOLS = setOf(RunCommandTool.NAME, RunPythonTool.NAME)
 
 fun ToolSettings.followingMode(previous: ModeSettings, current: ModeSettings): ToolSettings =

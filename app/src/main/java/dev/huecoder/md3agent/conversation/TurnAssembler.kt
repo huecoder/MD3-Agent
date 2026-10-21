@@ -30,6 +30,7 @@ object TurnAssembler {
         systemPrompt: String,
         history: List<MessageEntity>,
         attachments: Map<String, AttachmentContent>,
+        continuing: String = "",
     ): List<ChatTurn> {
         val answeredCallIds = history.filter { it.role == MessageRole.TOOL }.mapNotNullTo(HashSet()) { it.toolCallId }
         val keptCallIds = HashSet<String>()
@@ -66,6 +67,10 @@ object TurnAssembler {
             }
         }
         flushToolImages()
+        if (continuing.isNotBlank()) {
+            turns += ChatTurn(ChatTurn.Role.ASSISTANT, continuing)
+            turns += ChatTurn(ChatTurn.Role.USER, CONTINUE_PROMPT)
+        }
         return markCacheBreakpoints(turns)
     }
 
@@ -104,6 +109,7 @@ object TurnAssembler {
     }
 
     private const val TOOL_IMAGES_NOTE = "Images returned by the tool calls above."
+    private const val CONTINUE_PROMPT = "Your last message was cut off by an error. Continue it from exactly where it stopped, without repeating or summarizing what you already wrote."
     private const val CONTEXT_OPEN = "<context>"
     private const val CONTEXT_CLOSE = "</context>"
 }
