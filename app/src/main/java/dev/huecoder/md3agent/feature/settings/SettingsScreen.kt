@@ -3,6 +3,7 @@ package dev.huecoder.md3agent.feature.settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -15,10 +16,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -28,22 +31,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composables.icons.materialsymbols.MaterialSymbols
-import com.composables.icons.materialsymbols.rounded.Neurology
-import com.composables.icons.materialsymbols.rounded.Notification_settings
-import com.composables.icons.materialsymbols.rounded.Notifications_active
-import com.composables.icons.materialsymbols.rounded.Extension
-import com.composables.icons.materialsymbols.rounded.Touch_app
-import com.composables.icons.materialsymbols.rounded.Info
-import com.composables.icons.materialsymbols.rounded.Palette
 import com.composables.icons.materialsymbols.rounded.Chevron_right
-import com.composables.icons.materialsymbols.rounded.Dns
-import com.composables.icons.materialsymbols.rounded.Auto_awesome
-import com.composables.icons.materialsymbols.rounded.Face
-import com.composables.icons.materialsymbols.rounded.Handyman
-import com.composables.icons.materialsymbols.rounded.Shield_person
-import com.composables.icons.materialsymbols.rounded.Hub
-import com.composables.icons.materialsymbols.rounded.Mic
-import com.composables.icons.materialsymbols.rounded.Tune
 import dev.huecoder.md3agent.feature.mode.titleRes
 import dev.huecoder.md3agent.App
 import dev.huecoder.md3agent.BuildConfig
@@ -52,9 +40,11 @@ import dev.huecoder.md3agent.feature.main.MainNavBarClearance
 import dev.huecoder.md3agent.data.settings.EmbeddingKind
 import dev.huecoder.md3agent.assistant.AssistantRole
 import dev.huecoder.md3agent.data.settings.AppSettings
+import dev.huecoder.md3agent.data.settings.ModeSettings
 import dev.huecoder.md3agent.data.settings.SpeakReplies
 import dev.huecoder.md3agent.data.settings.ToolPermission
 import dev.huecoder.md3agent.tools.ToolRegistry
+import dev.huecoder.md3agent.ui.components.SearchField
 import dev.huecoder.md3agent.ui.components.SectionHeader
 import dev.huecoder.md3agent.ui.components.SettingsScaffold
 import dev.huecoder.md3agent.ui.components.ShapeBadge
@@ -66,6 +56,7 @@ import kotlinx.coroutines.flow.map
 data class SettingsDestinations(
     val models: () -> Unit,
     val appearance: () -> Unit,
+    val chat: () -> Unit,
     val about: () -> Unit,
     val agent: () -> Unit,
     val memory: () -> Unit,
@@ -80,7 +71,26 @@ data class SettingsDestinations(
     val mcp: () -> Unit,
     val mode: () -> Unit,
     val editAgent: (agentId: String?) -> Unit,
-)
+) {
+    fun open(page: SettingsPage, settings: AppSettings) = when (page) {
+        SettingsPage.MODELS -> models()
+        SettingsPage.MODE -> mode()
+        SettingsPage.AGENT -> if (settings.mode.multipleAgents) agent() else editAgent(settings.agents.active.id)
+        SettingsPage.MEMORY -> memory()
+        SettingsPage.CHAT -> chat()
+        SettingsPage.APPEARANCE -> appearance()
+        SettingsPage.VOICE -> voice()
+        SettingsPage.TOOLS -> tools()
+        SettingsPage.MCP -> mcp()
+        SettingsPage.PHONE_USE -> phoneUse()
+        SettingsPage.ACCESS -> access()
+        SettingsPage.ASSISTANT_INVOKE -> assistantInvoke()
+        SettingsPage.NOTIFICATIONS -> notifications()
+        SettingsPage.REMINDERS -> reminders()
+        SettingsPage.NETWORK -> network()
+        SettingsPage.ABOUT -> about()
+    }
+}
 
 @Composable
 fun SettingsScreen(destinations: SettingsDestinations) {
@@ -92,125 +102,86 @@ fun SettingsScreen(destinations: SettingsDestinations) {
     val context = LocalContext.current
     var isAssistant by remember { mutableStateOf(AssistantRole.isHeld(context)) }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { isAssistant = AssistantRole.isHeld(context) }
+    var query by rememberSaveable { mutableStateOf("") }
 
     SettingsScaffold(stringResource(R.string.settings_title), onBack = null) { padding ->
         val current = settings ?: return@SettingsScaffold
-        val generalEntries = listOf(
-            SettingsEntry(
-                icon = MaterialSymbols.Rounded.Hub,
-                title = stringResource(R.string.settings_models),
-                summary = modelsSummary(current),
-                onClick = destinations.models,
-            ),
-            SettingsEntry(
-                icon = MaterialSymbols.Rounded.Palette,
-                title = stringResource(R.string.settings_appearance),
-                summary = stringResource(R.string.settings_appearance_summary),
-                onClick = destinations.appearance,
-            ),
-            SettingsEntry(
-                icon = MaterialSymbols.Rounded.Tune,
-                title = stringResource(R.string.settings_mode),
-                summary = stringResource(current.mode.preset?.titleRes ?: R.string.mode_custom),
-                onClick = destinations.mode,
-            ),
-        )
-        val assistantEntries = listOf(
-            SettingsEntry(
-                icon = MaterialSymbols.Rounded.Face,
-                title = stringResource(if (current.mode.multipleAgents) R.string.settings_agent else R.string.settings_agent_single),
-                summary = stringResource(R.string.settings_agent_summary, current.agents.active.name),
-                onClick = if (current.mode.multipleAgents) destinations.agent else ({ destinations.editAgent(current.agents.active.id) }),
-            ),
-            SettingsEntry(
-                icon = MaterialSymbols.Rounded.Neurology,
-                title = stringResource(R.string.settings_memory),
-                summary = memorySummary(current),
-                onClick = destinations.memory,
-            ),
-            SettingsEntry(
-                icon = MaterialSymbols.Rounded.Mic,
-                title = stringResource(R.string.settings_voice),
-                summary = voiceSummary(current),
-                onClick = destinations.voice,
-            ),
-            SettingsEntry(
-                icon = MaterialSymbols.Rounded.Auto_awesome,
-                title = stringResource(R.string.settings_assistant_invoke),
-                summary = stringResource(R.string.settings_assistant_invoke_summary),
-                onClick = destinations.assistantInvoke,
-            ),
-        )
-        val capabilityEntries = listOfNotNull(
-            SettingsEntry(
-                icon = MaterialSymbols.Rounded.Handyman,
-                title = stringResource(R.string.settings_tools),
-                summary = toolsSummary(current, toolRegistry),
-                onClick = destinations.tools,
-            ),
-            SettingsEntry(
-                icon = MaterialSymbols.Rounded.Shield_person,
-                title = stringResource(R.string.settings_access),
-                summary = accessSummary(current, isAssistant),
-                onClick = destinations.access,
-            ).takeIf { current.mode.shellAndFiles },
-            SettingsEntry(
-                icon = MaterialSymbols.Rounded.Notification_settings,
-                title = stringResource(R.string.settings_notifications),
-                summary = stringResource(R.string.settings_notifications_summary),
-                onClick = destinations.notifications,
-            ),
-            SettingsEntry(
-                icon = MaterialSymbols.Rounded.Touch_app,
-                title = stringResource(R.string.settings_phone_use),
-                summary = stringResource(R.string.settings_phone_use_summary),
-                onClick = destinations.phoneUse,
-            ).takeIf { current.mode.phoneControl },
-            SettingsEntry(
-                icon = MaterialSymbols.Rounded.Extension,
-                title = stringResource(R.string.settings_mcp),
-                summary = mcpSummary(current),
-                onClick = destinations.mcp,
-            ).takeIf { current.mode.mcp },
-            SettingsEntry(
-                icon = MaterialSymbols.Rounded.Notifications_active,
-                title = stringResource(R.string.settings_reminders),
-                summary = remindersSummary(reminderCount),
-                onClick = destinations.reminders,
-            ),
-        )
-        val systemEntries = listOf(
-            SettingsEntry(
-                icon = MaterialSymbols.Rounded.Dns,
-                title = stringResource(R.string.settings_network),
-                summary = networkSummary(current),
-                onClick = destinations.network,
-            ),
-            SettingsEntry(
-                icon = MaterialSymbols.Rounded.Info,
-                title = stringResource(R.string.settings_about),
-                summary = stringResource(R.string.settings_about_summary, BuildConfig.VERSION_NAME),
-                onClick = destinations.about,
-            ),
-        )
+        val available = SettingsPage.entries.filter { it.isAvailable(current.mode) }
+        val rows = searchRows(available, current.mode)
+        val results = SettingsSearch.filter(rows, query)
+        val groups = SettingsSection.entries.map { section ->
+            section to available.filter { it.section == section }.map { page ->
+                SettingsEntry(
+                    icon = page.icon,
+                    title = stringResource(page.titleFor(current.mode)),
+                    summary = pageSummary(page, current, toolRegistry, isAssistant, reminderCount),
+                    onClick = { destinations.open(page, current) },
+                )
+            }
+        }
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = padding.calculateTopPadding(), bottom = MainNavBarClearance),
             verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
         ) {
-            item { SectionHeader(stringResource(R.string.settings_section_general)) }
-            entryGroup(generalEntries)
-
-            item { SectionHeader(stringResource(R.string.settings_section_assistant)) }
-            entryGroup(assistantEntries)
-
-            item { SectionHeader(stringResource(R.string.settings_section_capabilities)) }
-            entryGroup(capabilityEntries)
-
-            item { SectionHeader(stringResource(R.string.settings_section_system)) }
-            entryGroup(systemEntries)
+            item { SearchField(query, { query = it }, stringResource(R.string.settings_search_hint), Modifier.padding(vertical = 8.dp)) }
+            if (query.isBlank()) {
+                groups.forEach { (section, entries) ->
+                    item(key = section) { SectionHeader(stringResource(section.title)) }
+                    entryGroup(entries)
+                }
+            } else if (results.isEmpty()) {
+                item { Text(stringResource(R.string.settings_search_empty), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(16.dp)) }
+            } else {
+                itemsIndexed(results, key = { _, row -> "${row.page}/${row.path}/${row.title}" }) { index, row ->
+                    SegmentedListItem(
+                        onClick = { destinations.open(row.page, current) },
+                        shapes = ListItemDefaults.segmentedShapes(index, results.size),
+                        colors = groupedListColors(),
+                        leadingContent = { ShapeBadge(row.page.icon) },
+                        supportingContent = { Text(row.path, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                    ) { Text(row.title, style = MaterialTheme.typography.titleMediumEmphasized) }
+                }
+            }
         }
     }
+}
+
+@Composable
+private fun searchRows(pages: List<SettingsPage>, mode: ModeSettings): List<SettingsSearchRow> {
+    val context = LocalContext.current
+    val configuration = LocalConfiguration.current
+    return remember(pages, mode, configuration) {
+        val pageRows = pages.map { page ->
+            SettingsSearchRow(page, context.getString(page.titleFor(mode)), context.getString(page.section.title))
+        }
+        val itemRows = SETTINGS_ITEMS.filter { it.page in pages }.map { item ->
+            val pageTitle = context.getString(item.page.titleFor(mode))
+            val path = item.section?.let { "$pageTitle › ${context.getString(it)}" } ?: pageTitle
+            SettingsSearchRow(item.page, context.getString(item.title), path)
+        }
+        pageRows + itemRows
+    }
+}
+
+@Composable
+private fun pageSummary(page: SettingsPage, settings: AppSettings, registry: ToolRegistry, isAssistant: Boolean, reminderCount: Int): String = when (page) {
+    SettingsPage.MODELS -> modelsSummary(settings)
+    SettingsPage.MODE -> stringResource(settings.mode.preset?.titleRes ?: R.string.mode_custom)
+    SettingsPage.AGENT -> stringResource(R.string.settings_agent_summary, settings.agents.active.name)
+    SettingsPage.MEMORY -> memorySummary(settings)
+    SettingsPage.CHAT -> stringResource(R.string.settings_chat_summary)
+    SettingsPage.APPEARANCE -> stringResource(R.string.settings_appearance_summary)
+    SettingsPage.VOICE -> voiceSummary(settings)
+    SettingsPage.TOOLS -> toolsSummary(settings, registry)
+    SettingsPage.MCP -> mcpSummary(settings)
+    SettingsPage.PHONE_USE -> stringResource(R.string.settings_phone_use_summary)
+    SettingsPage.ACCESS -> accessSummary(settings, isAssistant)
+    SettingsPage.ASSISTANT_INVOKE -> stringResource(R.string.settings_assistant_invoke_summary)
+    SettingsPage.NOTIFICATIONS -> stringResource(R.string.settings_notifications_summary)
+    SettingsPage.REMINDERS -> remindersSummary(reminderCount)
+    SettingsPage.NETWORK -> networkSummary(settings)
+    SettingsPage.ABOUT -> stringResource(R.string.settings_about_summary, BuildConfig.VERSION_NAME)
 }
 
 @Composable

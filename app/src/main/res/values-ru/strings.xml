@@ -2,6 +2,12 @@
 <resources>
     <string name="settings_title">Настройки</string>
     <string name="settings_section_assistant">Ассистент</string>
+    <string name="settings_section_chat">Чат</string>
+    <string name="settings_section_app">Приложение</string>
+    <string name="settings_chat">Чат</string>
+    <string name="settings_chat_summary">Ответы, ввод, анимация печати</string>
+    <string name="settings_search_hint">Поиск по настройкам</string>
+    <string name="settings_search_empty">Ничего не найдено</string>
     <string name="settings_agent">Агенты</string>
     <string name="settings_agent_summary">Новые чаты: %1$s</string>
     <string name="settings_section_capabilities">Возможности</string>
@@ -611,12 +617,11 @@
     <string name="access_group_ready">готово %1$d из %2$d</string>
     <string name="tools_category_enabled">включено %1$d из %2$d</string>
     <string name="settings_appearance">Внешний вид</string>
-    <string name="settings_appearance_summary">Аватар, ответы, вибрация</string>
+    <string name="settings_appearance_summary">Язык, список чатов, вибрация</string>
     <string name="settings_models">Модели</string>
     <string name="settings_models_summary">%1$s через %2$s</string>
     <string name="settings_models_summary_none">Добавь провайдера чтобы начать</string>
     <string name="settings_models_summary_pick">Выбери модель вверху чата</string>
-    <string name="settings_section_general">Основное</string>
     <string name="settings_about">О приложении</string>
     <string name="settings_about_summary">Версия %1$s, обновления, исходники</string>
     <string name="appearance_section_feedback">Отклик</string>

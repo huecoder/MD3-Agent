@@ -38,6 +38,7 @@ import dev.huecoder.md3agent.feature.files.MediaScreen
 import dev.huecoder.md3agent.feature.playground.PlaygroundScreen
 import dev.huecoder.md3agent.feature.settings.AboutScreen
 import dev.huecoder.md3agent.feature.settings.AppearanceScreen
+import dev.huecoder.md3agent.feature.settings.ChatSettingsScreen
 import dev.huecoder.md3agent.feature.settings.ModelsScreen
 import dev.huecoder.md3agent.feature.settings.RemindersScreen
 import dev.huecoder.md3agent.feature.settings.DeviceAccessScreen
@@ -105,6 +106,7 @@ private fun AppNavGraph(start: Any, chatToOpen: String?, onChatOpened: () -> Uni
                 settingsDestinations = SettingsDestinations(
                     models = { navController.navigate(ModelsRoute) },
                     appearance = { navController.navigate(AppearanceRoute) },
+                    chat = { navController.navigate(ChatSettingsRoute) },
                     about = { navController.navigate(AboutRoute) },
                     agent = { navController.navigate(AgentsRoute) },
                     memory = { navController.navigate(MemorySettingsRoute) },
@@ -171,6 +173,7 @@ private fun AppNavGraph(start: Any, chatToOpen: String?, onChatOpened: () -> Uni
         screen<AssistantInvokeRoute>(navController) { AssistantInvokeSettingsScreen(onBack = navController::popBackStack) }
         screen<PhoneUseRoute>(navController) { PhoneUseSettingsScreen(onBack = navController::popBackStack) }
         screen<AppearanceRoute>(navController) { AppearanceScreen(onBack = navController::popBackStack) }
+        screen<ChatSettingsRoute>(navController) { ChatSettingsScreen(onBack = navController::popBackStack) }
         screen<AboutRoute>(navController) {
             AboutScreen(
                 onBack = navController::popBackStack,

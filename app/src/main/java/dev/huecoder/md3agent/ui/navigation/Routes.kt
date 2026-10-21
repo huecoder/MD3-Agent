@@ -39,6 +39,9 @@ data object RemindersRoute
 data object AppearanceRoute
 
 @Serializable
+data object ChatSettingsRoute
+
+@Serializable
 data object ModelsRoute
 
 @Serializable
