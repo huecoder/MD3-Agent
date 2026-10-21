@@ -37,7 +37,7 @@ import dev.huecoder.md3agent.ui.components.AgentAvatar
 import kotlinx.coroutines.delay
 
 @Composable
-fun AskScene(modifier: Modifier = Modifier, height: Dp = CHAT_HEIGHT) {
+fun AskScene(modifier: Modifier = Modifier, height: Dp = CHAT_HEIGHT, onCycle: () -> Unit = {}) {
     val question = stringResource(R.string.onboarding_scene_ask_question)
     val answer = stringResource(R.string.onboarding_scene_ask_answer)
     var asked by remember { mutableIntStateOf(0) }
@@ -55,6 +55,7 @@ fun AskScene(modifier: Modifier = Modifier, height: Dp = CHAT_HEIGHT) {
             typeInto(answer, ANSWER_CHAR_MS) { answered = it }
             delay(PAUSE_AFTER_MS)
             fade.animateTo(0f)
+            onCycle()
         }
     }
 

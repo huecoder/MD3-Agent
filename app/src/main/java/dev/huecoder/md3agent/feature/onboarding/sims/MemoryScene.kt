@@ -28,7 +28,7 @@ import dev.huecoder.md3agent.R
 import kotlinx.coroutines.delay
 
 @Composable
-fun MemoryScene(modifier: Modifier = Modifier) {
+fun MemoryScene(modifier: Modifier = Modifier, onCycle: () -> Unit = {}) {
     val appear = remember { Animatable(0f) }
     val pin = remember { Animatable(0f) }
 
@@ -42,6 +42,7 @@ fun MemoryScene(modifier: Modifier = Modifier) {
             pin.animateTo(1f, spring(dampingRatio = 0.35f, stiffness = 500f))
             delay(HOLD_MS * 3)
             appear.animateTo(0f, tween(FADE_MS))
+            onCycle()
         }
     }
 

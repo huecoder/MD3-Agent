@@ -32,7 +32,7 @@ import dev.huecoder.md3agent.ui.components.AgentAvatar
 import kotlinx.coroutines.delay
 
 @Composable
-fun ScreenScene(modifier: Modifier = Modifier) {
+fun ScreenScene(modifier: Modifier = Modifier, onCycle: () -> Unit = {}) {
     val reply = stringResource(R.string.onboarding_scene_screen_reply)
     val slide = remember { Animatable(0f) }
     var typed by remember { mutableIntStateOf(0) }
@@ -46,6 +46,7 @@ fun ScreenScene(modifier: Modifier = Modifier) {
             typeInto(reply, CHAR_MS) { typed = it }
             delay(HOLD_MS * 2)
             slide.animateTo(0f, tween(SLIDE_MS, easing = FastOutSlowInEasing))
+            onCycle()
         }
     }
 

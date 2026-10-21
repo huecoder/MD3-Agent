@@ -38,7 +38,7 @@ import dev.huecoder.md3agent.R
 import kotlinx.coroutines.delay
 
 @Composable
-fun PhoneScene(modifier: Modifier = Modifier) {
+fun PhoneScene(modifier: Modifier = Modifier, onCycle: () -> Unit = {}) {
     val labels = listOf(
         stringResource(R.string.onboarding_scene_phone_wifi),
         stringResource(R.string.onboarding_scene_phone_dark),
@@ -68,6 +68,7 @@ fun PhoneScene(modifier: Modifier = Modifier) {
                 delay(HOLD_MS / 2)
             }
             delay(HOLD_MS * 2)
+            onCycle()
         }
     }
 

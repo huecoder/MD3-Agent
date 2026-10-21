@@ -34,7 +34,7 @@ import kotlinx.coroutines.delay
 private val LINES = listOf("$ ls", "notes.md  plot.py  data.csv", "$ python plot.py", "saved chart.png")
 
 @Composable
-fun CodeScene(modifier: Modifier = Modifier) {
+fun CodeScene(modifier: Modifier = Modifier, onCycle: () -> Unit = {}) {
     var shown by remember { mutableStateOf(emptyList<String>()) }
     var typing by remember { mutableStateOf("") }
     var chart by remember { mutableStateOf(false) }
@@ -57,6 +57,7 @@ fun CodeScene(modifier: Modifier = Modifier) {
                 if (line.startsWith("saved")) chart = true
             }
             delay(HOLD_MS * 3)
+            onCycle()
         }
     }
 
