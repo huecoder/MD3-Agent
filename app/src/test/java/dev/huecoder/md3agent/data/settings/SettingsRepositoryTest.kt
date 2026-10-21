@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
+import dev.huecoder.md3agent.llm.models.ReasoningEffort
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
@@ -173,6 +174,54 @@ class SettingsRepositoryTest {
 
         assertNull(repository.current().activeSelection)
         assertEquals(listOf("p2"), repository.current().providers.map { it.id })
+    }
+
+    @Test
+    fun `the last model picked in each provider is remembered`() = runTest {
+        val repository = repository()
+        repository.upsertProvider(provider)
+        repository.upsertProvider(provider.copy(id = "p2", name = "Cloud"))
+
+        repository.setActiveSelection(ModelSelection("p1", "small", ReasoningEffort.LOW))
+        repository.setActiveSelection(ModelSelection("p2", "big"))
+        repository.setActiveSelection(ModelSelection("p1", "medium"))
+
+        val settings = repository.current()
+        assertEquals(ModelSelection("p1", "medium"), settings.activeSelection)
+        assertEquals(ModelSelection("p1", "medium"), settings.rememberedIn("p1"))
+        assertEquals(ModelSelection("p2", "big"), settings.rememberedIn("p2"))
+    }
+
+    @Test
+    fun `deleting the active provider falls back to the remembered model of another one`() = runTest {
+        val repository = repository()
+        repository.upsertProvider(provider)
+        repository.upsertProvider(provider.copy(id = "p2", name = "Cloud"))
+        repository.setActiveSelection(ModelSelection("p2", "big", ReasoningEffort.HIGH))
+        repository.setActiveSelection(ModelSelection("p1", "small"))
+
+        repository.deleteProvider("p1")
+
+        val settings = repository.current()
+        assertEquals(ModelSelection("p2", "big", ReasoningEffort.HIGH), settings.activeSelection)
+        assertNull(settings.rememberedIn("p1"))
+    }
+
+    @Test
+    fun `a selection saved before the memory existed is kept when the next one is made`() = runTest {
+        val store = store()
+        store.edit {
+            it[stringPreferencesKey("active_provider")] = "p1"
+            it[stringPreferencesKey("active_model")] = "old"
+        }
+        val repository = repository(store)
+        repository.upsertProvider(provider)
+        repository.upsertProvider(provider.copy(id = "p2", name = "Cloud"))
+        assertEquals(ModelSelection("p1", "old"), repository.current().activeSelection)
+
+        repository.setActiveSelection(ModelSelection("p2", "big"))
+
+        assertEquals(ModelSelection("p1", "old"), repository.current().rememberedIn("p1"))
     }
 
     private companion object {

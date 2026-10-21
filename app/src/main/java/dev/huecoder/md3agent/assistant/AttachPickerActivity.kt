@@ -8,13 +8,11 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.content.FileProvider
 import androidx.core.os.BundleCompat
 import androidx.lifecycle.lifecycleScope
 import dev.huecoder.md3agent.App
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
-import java.io.File
 
 enum class AttachSource { PHOTOS, CAMERA, FILES }
 
@@ -22,7 +20,7 @@ class AttachPickerActivity : ComponentActivity() {
     private var cameraUri: Uri? = null
     private val presence get() = (applicationContext as App).container.assistant
 
-    private val pickPhotos = registerForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(MAX_PHOTOS)) { uris -> finishWith(uris) }
+    private val pickPhotos = registerForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(AttachPicking.MAX_PHOTOS)) { uris -> finishWith(uris) }
     private val takePhoto = registerForActivityResult(ActivityResultContracts.TakePicture()) { saved -> finishWith(listOfNotNull(cameraUri.takeIf { saved })) }
     private val pickFiles = registerForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris -> finishWith(uris) }
 
@@ -35,8 +33,8 @@ class AttachPickerActivity : ComponentActivity() {
         try {
             when (intent.getStringExtra(EXTRA_SOURCE)?.let(AttachSource::valueOf)) {
                 AttachSource.PHOTOS -> pickPhotos.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                AttachSource.CAMERA -> newCameraUri().also { cameraUri = it }.let(takePhoto::launch)
-                AttachSource.FILES -> pickFiles.launch(ANY_FILE)
+                AttachSource.CAMERA -> AttachPicking.newCameraUri(this).also { cameraUri = it }.let(takePhoto::launch)
+                AttachSource.FILES -> pickFiles.launch(AttachPicking.ANY_FILE)
                 null -> finishWith(emptyList())
             }
         } catch (e: ActivityNotFoundException) {
@@ -47,13 +45,6 @@ class AttachPickerActivity : ComponentActivity() {
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putParcelable(STATE_CAMERA_URI, cameraUri)
-    }
-
-    private fun newCameraUri(): Uri {
-        val folder = File(cacheDir, CAMERA_FOLDER).apply { mkdirs() }
-        folder.listFiles()?.forEach(File::delete)
-        val photo = File.createTempFile(PHOTO_PREFIX, PHOTO_SUFFIX, folder)
-        return FileProvider.getUriForFile(this, "$packageName.files", photo)
     }
 
     override fun onDestroy() {
@@ -74,12 +65,7 @@ class AttachPickerActivity : ComponentActivity() {
     companion object {
         private const val EXTRA_SOURCE = "source"
         private const val STATE_CAMERA_URI = "camera-uri"
-        private const val MAX_PHOTOS = 6
         private const val IMPORT_TIMEOUT_MS = 20_000L
-        private const val CAMERA_FOLDER = "camera"
-        private const val PHOTO_PREFIX = "photo-"
-        private const val PHOTO_SUFFIX = ".jpg"
-        private val ANY_FILE = arrayOf("*/*")
 
         fun intent(context: Context, source: AttachSource): Intent =
             Intent(context, AttachPickerActivity::class.java)

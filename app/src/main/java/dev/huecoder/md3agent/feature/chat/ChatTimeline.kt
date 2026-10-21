@@ -6,6 +6,7 @@ import dev.huecoder.md3agent.conversation.ReplyErrors
 import dev.huecoder.md3agent.conversation.StreamingDraft
 import dev.huecoder.md3agent.conversation.TurnAssembler
 import dev.huecoder.md3agent.data.attachments.Attachment
+import dev.huecoder.md3agent.data.chat.MessageVersions
 import dev.huecoder.md3agent.data.db.MessageEntity
 import dev.huecoder.md3agent.data.db.MessageRole
 import dev.huecoder.md3agent.data.db.MessageStatus
@@ -44,7 +45,12 @@ data class SourceUi(val title: String, val url: String, val host: String)
 sealed interface ChatItem {
     val id: String
 
-    data class User(override val id: String, val content: String, val attachments: List<Attachment>) : ChatItem
+    data class User(
+        override val id: String,
+        val content: String,
+        val attachments: List<Attachment>,
+        val versions: MessageVersions? = null,
+    ) : ChatItem
 
     data class Reply(
         override val id: String,
@@ -56,8 +62,11 @@ sealed interface ChatItem {
         val usage: TokenUsage?,
         val end: ReplyEnd?,
         val anchor: MessageEntity,
+        val retry: RetryNotice? = null,
     ) : ChatItem
 }
+
+data class RetryNotice(val attempt: Int, val limit: Int, val resumesAt: Long, val reason: UiText)
 
 sealed interface ReplyPart {
     data class Work(val steps: List<WorkStep>) : ReplyPart {
@@ -98,7 +107,7 @@ object ChatTimeline {
         return items.lastOrNull { item -> createdAt[item.id]?.let { it <= target } == true }?.id
     }
 
-    fun build(messages: List<MessageEntity>, draft: StreamingDraft?): List<ChatItem> {
+    fun build(messages: List<MessageEntity>, draft: StreamingDraft?, versions: Map<String, MessageVersions> = emptyMap()): List<ChatItem> {
         val results = messages.filter { it.role == MessageRole.TOOL }.associateBy { it.toolCallId }
         val visible = messages.filter { it.role == MessageRole.USER || it.role == MessageRole.ASSISTANT }
         val items = mutableListOf<ChatItem>()
@@ -115,7 +124,7 @@ object ChatTimeline {
                 pendingRounds += row
             } else {
                 flushReply(isLatest = false)
-                items += ChatItem.User(row.id, row.content, Attachment.decode(row.attachmentsJson))
+                items += ChatItem.User(row.id, row.content, Attachment.decode(row.attachmentsJson), versions[row.id])
             }
         }
         flushReply(isLatest = true)
@@ -140,6 +149,7 @@ object ChatTimeline {
             usage = usages.reduceOrNull(TokenUsage::plus),
             end = if (isActive) null else replyEnd(rounds, results, isLatest),
             anchor = rounds.first(),
+            retry = live?.retry?.let { RetryNotice(it.attempt, it.limit, it.resumesAt, errorText(it.error)) },
         )
     }
 

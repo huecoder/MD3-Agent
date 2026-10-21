@@ -2,6 +2,7 @@ package dev.huecoder.md3agent.feature.chat
 
 import dev.huecoder.md3agent.conversation.StreamingDraft
 import dev.huecoder.md3agent.conversation.TurnAssembler
+import dev.huecoder.md3agent.data.chat.MessageVersions
 import dev.huecoder.md3agent.data.db.MessageEntity
 import dev.huecoder.md3agent.data.db.MessageRole
 import dev.huecoder.md3agent.data.db.MessageStatus
@@ -63,6 +64,17 @@ class ChatTimelineTest {
         assertEquals(listOf("open-meteo.com"), end.sources.map { it.host })
         assertEquals(listOf("Ещё"), end.ui.suggestions)
         assertTrue(end.isLatest)
+    }
+
+    @Test
+    fun `an edited message carries its version position into the timeline`() {
+        val messages = listOf(row(MessageRole.USER, "вопрос"), row(MessageRole.ASSISTANT, "ответ"))
+        val versions = mapOf(messages[0].id to MessageVersions(position = 2, count = 3, previousId = "old", nextId = "newer"))
+
+        val timeline = ChatTimeline.build(messages, draft = null, versions = versions)
+
+        assertEquals(MessageVersions(2, 3, "old", "newer"), (timeline[0] as ChatItem.User).versions)
+        assertNull((timeline[1] as? ChatItem.User)?.versions)
     }
 
     @Test

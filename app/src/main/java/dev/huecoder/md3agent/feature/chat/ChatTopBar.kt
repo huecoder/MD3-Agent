@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.DropdownMenu
@@ -38,7 +37,6 @@ import dev.huecoder.md3agent.data.chat.ChatLook
 import dev.huecoder.md3agent.feature.home.DeleteChatsDialog
 import dev.huecoder.md3agent.feature.home.NameDialog
 import dev.huecoder.md3agent.feature.models.label
-import dev.huecoder.md3agent.llm.models.ModelFamily
 import dev.huecoder.md3agent.ui.components.BackButton
 import dev.huecoder.md3agent.ui.components.ChatBadge
 import dev.huecoder.md3agent.ui.components.ModelChip
@@ -52,6 +50,7 @@ fun ChatTopBar(
     state: ChatUiState,
     onBack: () -> Unit,
     onPickModel: () -> Unit,
+    onOpenContext: () -> Unit,
     onRename: (String) -> Unit,
     onDelete: () -> Unit,
     onLookChange: (ChatLook) -> Unit,
@@ -63,12 +62,13 @@ fun ChatTopBar(
             if (state.isStarted) {
                 StartedChatTitle(title, state.look, onOpenLook = { dialog = ChatDialog.LOOK })
             } else {
-                NewChatTitle(title, state.modelFamily, modelLabel, onPickModel)
+                Text(title, style = MaterialTheme.typography.titleMediumEmphasized, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         },
         navigationIcon = { BackButton(onBack) },
         actions = {
             if (state.isStarted) {
+                state.context?.let { ContextPill(it, onClick = onOpenContext, modifier = Modifier.padding(end = 4.dp)) }
                 ChatMenu(
                     modelSummary = listOfNotNull(modelLabel, state.agentName).joinToString(LABEL_SEPARATOR),
                     onPickModel = onPickModel,
@@ -76,6 +76,8 @@ fun ChatTopBar(
                     onLook = { dialog = ChatDialog.LOOK },
                     onDelete = { dialog = ChatDialog.DELETE },
                 )
+            } else {
+                ModelChip(family = state.modelFamily, label = modelLabel, onClick = onPickModel, modifier = Modifier.padding(end = 8.dp))
             }
         },
     )
@@ -103,16 +105,6 @@ private fun StartedChatTitle(title: String, look: ChatLook, onOpenLook: () -> Un
             modifier = Modifier.clip(CircleShape).clickable(onClickLabel = stringResource(R.string.chat_look_title), onClick = onOpenLook),
         )
         Text(title, style = MaterialTheme.typography.titleMediumEmphasized, maxLines = 1, overflow = TextOverflow.Ellipsis)
-    }
-}
-
-@Composable
-private fun NewChatTitle(title: String, family: ModelFamily?, modelLabel: String?, onPickModel: () -> Unit) {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-        Text(title, style = MaterialTheme.typography.titleMediumEmphasized, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        Box(Modifier.weight(1f).padding(start = 12.dp), contentAlignment = Alignment.Center) {
-            ModelChip(family = family, label = modelLabel, onClick = onPickModel)
-        }
     }
 }
 

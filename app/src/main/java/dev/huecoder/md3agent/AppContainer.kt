@@ -33,6 +33,7 @@ import dev.huecoder.md3agent.tools.memory.MemorySearchTool
 import dev.huecoder.md3agent.tools.memory.MemoryUpdateTool
 import dev.huecoder.md3agent.data.settings.AssistantSettings
 import dev.huecoder.md3agent.feature.mode.ModeController
+import dev.huecoder.md3agent.data.settings.LockGuard
 import dev.huecoder.md3agent.data.settings.ShellMode
 import dev.huecoder.md3agent.data.settings.SecretCipher
 import dev.huecoder.md3agent.data.settings.SettingsRepository
@@ -53,6 +54,8 @@ import dev.huecoder.md3agent.system.control.PhoneControl
 import dev.huecoder.md3agent.system.control.PhoneUseSounds
 import dev.huecoder.md3agent.tools.phone.PhoneActionTool
 import dev.huecoder.md3agent.tools.phone.PhoneScreenTool
+import dev.huecoder.md3agent.system.lock.DeviceLock
+import dev.huecoder.md3agent.tools.phone.PhoneHandoffTool
 import dev.huecoder.md3agent.tools.phone.PhoneScreenshotTool
 import dev.huecoder.md3agent.tools.ShowChartTool
 import dev.huecoder.md3agent.tools.ShowDiagramTool
@@ -177,7 +180,8 @@ class AppContainer(context: Context) {
             ReadScreenTool(screenContext),
             PhoneScreenTool(phoneControl),
             PhoneScreenshotTool(phoneControl, attachments),
-            PhoneActionTool(phoneControl),
+            PhoneActionTool(phoneControl, attachments),
+            PhoneHandoffTool(phoneControl, prompts, phoneSounds, appContext),
             ShowUiTool(),
             ShowChartTool(),
             ShowDiagramTool(),
@@ -224,9 +228,11 @@ class AppContainer(context: Context) {
 
     val approvals = ToolApprovals()
 
+    val deviceLock = DeviceLock(appContext, { assistantSettings.value?.lockGuard ?: LockGuard.BIOMETRIC })
+
     val conversations = ConversationRunner(
         chats, settings, completions, systemPrompt, tools, attachments, approvals, prompts,
-        modelCatalog, GeneratedImages(attachments, httpClients), memories, applicationScope,
+        modelCatalog, GeneratedImages(attachments, httpClients), memories, applicationScope, deviceLock,
     )
 
     init {
@@ -256,7 +262,7 @@ class AppContainer(context: Context) {
     private fun ToolCall.drivesPhone(): Boolean = name in PHONE_TOOLS || (name == RunPythonTool.NAME && runCatching { RunPythonTool.usesPhone(Json.parseToJsonElement(arguments).jsonObject) }.getOrDefault(false))
 
     private companion object {
-        val PHONE_TOOLS = setOf(PhoneScreenTool.NAME, PhoneScreenshotTool.NAME, PhoneActionTool.NAME)
+        val PHONE_TOOLS = setOf(PhoneScreenTool.NAME, PhoneScreenshotTool.NAME, PhoneActionTool.NAME, PhoneHandoffTool.NAME)
         const val FILE_STAGING_DIR = "file-staging"
         const val UPLOADS_DIR = "uploads"
         const val MODEL_CATALOG_DIR = "model-catalog"

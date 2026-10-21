@@ -3,6 +3,7 @@ package dev.huecoder.md3agent.data.settings
 import android.content.Context
 import android.util.Log
 import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -20,6 +21,8 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.builtins.MapSerializer
+import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
 import java.security.GeneralSecurityException
 import java.util.UUID
@@ -35,6 +38,7 @@ class SettingsRepository(
 
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
     private val providerListSerializer = ListSerializer(ProviderProfile.serializer())
+    private val rememberedSerializer = MapSerializer(String.serializer(), RememberedModel.serializer())
     private val providersCache = LastDecoded<List<ProviderProfile>>()
     private val toolsCache = LastDecoded<ToolSettings>()
     private val voiceCache = LastDecoded<VoiceSettings>()
@@ -63,11 +67,17 @@ class SettingsRepository(
             if (prefs[Keys.ACTIVE_PROVIDER] == providerId) {
                 prefs.remove(Keys.ACTIVE_PROVIDER)
                 prefs.remove(Keys.ACTIVE_MODEL)
+                prefs.remove(Keys.ACTIVE_REASONING)
             }
+            writeRemembered(prefs, decodeRemembered(prefs) - providerId)
         }
     }
 
     suspend fun setActiveSelection(selection: ModelSelection) = store.edit { prefs ->
+        val remembered = decodeRemembered(prefs).toMutableMap()
+        activeSelectionOf(prefs)?.let { previous -> remembered.putIfAbsent(previous.providerId, RememberedModel.of(previous)) }
+        remembered[selection.providerId] = RememberedModel.of(selection)
+        writeRemembered(prefs, remembered)
         prefs[Keys.ACTIVE_PROVIDER] = selection.providerId
         prefs[Keys.ACTIVE_MODEL] = selection.modelId
         val effort = selection.reasoningEffort
@@ -136,15 +146,13 @@ class SettingsRepository(
     private fun toAppSettings(prefs: Preferences): AppSettings {
         val providers = decodeProviders(prefs[Keys.PROVIDERS_ENCRYPTED])
         val activeProvider = prefs[Keys.ACTIVE_PROVIDER]
-        val activeModel = prefs[Keys.ACTIVE_MODEL]
-        val selection = if (activeProvider != null && activeModel != null && providers.any { it.id == activeProvider }) {
-            ModelSelection(activeProvider, activeModel, prefs[Keys.ACTIVE_REASONING]?.let(ReasoningEffort::fromWire))
-        } else {
-            null
-        }
+        val remembered = decodeRemembered(prefs)
+        val selection = activeSelectionOf(prefs)?.takeIf { chosen -> providers.any { it.id == chosen.providerId } }
+            ?: providers.firstNotNullOfOrNull { provider -> remembered[provider.id]?.selectionIn(provider.id) }
         return AppSettings(
             providers = providers,
             activeSelection = selection,
+            rememberedModels = remembered,
             agents = decodeAgents(prefs),
             network = decodeOrDefault(prefs[Keys.NETWORK], NetworkSettings.serializer(), NetworkSettings()),
             tools = decodeTools(prefs[Keys.TOOLS_ENCRYPTED]),
@@ -155,6 +163,19 @@ class SettingsRepository(
             assistant = decodeOrDefault(prefs[Keys.ASSISTANT], AssistantSettings.serializer(), AssistantSettings()),
             mode = decodeOrDefault(prefs[Keys.MODE], ModeSettings.serializer(), ModeSettings()),
         )
+    }
+
+    private fun activeSelectionOf(prefs: Preferences): ModelSelection? {
+        val provider = prefs[Keys.ACTIVE_PROVIDER] ?: return null
+        val model = prefs[Keys.ACTIVE_MODEL] ?: return null
+        return ModelSelection(provider, model, prefs[Keys.ACTIVE_REASONING]?.let(ReasoningEffort::fromWire))
+    }
+
+    private fun decodeRemembered(prefs: Preferences): Map<String, RememberedModel> =
+        decodeOrDefault(prefs[Keys.REMEMBERED_MODELS], rememberedSerializer, emptyMap())
+
+    private fun writeRemembered(prefs: MutablePreferences, remembered: Map<String, RememberedModel>) {
+        if (remembered.isEmpty()) prefs.remove(Keys.REMEMBERED_MODELS) else prefs[Keys.REMEMBERED_MODELS] = json.encodeToString(rememberedSerializer, remembered)
     }
 
     private fun decodeProviders(encrypted: String?): List<ProviderProfile> {
@@ -224,6 +245,7 @@ class SettingsRepository(
         val ACTIVE_PROVIDER = stringPreferencesKey("active_provider")
         val ACTIVE_MODEL = stringPreferencesKey("active_model")
         val ACTIVE_REASONING = stringPreferencesKey("active_reasoning")
+        val REMEMBERED_MODELS = stringPreferencesKey("remembered_models")
         val LEGACY_AGENT = stringPreferencesKey("agent")
         val AGENTS = stringPreferencesKey("agents")
         val NETWORK = stringPreferencesKey("network")

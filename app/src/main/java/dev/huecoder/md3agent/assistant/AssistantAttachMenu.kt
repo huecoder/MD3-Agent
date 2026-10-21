@@ -67,10 +67,12 @@ internal class AttachMenuState {
     var page by mutableStateOf(AttachPage.SOURCES)
         private set
     val files = AppFilesState()
+    private var firstPage = AttachPage.SOURCES
 
-    fun open() {
+    fun open(first: AttachPage = AttachPage.SOURCES) {
         files.reset()
-        page = AttachPage.SOURCES
+        page = first
+        firstPage = first
         isOpen = true
     }
 
@@ -86,7 +88,7 @@ internal class AttachMenuState {
         if (!isOpen) return false
         when {
             page == AttachPage.APP_FILES && files.goUp() -> Unit
-            page == AttachPage.APP_FILES -> page = AttachPage.SOURCES
+            page == AttachPage.APP_FILES && firstPage == AttachPage.SOURCES -> page = AttachPage.SOURCES
             else -> close()
         }
         return true

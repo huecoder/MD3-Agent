@@ -34,7 +34,7 @@ fun ModelChip(
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(GAP),
-            modifier = Modifier.heightIn(min = HEIGHT).padding(start = START_PADDING, end = END_PADDING),
+            modifier = Modifier.heightIn(min = ModelChipHeight).padding(start = START_PADDING, end = END_PADDING),
         ) {
             VendorGlyph(family, size = GLYPH, tint = tint)
             Text(
@@ -55,7 +55,7 @@ fun ModelChip(
     }
 }
 
-private val HEIGHT = 36.dp
+val ModelChipHeight = 36.dp
 private val GLYPH = 16.dp
 private val ARROW = 20.dp
 private val GAP = 6.dp

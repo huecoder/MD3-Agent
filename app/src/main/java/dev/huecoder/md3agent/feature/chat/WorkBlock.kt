@@ -36,6 +36,7 @@ import dev.huecoder.md3agent.tools.ShowDiagramTool
 import dev.huecoder.md3agent.system.control.PhoneSay
 import dev.huecoder.md3agent.tools.phone.PhoneActionTool
 import dev.huecoder.md3agent.tools.phone.PhoneScreenTool
+import dev.huecoder.md3agent.tools.phone.PhoneHandoffTool
 import dev.huecoder.md3agent.tools.phone.PhoneScreenshotTool
 import dev.huecoder.md3agent.tools.system.RunCommandTool
 import dev.huecoder.md3agent.tools.system.RunPythonTool
@@ -203,6 +204,7 @@ private data class ToolLook(val icon: ImageVector, val title: UiText) {
                 PhoneScreenTool.NAME -> UiText.Resource(if (running) R.string.chat_tool_looking_phone else R.string.chat_tool_looked_phone)
                 PhoneScreenshotTool.NAME -> UiText.Resource(if (running) R.string.chat_tool_shooting_phone else R.string.chat_tool_shot_phone)
                 PhoneActionTool.NAME -> UiText.Resource(R.string.chat_tool_phone_action, listOf(phoneStep(args)))
+                PhoneHandoffTool.NAME -> UiText.Resource(R.string.chat_tool_phone_handoff, listOf(args.optionalString("reason").orEmpty()))
                 RunCommandTool.NAME -> UiText.Resource(
                     if (running) R.string.chat_tool_running_command else R.string.chat_tool_command,
                     listOf(args.optionalString("command")?.lineSequence()?.first()?.take(COMMAND_PREVIEW_CHARS).orEmpty()),

@@ -11,13 +11,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxDefaults
+import androidx.compose.material3.SwipeToDismissBoxState
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,6 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
@@ -77,11 +81,29 @@ fun SwipeableRow(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
-    val haptics = rememberHaptics()
+    val haptics by rememberUpdatedState(rememberHaptics())
     val scope = rememberCoroutineScope()
-    val state = rememberSwipeToDismissBoxState()
+    val density = LocalDensity.current
+    val threshold = SwipeToDismissBoxDefaults.positionalThreshold
+    val state = remember { SwipeToDismissBoxState(SwipeToDismissBoxValue.Settled, density, positionalThreshold = threshold) }
+    val currentRight by rememberUpdatedState(right)
+    val currentLeft by rememberUpdatedState(left)
+    val currentOnAction by rememberUpdatedState(onAction)
+    val dismiss = remember(state) {
+        { value: SwipeToDismissBoxValue ->
+            val action = when (value) {
+                SwipeToDismissBoxValue.StartToEnd -> currentRight
+                SwipeToDismissBoxValue.EndToStart -> currentLeft
+                SwipeToDismissBoxValue.Settled -> null
+            }
+            action?.let {
+                haptics.press()
+                currentOnAction(it)
+            }
+            if (action == null || action.keepsRow) scope.launch { state.snapTo(SwipeToDismissBoxValue.Settled) }
+        }
+    }
     LaunchedEffect(state) {
-        if (state.currentValue != SwipeToDismissBoxValue.Settled) state.snapTo(SwipeToDismissBoxValue.Settled)
         snapshotFlow { state.targetValue }.distinctUntilChanged().drop(1).collect { haptics.tick() }
     }
     SwipeToDismissBox(
@@ -89,14 +111,7 @@ fun SwipeableRow(
         modifier = modifier,
         enableDismissFromStartToEnd = right != null,
         enableDismissFromEndToStart = left != null,
-        onDismiss = { value ->
-            val action = if (value == SwipeToDismissBoxValue.StartToEnd) right else left
-            action?.let {
-                haptics.press()
-                onAction(it)
-            }
-            if (action == null || action.keepsRow) scope.launch { state.snapTo(SwipeToDismissBoxValue.Settled) }
-        },
+        onDismiss = dismiss,
         backgroundContent = {
             val isRight = state.dismissDirection == SwipeToDismissBoxValue.StartToEnd
             val action = (if (isRight) right else left) ?: return@SwipeToDismissBox

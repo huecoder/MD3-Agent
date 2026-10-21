@@ -12,11 +12,15 @@ import dev.huecoder.md3agent.data.db.MessageEntity
 import dev.huecoder.md3agent.data.db.MessageHit
 import dev.huecoder.md3agent.data.db.MessageRole
 import dev.huecoder.md3agent.data.db.MessageStatus
+import dev.huecoder.md3agent.data.db.TitleSource
 import dev.huecoder.md3agent.data.settings.ModelSelection
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.combine
 import java.util.UUID
+
+data class ChatBranch(val messages: List<MessageEntity>, val versions: Map<String, MessageVersions>)
 
 class ChatRepository(
     private val chatDao: ChatDao,
@@ -40,11 +44,14 @@ class ChatRepository(
 
     fun observeChat(chatId: String): Flow<ChatEntity?> = chatDao.observe(chatId)
 
-    fun observeMessages(chatId: String): Flow<List<MessageEntity>> = messageDao.observeForChat(chatId)
+    fun observeBranch(chatId: String): Flow<ChatBranch> =
+        combine(messageDao.observePath(chatId), messageDao.observeUserNodes(chatId)) { messages, userNodes ->
+            ChatBranch(messages, MessageBranches.versions(userNodes))
+        }
 
     suspend fun chat(chatId: String): ChatEntity? = chatDao.get(chatId)
 
-    suspend fun history(chatId: String): List<MessageEntity> = messageDao.listForChat(chatId)
+    suspend fun history(chatId: String): List<MessageEntity> = messageDao.path(chatId)
 
     suspend fun createChat(title: String, selection: ModelSelection, agentId: String): ChatEntity {
         val now = clock()
@@ -63,18 +70,72 @@ class ChatRepository(
     }
 
     suspend fun appendUserMessage(chatId: String, text: String, attached: List<Attachment>, contextNote: String? = null): MessageEntity =
-        newMessage(chatId, MessageRole.USER, text, MessageStatus.COMPLETE, modelId = null)
-            .copy(attachmentsJson = Attachment.encode(attached), contextNote = contextNote)
-            .also { save(it) }
+        append(
+            newMessage(chatId, MessageRole.USER, text, MessageStatus.COMPLETE, modelId = null)
+                .copy(attachmentsJson = Attachment.encode(attached), contextNote = contextNote),
+        )
 
     suspend fun appendToolResult(chatId: String, toolCallId: String, content: String, status: MessageStatus, attached: List<Attachment>): MessageEntity =
-        newMessage(chatId, MessageRole.TOOL, content, status, modelId = null)
-            .copy(toolCallId = toolCallId, attachmentsJson = Attachment.encode(attached))
-            .also { save(it) }
+        append(
+            newMessage(chatId, MessageRole.TOOL, content, status, modelId = null)
+                .copy(toolCallId = toolCallId, attachmentsJson = Attachment.encode(attached)),
+        )
 
     suspend fun startAssistantMessage(chatId: String, modelId: String): MessageEntity =
-        newMessage(chatId, MessageRole.ASSISTANT, content = "", MessageStatus.STREAMING, modelId)
-            .also { save(it) }
+        append(newMessage(chatId, MessageRole.ASSISTANT, content = "", MessageStatus.STREAMING, modelId))
+
+    suspend fun editUserMessage(messageId: String, text: String, added: List<Attachment>): MessageEntity? {
+        val original = messageDao.get(messageId) ?: return null
+        val content = text.trim()
+        val attached = Attachment.decode(original.attachmentsJson) + added
+        if (added.isEmpty() && content == original.content) return null
+        if (content.isEmpty() && attached.isEmpty()) return null
+        val edited = original.copy(
+            id = UUID.randomUUID().toString(),
+            content = content,
+            attachmentsJson = Attachment.encode(attached),
+            createdAt = monotonicNow(),
+        )
+        messageDao.add(edited, clock())
+        return edited
+    }
+
+    suspend fun selectVersion(chatId: String, messageId: String) {
+        chatDao.setLeaf(chatId, MessageBranches.newestLeaf(messageDao.nodes(chatId), messageId))
+    }
+
+    suspend fun fork(chatId: String, replyId: String, title: String): ChatEntity? {
+        val source = chatDao.get(chatId) ?: return null
+        val kept = MessageBranches.upToReply(messageDao.path(chatId), replyId) ?: return null
+        val forkId = UUID.randomUUID().toString()
+        val copies = MessageBranches.copyTo(forkId, kept)
+        val now = clock()
+        val fork = source.copy(
+            id = forkId,
+            title = title.trim(),
+            createdAt = now,
+            updatedAt = now,
+            titleSource = TitleSource.USER,
+            archivedAt = null,
+            trashedAt = null,
+            leafId = copies.last().id,
+        )
+        messageDao.fork(fork, copies)
+        return fork
+    }
+
+    suspend fun reopen(failed: MessageEntity, modelId: String): MessageEntity =
+        failed.copy(
+            status = MessageStatus.STREAMING,
+            errorText = null,
+            modelId = modelId,
+            toolCallsJson = null,
+            reasoningTraceJson = null,
+            finishedAt = null,
+            promptTokens = null,
+            completionTokens = null,
+            cachedTokens = null,
+        ).also { save(it) }
 
     suspend fun save(message: MessageEntity) {
         messageDao.upsert(message)
@@ -82,10 +143,10 @@ class ChatRepository(
     }
 
     suspend fun truncateAfter(message: MessageEntity) {
-        val from = message.createdAt + 1
-        val dropped = messageDao.listForChat(message.chatId).filter { it.createdAt >= from }.flatMap { Attachment.decode(it.attachmentsJson) }
-        messageDao.deleteFrom(message.chatId, from)
-        attachments.delete(dropped)
+        val dropped = messageDao.path(message.chatId).dropWhile { it.id != message.id }.drop(1)
+        if (dropped.isEmpty()) return
+        messageDao.cut(message.chatId, message.id, dropped.map { it.id }, clock())
+        releaseUnused(dropped.flatMap { Attachment.decode(it.attachmentsJson) })
     }
 
     suspend fun rename(chatId: String, title: String) = chatDao.rename(chatId, title)
@@ -132,10 +193,22 @@ class ChatRepository(
     suspend fun purgeExpiredTrash() = deleteForever(chatDao.trashedBefore(clock() - TRASH_RETENTION_MS))
 
     private suspend fun delete(chatId: String) {
-        val attached = messageDao.listForChat(chatId).flatMap { Attachment.decode(it.attachmentsJson) }
+        val attached = messageDao.all(chatId).flatMap { Attachment.decode(it.attachmentsJson) }
         chatDao.delete(chatId)
         drafts.forget(chatId)
-        attachments.delete(attached)
+        releaseUnused(attached)
+    }
+
+    private suspend fun releaseUnused(candidates: List<Attachment>) {
+        if (candidates.isEmpty()) return
+        val inUse = messageDao.attachmentLists().flatMapTo(HashSet()) { json -> Attachment.decode(json).map(Attachment::id) }
+        attachments.delete(candidates.filter { it.id !in inUse })
+    }
+
+    private suspend fun append(message: MessageEntity): MessageEntity {
+        val linked = message.copy(parentId = messageDao.leafOf(message.chatId))
+        messageDao.add(linked, clock())
+        return linked
     }
 
     fun draft(chatId: String?): String = drafts.read(chatId)

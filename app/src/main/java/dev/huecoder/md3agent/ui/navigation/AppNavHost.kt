@@ -124,7 +124,12 @@ private fun AppNavGraph(start: Any, chatToOpen: String?, onChatOpened: () -> Uni
         }
         screen<ChatRoute>(navController) { entry ->
             val route = entry.toRoute<ChatRoute>()
-            ChatScreen(chatId = route.chatId, focusMessageId = route.focusMessageId, onBack = navController::popBackStack)
+            ChatScreen(
+                chatId = route.chatId,
+                focusMessageId = route.focusMessageId,
+                onBack = navController::popBackStack,
+                onOpenChat = { navController.navigate(ChatRoute(it)) },
+            )
         }
         screen<ProviderEditorRoute>(navController) { entry ->
             ProviderEditorScreen(providerId = entry.toRoute<ProviderEditorRoute>().providerId, onDone = navController::popBackStack)

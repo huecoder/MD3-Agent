@@ -208,6 +208,7 @@ fun AssistantOverlay(
                             typing = state.typing,
                             speakingId = speakingId,
                             onRegenerate = viewModel::regenerate,
+                            onContinue = viewModel::continueReply,
                             onToggleSpeech = viewModel::toggleSpeech,
                             onSend = viewModel::send,
                             onApproval = viewModel::respondToApproval,

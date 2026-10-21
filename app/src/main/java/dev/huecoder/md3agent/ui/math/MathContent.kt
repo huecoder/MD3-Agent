@@ -12,6 +12,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
@@ -23,6 +24,9 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.isUnspecified
+import androidx.compose.ui.unit.sp
 import com.mikepenz.markdown.model.DefaultMarkdownInlineContent
 import com.mikepenz.markdown.model.MarkdownAnnotator
 import com.mikepenz.markdown.model.MarkdownInlineContent
@@ -31,13 +35,25 @@ import org.intellij.markdown.MarkdownTokenTypes
 import ru.noties.jlatexmath.JLatexMathDrawable
 import kotlin.math.min
 
+val LocalMathContent = staticCompositionLocalOf<MathContent?> { null }
+
 @Stable
 class MathContent internal constructor(
     val markdown: String,
     val inlineContent: MarkdownInlineContent,
     val measure: Modifier,
     private val formulas: List<MathFormula>,
+    private val heights: List<TextUnit>,
 ) {
+    fun lineHeightFor(markdown: String, base: TextUnit): TextUnit {
+        if (base.isUnspecified) return base
+        val tallest = MathExtractor.slotPattern.findAll(markdown)
+            .mapNotNull { match -> match.groupValues[1].toIntOrNull()?.let(heights::getOrNull) }
+            .maxOfOrNull { it.value } ?: return base
+        val needed = tallest + LINE_PADDING_SP
+        return if (needed > base.value) needed.sp else base
+    }
+
     fun annotator(base: MarkdownAnnotator): MarkdownAnnotator = markdownAnnotator(base.config) { content, node ->
         (node.type == MarkdownTokenTypes.TEXT && appendSlots(content.substring(node.startOffset, node.endOffset))) ||
             base.annotate?.invoke(this, content, node) == true
@@ -70,10 +86,9 @@ fun rememberMathContent(text: String): MathContent {
     val measure = remember { Modifier.onSizeChanged { availableWidthPx = it.width } }
     return remember(text, color, sizePx, availableWidthPx, density) {
         val extracted = MathExtractor.extract(text) { FormulaDrawables.of(context, it, sizePx, color) != null }
-        val inline = extracted.formulas.mapIndexed { index, formula ->
-            inlineId(index) to formulaContent(context, formula, sizePx, color, availableWidthPx, density)
-        }.toMap()
-        MathContent(extracted.markdown, DefaultMarkdownInlineContent(inline), measure, extracted.formulas)
+        val contents = extracted.formulas.map { formula -> formulaContent(context, formula, sizePx, color, availableWidthPx, density) }
+        val inline = contents.mapIndexed { index, content -> inlineId(index) to content }.toMap()
+        MathContent(extracted.markdown, DefaultMarkdownInlineContent(inline), measure, extracted.formulas, contents.map { it.placeholder.height })
     }
 }
 
@@ -98,3 +113,5 @@ private fun FormulaCanvas(drawable: JLatexMathDrawable) {
         drawIntoCanvas { drawable.draw(it.nativeCanvas) }
     }
 }
+
+private const val LINE_PADDING_SP = 6f

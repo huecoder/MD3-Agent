@@ -32,6 +32,19 @@ class AttachMenuStateTest {
     }
 
     @Test
+    fun `opened straight on the app files, back leaves folders and then closes the menu`() {
+        menu.open(AttachPage.APP_FILES)
+        menu.files.select(AppFilesTab.MINE)
+        menu.files.enter("docs")
+
+        assertTrue(menu.back())
+        assertTrue(menu.isOpen)
+        assertEquals(AttachPage.APP_FILES, menu.page)
+        assertTrue(menu.back())
+        assertFalse(menu.isOpen)
+    }
+
+    @Test
     fun `back does nothing while the menu is closed`() {
         assertFalse(menu.back())
     }

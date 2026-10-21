@@ -24,9 +24,20 @@ data class NetworkSettings(
 
 data class ModelSelection(val providerId: String, val modelId: String, val reasoningEffort: ReasoningEffort? = null)
 
+@Serializable
+data class RememberedModel(val modelId: String, val reasoningEffort: String? = null) {
+    fun selectionIn(providerId: String): ModelSelection =
+        ModelSelection(providerId, modelId, reasoningEffort?.let(ReasoningEffort::fromWire))
+
+    companion object {
+        fun of(selection: ModelSelection) = RememberedModel(selection.modelId, selection.reasoningEffort?.wireName)
+    }
+}
+
 data class AppSettings(
     val providers: List<ProviderProfile>,
     val activeSelection: ModelSelection?,
+    val rememberedModels: Map<String, RememberedModel> = emptyMap(),
     val agents: AgentSettings,
     val network: NetworkSettings,
     val tools: ToolSettings,
@@ -38,6 +49,8 @@ data class AppSettings(
     val mode: ModeSettings = ModeSettings(),
 ) {
     fun provider(id: String?): ProviderProfile? = providers.firstOrNull { it.id == id }
+
+    fun rememberedIn(providerId: String?): ModelSelection? = rememberedModels[providerId]?.selectionIn(providerId.orEmpty())
 
     fun agent(id: String?): AgentProfile = agents.resolve(id)
 }

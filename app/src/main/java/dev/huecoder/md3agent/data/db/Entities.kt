@@ -29,6 +29,7 @@ data class ChatEntity(
     val archivedAt: Long? = null,
     val trashedAt: Long? = null,
     val agentId: String? = null,
+    val leafId: String? = null,
 )
 
 val ChatEntity.selection: ModelSelection?
@@ -80,6 +81,7 @@ data class MessageEntity(
     val cachedTokens: Int? = null,
     val contextNote: String? = null,
     val reasoningTraceJson: String? = null,
+    val parentId: String? = null,
 )
 
 enum class MemoryTier { INSTANT, LONG_TERM }

@@ -52,6 +52,7 @@ private fun LazyListScope.providerItems(settings: AppSettings, onEditProvider: (
     val count = settings.providers.size + 1
     itemsIndexed(settings.providers, key = { _, provider -> provider.id }) { index, provider ->
         val isActive = settings.activeSelection?.providerId == provider.id
+        val remembered = settings.rememberedModels[provider.id]?.modelId
         SegmentedListItem(
             onClick = { onEditProvider(provider.id) },
             shapes = ListItemDefaults.segmentedShapes(index, count),
@@ -59,7 +60,7 @@ private fun LazyListScope.providerItems(settings: AppSettings, onEditProvider: (
             leadingContent = { ShapeBadge(MaterialSymbols.Rounded.Hub) },
             supportingContent = {
                 Text(
-                    if (isActive) settings.activeSelection?.modelId.orEmpty() else provider.baseUrl,
+                    remembered ?: provider.baseUrl,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )

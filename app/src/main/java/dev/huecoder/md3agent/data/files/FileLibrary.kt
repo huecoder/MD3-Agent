@@ -122,7 +122,7 @@ class FileLibrary(
                 .map { MediaCandidate(ViewableFile(it, it.name, mimeTypeOf(it.name)), it.lastModified()) }
                 .toList()
         }
-        val chats = sentFiles.all().filter { it.file.isImage && it.file.file.isFile }.map { MediaCandidate(it.file, it.sentAt) }
+        val chats = sentFiles.all().distinctBy { it.id }.filter { it.file.isImage && it.file.file.isFile }.map { MediaCandidate(it.file, it.sentAt) }
         return folders + chats
     }
 

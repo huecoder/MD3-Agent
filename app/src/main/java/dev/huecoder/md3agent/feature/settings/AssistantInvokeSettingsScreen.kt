@@ -17,6 +17,7 @@ import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Auto_awesome
 import com.composables.icons.materialsymbols.rounded.Face
 import com.composables.icons.materialsymbols.rounded.Line_weight
+import com.composables.icons.materialsymbols.rounded.Lock
 import com.composables.icons.materialsymbols.rounded.Palette
 import com.composables.icons.materialsymbols.rounded.Shield_question
 import com.composables.icons.materialsymbols.rounded.Timer
@@ -25,6 +26,7 @@ import dev.huecoder.md3agent.assistant.AssistantRole
 import dev.huecoder.md3agent.data.settings.AssistantGlow
 import dev.huecoder.md3agent.data.settings.AssistantLayout
 import dev.huecoder.md3agent.data.settings.AssistantSettings
+import dev.huecoder.md3agent.data.settings.LockGuard
 import dev.huecoder.md3agent.ui.components.SectionHeader
 import dev.huecoder.md3agent.ui.components.SettingsScaffold
 import dev.huecoder.md3agent.ui.components.appViewModel
@@ -116,6 +118,26 @@ fun AssistantInvokeSettingsScreen(onBack: () -> Unit) {
                 }
             }
 
+            SectionHeader(stringResource(R.string.assistant_invoke_section_lock))
+            CardGroup {
+                card("lock") { shape ->
+                    SettingCard(
+                        icon = MaterialSymbols.Rounded.Lock,
+                        title = stringResource(R.string.assistant_invoke_lock_title),
+                        summary = stringResource(
+                            when (current.lockGuard) {
+                                LockGuard.BIOMETRIC -> R.string.assistant_invoke_lock_biometric_hint
+                                LockGuard.UNLOCK -> R.string.assistant_invoke_lock_unlock_hint
+                                LockGuard.OFF -> R.string.assistant_invoke_lock_off_hint
+                            },
+                        ),
+                        shape = shape,
+                        indentBelow = false,
+                        below = { ChoicePill(LOCK_CHOICES, current.lockGuard, { value -> update { it.copy(lockGuard = value) } }, Modifier.fillMaxWidth(), fillWidth = true, height = CHOICE_HEIGHT) },
+                    )
+                }
+            }
+
             SectionHeader(stringResource(R.string.assistant_invoke_section_system))
             CardGroup {
                 card("system") { shape ->
@@ -145,6 +167,12 @@ private const val TENTHS_PER_UNIT = 10f
 private val LAYOUT_CHOICES = listOf(
     Choice(AssistantLayout.PANEL, R.string.assistant_invoke_layout_panel),
     Choice(AssistantLayout.COMPACT, R.string.assistant_invoke_layout_compact),
+)
+
+private val LOCK_CHOICES = listOf(
+    Choice(LockGuard.BIOMETRIC, R.string.assistant_invoke_lock_biometric),
+    Choice(LockGuard.UNLOCK, R.string.assistant_invoke_lock_unlock),
+    Choice(LockGuard.OFF, R.string.assistant_invoke_lock_off),
 )
 
 private val GLOW_CHOICES = listOf(

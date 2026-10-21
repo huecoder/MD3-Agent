@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -18,6 +19,7 @@ import com.mikepenz.markdown.compose.components.MarkdownComponents
 import com.mikepenz.markdown.compose.components.markdownComponents
 import com.mikepenz.markdown.compose.elements.highlightedCodeBlock
 import com.mikepenz.markdown.compose.elements.MarkdownImage
+import com.mikepenz.markdown.compose.elements.MarkdownParagraph
 import com.mikepenz.markdown.compose.elements.highlightedCodeFence
 import com.mikepenz.markdown.m3.Markdown
 import com.mikepenz.markdown.m3.markdownColor
@@ -28,6 +30,7 @@ import com.mikepenz.markdown.model.MarkdownTypography
 import com.mikepenz.markdown.model.markdownAnnotator
 import com.mikepenz.markdown.model.State
 import com.mikepenz.markdown.model.rememberMarkdownState
+import dev.huecoder.md3agent.ui.math.LocalMathContent
 import dev.huecoder.md3agent.ui.math.MathContent
 import dev.huecoder.md3agent.ui.math.rememberMathContent
 import dev.huecoder.md3agent.ui.pictures.MarkdownBlock
@@ -59,12 +62,14 @@ fun MarkdownBlocksContent(
     modifier: Modifier = Modifier,
     text: @Composable (MarkdownBlock.Text) -> Unit,
 ) {
-    Column(modifier.fillMaxWidth().then(math.measure), verticalArrangement = Arrangement.spacedBy(BLOCK_GAP)) {
-        blocks.forEachIndexed { index, block ->
-            key(index) {
-                when (block) {
-                    is MarkdownBlock.Text -> text(block)
-                    is MarkdownBlock.Pictures -> PictureGroupView(block)
+    CompositionLocalProvider(LocalMathContent provides math) {
+        Column(modifier.fillMaxWidth().then(math.measure), verticalArrangement = Arrangement.spacedBy(BLOCK_GAP)) {
+            blocks.forEachIndexed { index, block ->
+                key(index) {
+                    when (block) {
+                        is MarkdownBlock.Text -> text(block)
+                        is MarkdownBlock.Pictures -> PictureGroupView(block)
+                    }
                 }
             }
         }
@@ -91,7 +96,18 @@ private val appMarkdownComponents: MarkdownComponents = markdownComponents(
     codeFence = highlightedCodeFence,
     codeBlock = highlightedCodeBlock,
     image = { model -> InTextPicture(model) },
+    paragraph = { model -> FormulaParagraph(model) },
+    table = { model -> ChatTable(model) },
 )
+
+@Composable
+private fun FormulaParagraph(model: MarkdownComponentModel) {
+    val style = model.typography.paragraph
+    val math = LocalMathContent.current
+    val paragraph = model.content.substring(model.node.startOffset, model.node.endOffset)
+    val fitted = if (math == null) style else style.copy(lineHeight = math.lineHeightFor(paragraph, style.lineHeight))
+    MarkdownParagraph(model.content, model.node, style = fitted)
+}
 
 @Composable
 private fun InTextPicture(model: MarkdownComponentModel) {
@@ -122,6 +138,7 @@ private fun appMarkdownTypography(): MarkdownTypography {
         list = typography.bodyLarge,
         ordered = typography.bodyLarge,
         quote = typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
+        table = typography.bodyMedium,
         textLink = TextLinkStyles(
             SpanStyle(color = MaterialTheme.colorScheme.primary, textDecoration = TextDecoration.Underline),
         ),

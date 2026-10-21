@@ -109,7 +109,7 @@ private fun ColumnScope.ModelTab(
     val query by viewModel.queryText.collectAsStateWithLifecycle()
     val capabilities by viewModel.activeCapabilities.collectAsStateWithLifecycle()
     val vendor by viewModel.activeVendor.collectAsStateWithLifecycle()
-    val currentHere = current?.takeIf { it.providerId == state.providerId }
+    val currentHere = current?.takeIf { it.providerId == state.providerId } ?: state.remembered
 
     PickerHeader(pluralStringResource(R.plurals.model_picker_count, state.totalCount, state.totalCount), state.isRefreshing, viewModel::refresh)
     if (state.providers.size > 1) {

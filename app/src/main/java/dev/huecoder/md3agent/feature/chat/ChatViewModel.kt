@@ -15,14 +15,16 @@ import dev.huecoder.md3agent.conversation.UserPrompts
 import dev.huecoder.md3agent.data.attachments.Attachment
 import dev.huecoder.md3agent.data.attachments.AttachmentStore
 import dev.huecoder.md3agent.data.attachments.AttachmentTooLargeException
+import dev.huecoder.md3agent.data.chat.ChatBranch
 import dev.huecoder.md3agent.data.chat.ChatLook
 import dev.huecoder.md3agent.data.chat.ChatRepository
 import dev.huecoder.md3agent.data.db.ChatEntity
-import dev.huecoder.md3agent.data.db.MessageEntity
 import dev.huecoder.md3agent.data.db.selection
 import dev.huecoder.md3agent.data.files.ViewableFile
 import dev.huecoder.md3agent.data.settings.AgentProfile
 import dev.huecoder.md3agent.data.settings.AgentSettings
+import dev.huecoder.md3agent.data.settings.AttachMenuStyle
+import dev.huecoder.md3agent.data.settings.ChatSettings
 import dev.huecoder.md3agent.data.models.ModelCatalog
 import dev.huecoder.md3agent.data.settings.ModelSelection
 import dev.huecoder.md3agent.llm.models.ModelFamily
@@ -63,6 +65,10 @@ data class ChatUiState(
     val modelName: String? = null,
     val messages: List<ChatItem> = emptyList(),
     val showTokenUsage: Boolean = false,
+    val showContext: Boolean = false,
+    val attachMenu: AttachMenuStyle = AttachMenuStyle.COMPACT,
+    val contextTokens: Int? = null,
+    val contextLimit: Int = ContextMeter.DEFAULT_LIMIT,
     val typing: TypingStyle = TypingStyle(),
     val isStreaming: Boolean = false,
     val pendingAttachments: List<Attachment> = emptyList(),
@@ -71,6 +77,8 @@ data class ChatUiState(
     val focusItemId: String? = null,
 ) {
     val isStarted: Boolean get() = chatId != null
+
+    val context: ContextMeter? get() = contextTokens?.takeIf { showContext }?.let { ContextMeter(it, contextLimit) }
 
     fun canSend(text: String): Boolean = (text.isNotBlank() || pendingAttachments.isNotEmpty()) && !isImporting
 
@@ -120,13 +128,14 @@ class ChatViewModel(
             if (id == null) {
                 combine(appSettings, pendingSelection, pendingAgentId) { current, chosen, chosenAgentId ->
                     val agent = current.agents.resolve(chosenAgentId)
-                    ChatUiState(agentId = agent.id, agentName = agent.name, showTokenUsage = current.chat.showTokenUsage, typing = current.chat.typing).withSelection(chosen ?: current.activeSelection)
+                    ChatUiState(agentId = agent.id, agentName = agent.name).withChatSettings(current.chat).withSelection(chosen ?: current.activeSelection)
                 }
             } else {
-                combine(chats.observeChat(id), chats.observeMessages(id), runner.drafts, appSettings, pendingFocus) { chat, messages, drafts, current, focus ->
+                combine(chats.observeChat(id), chats.observeBranch(id), runner.drafts, appSettings, pendingFocus) { chat, branch, drafts, current, focus ->
                     val agent = current.agents.forChat(chat?.agentId)
-                    buildState(id, chat, messages, drafts[id], focus)
-                        .copy(agentId = agent.id, agentName = agent.name, showTokenUsage = current.chat.showTokenUsage, typing = current.chat.typing)
+                    buildState(id, chat, branch, drafts[id], focus)
+                        .copy(agentId = agent.id, agentName = agent.name)
+                        .withChatSettings(current.chat)
                         .withSelection(chat?.selection ?: current.activeSelection)
                 }
             }
@@ -169,6 +178,32 @@ class ChatViewModel(
         }
     }
 
+    fun edit(messageId: String, text: String) {
+        val id = chatId.value ?: return
+        if (pending.value.importing > 0) return
+        val added = pending.value.items
+        pending.update { it.copy(items = emptyList()) }
+        if (shouldNarrate(fromVoice = inputFromVoice)) narration.arm(latestReplyId())
+        inputFromVoice = false
+        viewModelScope.launch { runner.edit(id, messageId, text, added) }
+    }
+
+    fun selectVersion(messageId: String) {
+        val id = chatId.value ?: return
+        viewModelScope.launch { chats.selectVersion(id, messageId) }
+    }
+
+    suspend fun contextBreakdown(): ContextBreakdown? {
+        val id = chatId.value ?: return null
+        val used = state.value.contextTokens ?: return null
+        return runner.previewPrompt(id)?.let { ContextBreakdown.of(it.turns, it.tools, used) }
+    }
+
+    fun fork(reply: ChatItem.Reply, title: String, onForked: (String) -> Unit) {
+        val id = chatId.value ?: return
+        viewModelScope.launch { chats.fork(id, reply.id, title)?.let { onForked(it.id) } }
+    }
+
     fun draft(): String = chats.draft(chatId.value)
 
     fun saveDraft(text: String) = chats.saveDraft(chatId.value, text)
@@ -192,6 +227,7 @@ class ChatViewModel(
     fun selectModel(selection: ModelSelection) {
         val id = chatId.value
         if (id == null) pendingSelection.value = selection else viewModelScope.launch { chats.setModel(id, selection) }
+        appScope.launch { settings.setActiveSelection(selection) }
     }
 
     fun selectAgent(agentId: String) {
@@ -199,10 +235,23 @@ class ChatViewModel(
         if (id == null) pendingAgentId.value = agentId else viewModelScope.launch { chats.setAgent(id, agentId) }
     }
 
+    private fun ChatUiState.withChatSettings(chat: ChatSettings) = copy(
+        showTokenUsage = chat.showTokenUsage,
+        showContext = chat.showContext,
+        attachMenu = chat.attachMenu,
+        typing = chat.typing,
+    )
+
     private suspend fun ChatUiState.withSelection(selection: ModelSelection?): ChatUiState {
         if (selection == null) return this
         val info = catalog.infoLoaded(selection.providerId, selection.modelId)
-        return copy(selection = selection, modelId = selection.modelId, modelFamily = info.family, modelName = info.displayName)
+        return copy(
+            selection = selection,
+            modelId = selection.modelId,
+            modelFamily = info.family,
+            modelName = info.displayName,
+            contextLimit = ContextMeter.limitFor(info.contextLength),
+        )
     }
 
     fun attach(uris: List<Uri>): Job = attachAll(uris) { attachments.import(it) }
@@ -255,6 +304,12 @@ class ChatViewModel(
         viewModelScope.launch { runner.regenerate(reply.anchor) }
     }
 
+    fun continueReply() {
+        val id = chatId.value ?: return
+        if (shouldNarrate(fromVoice = false)) narration.arm(latestReplyId())
+        runner.continueReply(id)
+    }
+
     fun toggleSpeech(reply: ChatItem.Reply) {
         if (speakingId.value == reply.id) return stopSpeaking()
         narration.disarm()
@@ -278,16 +333,17 @@ class ChatViewModel(
         _errors.value = null
     }
 
-    private fun buildState(id: String, chat: ChatEntity?, messages: List<MessageEntity>, draft: StreamingDraft?, focus: String?): ChatUiState {
-        val items = ChatTimeline.build(messages, draft)
+    private fun buildState(id: String, chat: ChatEntity?, branch: ChatBranch, draft: StreamingDraft?, focus: String?): ChatUiState {
+        val items = ChatTimeline.build(branch.messages, draft, branch.versions)
         return ChatUiState(
             chatId = id,
             title = chat?.title?.let(UiText::Raw) ?: ChatUiState.NEW_CHAT_TITLE,
             modelId = chat?.modelId,
             look = chat?.let { ChatLook.of(it.iconKey, it.colorKey, it.shapeKey) } ?: ChatLook.Default,
             messages = items,
+            contextTokens = ContextMeter.usedBy(branch.messages),
             isStreaming = draft != null,
-            focusItemId = focus?.let { ChatTimeline.itemFor(it, messages, items) },
+            focusItemId = focus?.let { ChatTimeline.itemFor(it, branch.messages, items) },
         )
     }
 

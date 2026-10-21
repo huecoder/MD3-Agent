@@ -65,7 +65,7 @@ private fun Legend(spec: ChartSpec, palette: List<Color>) {
 }
 
 @Composable
-private fun PieChart(values: List<Double>, palette: List<Color>, modifier: Modifier) {
+internal fun PieChart(values: List<Double>, palette: List<Color>, modifier: Modifier) {
     val total = values.sum()
     val track = MaterialTheme.colorScheme.surfaceContainerHighest
     Canvas(modifier) {

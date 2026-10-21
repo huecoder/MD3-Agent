@@ -5,9 +5,15 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class ChatSettings(
     val showTokenUsage: Boolean = false,
+    val showContext: Boolean = false,
     val autoTitle: Boolean = true,
+    val autoRetry: Boolean = false,
+    val attachMenu: AttachMenuStyle = AttachMenuStyle.COMPACT,
     val typing: TypingStyle = TypingStyle(),
 )
+
+@Serializable
+enum class AttachMenuStyle { COMPACT, PANEL }
 
 @Serializable
 enum class TypingMode { FADE, TYPEWRITER, RAW }
