@@ -33,5 +33,5 @@ suspend fun typeInto(text: String, charMillis: Long, publish: (Int) -> Unit) {
     }
 }
 
-val SCENE_HEIGHT = 220.dp
+val SCENE_HEIGHT = 240.dp
 private val SCENE_CORNER = 24.dp

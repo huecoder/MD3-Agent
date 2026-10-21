@@ -1,5 +1,6 @@
 package dev.huecoder.md3agent.feature.onboarding.scene
 
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -22,8 +23,8 @@ class BackdropScene {
     var position by mutableFloatStateOf(0f)
     var topX by mutableFloatStateOf(0f)
     var topY by mutableFloatStateOf(0f)
-    var topAngle by mutableFloatStateOf(0f)
     var squash by mutableFloatStateOf(0f)
+    var bottomAngle by mutableFloatStateOf(0f)
     var stage by mutableStateOf<SceneStage?>(null)
         private set
 
@@ -33,21 +34,32 @@ class BackdropScene {
     var hitAxis = Offset.Zero
         private set
 
+    val bottomPath = Path()
+
     private val paths = HashMap<AgentShape, Path>()
+    private val morphs = HashMap<Pair<AgentShape, AgentShape>, Morph>()
     private var physics: BackdropPhysics? = null
     private var squashSpeed = 0f
+    private var bottomIndex = 0
+    private var morphing = false
+    private var morphSeconds = 0f
+
+    private val bottomShape: AgentShape get() = ScenePlan.bottomShapes[bottomIndex]
+    private val nextBottomShape: AgentShape get() = ScenePlan.bottomShapes[(bottomIndex + 1) % ScenePlan.bottomShapes.size]
 
     fun path(shape: AgentShape): Path = paths.getOrPut(shape) { Morph(shape.polygon, shape.polygon).toPath(0f) }
 
     suspend fun prepare(next: SceneStage) {
         val engine = withContext(Dispatchers.Default) {
-            ShapeParts.of(ScenePlan.topShape)
-            BackdropPhysics(next, ScenePlan.topShape, ScenePlan.bottomShape)
+            ScenePlan.bottomShapes.forEach { ShapeParts.of(it) }
+            BackdropPhysics(next, ScenePlan.topShape, bottomShape)
         }
         physics = engine
         stage = next
         squash = 0f
         squashSpeed = 0f
+        morphing = false
+        blendBottomPath(bottomShape, bottomShape, 0f)
         publish(engine)
     }
 
@@ -60,18 +72,22 @@ class BackdropScene {
             previous = now
             engine.step(seconds, ::react)
             relaxSquash(seconds)
+            advanceMorph(seconds, engine)
             publish(engine)
         }
     }
 
     private fun react(hit: BackdropPhysics.Hit) {
         val power = (hit.metersPerSecond / SceneMotion.SQUASH_REFERENCE_SPEED).coerceIn(0f, 1f)
-        if (power < SceneMotion.MIN_HIT_POWER) return
         val toward = hit.point - hit.topCenter
         val reach = toward.getDistance()
         hitPoint = hit.point
         hitAxis = if (reach > 0f) toward / reach else Offset.Zero
         squashSpeed += power * SceneMotion.SQUASH_KICK
+        if (!morphing) {
+            morphing = true
+            morphSeconds = 0f
+        }
     }
 
     private fun relaxSquash(seconds: Float) {
@@ -80,11 +96,27 @@ class BackdropScene {
         squash += squashSpeed * seconds
     }
 
+    private fun advanceMorph(seconds: Float, engine: BackdropPhysics) {
+        if (!morphing) return
+        morphSeconds += seconds
+        val progress = (morphSeconds / SceneMotion.MORPH_SECONDS).coerceIn(0f, 1f)
+        blendBottomPath(bottomShape, nextBottomShape, FastOutSlowInEasing.transform(progress))
+        if (progress < 1f) return
+        bottomIndex = (bottomIndex + 1) % ScenePlan.bottomShapes.size
+        engine.reshapeBottom(bottomShape)
+        morphing = false
+    }
+
+    private fun blendBottomPath(from: AgentShape, to: AgentShape, progress: Float) {
+        bottomPath.rewind()
+        morphs.getOrPut(from to to) { Morph(from.polygon, to.polygon) }.toPath(progress, bottomPath)
+    }
+
     private fun publish(engine: BackdropPhysics) {
         val center = engine.topCenter
         topX = center.x
         topY = center.y
-        topAngle = engine.topAngle
+        bottomAngle = engine.bottomAngle
     }
 
     private companion object {

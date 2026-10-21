@@ -77,11 +77,11 @@ fun DonePage(state: OnboardingState, departing: Boolean) {
             }
         }
         Column(Modifier.fillMaxWidth().reveal(3), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(stringResource(R.string.onboarding_done_where), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
-            Where(MaterialSymbols.Rounded.Hub, R.string.onboarding_where_models, R.string.settings_models)
-            Where(MaterialSymbols.Rounded.Tune, R.string.onboarding_where_mode, R.string.settings_mode)
-            Where(MaterialSymbols.Rounded.Face, R.string.onboarding_where_agent, R.string.settings_agent)
-            Where(MaterialSymbols.Rounded.Shield_person, R.string.onboarding_where_access, R.string.settings_access)
+            Text(stringResource(R.string.onboarding_done_where), style = MaterialTheme.typography.titleMedium)
+            Where(MaterialSymbols.Rounded.Hub, R.string.onboarding_where_models)
+            Where(MaterialSymbols.Rounded.Tune, R.string.onboarding_where_mode)
+            Where(MaterialSymbols.Rounded.Face, R.string.onboarding_where_agent)
+            Where(MaterialSymbols.Rounded.Shield_person, R.string.onboarding_where_access)
         }
     }
 }
@@ -92,17 +92,10 @@ private fun Summary(text: String) {
 }
 
 @Composable
-private fun Where(icon: ImageVector, @StringRes what: Int, @StringRes section: Int) {
-    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(22.dp))
-        Column {
-            Text(stringResource(what), style = MaterialTheme.typography.bodyLarge)
-            Text(
-                stringResource(R.string.onboarding_where_path, stringResource(R.string.settings_title), stringResource(section)),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+private fun Where(icon: ImageVector, @StringRes what: Int) {
+    Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(24.dp))
+        Text(stringResource(what), style = MaterialTheme.typography.bodyLarge)
     }
 }
 

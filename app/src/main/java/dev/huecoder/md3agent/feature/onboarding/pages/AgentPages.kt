@@ -61,7 +61,6 @@ fun FirstAgentPage(state: OnboardingState, onShape: (AgentShape) -> Unit, onTint
     PageScaffold(
         title = stringResource(R.string.onboarding_first_title),
         body = stringResource(R.string.onboarding_first_body),
-        hint = stringResource(R.string.onboarding_changeable),
     ) {
         Box(Modifier.fillMaxWidth().padding(vertical = 8.dp).reveal(2), contentAlignment = Alignment.Center) {
             AgentAvatar(isWorking = false, size = PREVIEW_SIZE, look = state.look, interactive = true)

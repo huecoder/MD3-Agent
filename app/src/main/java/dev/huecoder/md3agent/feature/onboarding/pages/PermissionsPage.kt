@@ -2,8 +2,6 @@ package dev.huecoder.md3agent.feature.onboarding.pages
 
 import android.os.Build
 import androidx.annotation.StringRes
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -25,9 +23,9 @@ import com.composables.icons.materialsymbols.rounded.Terminal
 import com.composables.icons.materialsymbols.rounded.Touch_app
 import com.composables.icons.materialsymbols.roundedfilled.Check_circle
 import dev.huecoder.md3agent.R
+import dev.huecoder.md3agent.feature.onboarding.LATE_ORDER
 import dev.huecoder.md3agent.feature.onboarding.OnboardingState
 import dev.huecoder.md3agent.feature.onboarding.PageScaffold
-import dev.huecoder.md3agent.feature.onboarding.SettingsHint
 import dev.huecoder.md3agent.feature.onboarding.reveal
 import dev.huecoder.md3agent.feature.settings.DeviceAccessViewModel
 import dev.huecoder.md3agent.feature.settings.DevicePermission
@@ -48,39 +46,41 @@ fun PermissionsPage(state: OnboardingState, onRefreshed: () -> Unit) {
     LaunchedEffect(Unit) { access.refresh() }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { refresh() }
 
+    val restricted = DevicePermission.PHONE_CONTROL in state.missingPermissions &&
+        statuses[DevicePermission.PHONE_CONTROL] != AccessStatus.READY &&
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+
     PageScaffold(
         title = stringResource(R.string.onboarding_permissions_title),
         body = stringResource(R.string.onboarding_permissions_body),
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            state.missingPermissions.forEachIndexed { index, permission ->
-                val status = statuses[permission] ?: AccessStatus.UNKNOWN
-                val ready = status == AccessStatus.READY
-                val action: PermissionAction? = actionFor(permission, status)
-                SettingCard(
-                    icon = permission.icon,
-                    title = stringResource(permission.title),
-                    summary = stringResource(permission.summary),
-                    onClick = action?.onClick?.takeIf { !ready },
-                    trailing = {
-                        if (ready) {
-                            Icon(MaterialSymbols.RoundedFilled.Check_circle, contentDescription = stringResource(R.string.access_status_ready), tint = MaterialTheme.colorScheme.primary)
-                        } else {
-                            action?.let { FilledTonalButton(onClick = it.onClick, contentPadding = ButtonDefaults.ExtraSmallContentPadding) { Text(stringResource(it.label)) } }
-                        }
-                    },
-                    below = if (permission == DevicePermission.PHONE_CONTROL && !ready && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        { Text(stringResource(R.string.permission_phone_control_restricted), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        state.missingPermissions.forEachIndexed { index, permission ->
+            val status = statuses[permission] ?: AccessStatus.UNKNOWN
+            val ready = status == AccessStatus.READY
+            val action: PermissionAction? = actionFor(permission, status)
+            SettingCard(
+                icon = permission.icon,
+                title = stringResource(permission.title),
+                summary = stringResource(permission.summary),
+                summaryMaxLines = 1,
+                onClick = action?.onClick?.takeIf { !ready },
+                trailing = {
+                    if (ready) {
+                        Icon(MaterialSymbols.RoundedFilled.Check_circle, contentDescription = stringResource(R.string.access_status_ready), tint = MaterialTheme.colorScheme.primary)
                     } else {
-                        null
-                    },
-                    modifier = Modifier.reveal(minOf(2 + index, 5)),
-                )
-            }
+                        action?.let { FilledTonalButton(onClick = it.onClick, contentPadding = ButtonDefaults.ExtraSmallContentPadding) { Text(stringResource(it.label)) } }
+                    }
+                },
+                modifier = Modifier.reveal(minOf(2 + index, LAST_CARD_ORDER)),
+            )
         }
-        SettingsHint(modifier = Modifier.reveal(6))
+        if (restricted) {
+            Text(stringResource(R.string.permission_phone_control_restricted), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.reveal(LATE_ORDER))
+        }
     }
 }
+
+private const val LAST_CARD_ORDER = 5
 
 private val DevicePermission.icon: ImageVector
     get() = when (this) {
@@ -96,7 +96,7 @@ private val DevicePermission.title: Int
     get() = when (this) {
         DevicePermission.NOTIFICATIONS -> R.string.permission_notifications
         DevicePermission.MICROPHONE -> R.string.permission_microphone
-        DevicePermission.PHONE_CONTROL -> R.string.permission_phone_control
+        DevicePermission.PHONE_CONTROL -> R.string.onboarding_permission_phone_control_title
         DevicePermission.ALL_FILES -> R.string.access_files_shared
         else -> R.string.access_mode_termux
     }
@@ -104,9 +104,9 @@ private val DevicePermission.title: Int
 @get:StringRes
 private val DevicePermission.summary: Int
     get() = when (this) {
-        DevicePermission.NOTIFICATIONS -> R.string.permission_notifications_summary
-        DevicePermission.MICROPHONE -> R.string.permission_microphone_summary
-        DevicePermission.PHONE_CONTROL -> R.string.permission_phone_control_summary
-        DevicePermission.ALL_FILES -> R.string.access_files_shared_summary
-        else -> R.string.access_mode_termux_summary
+        DevicePermission.NOTIFICATIONS -> R.string.onboarding_permission_notifications
+        DevicePermission.MICROPHONE -> R.string.onboarding_permission_microphone
+        DevicePermission.PHONE_CONTROL -> R.string.onboarding_permission_phone_control
+        DevicePermission.ALL_FILES -> R.string.onboarding_permission_files
+        else -> R.string.onboarding_permission_termux
     }

@@ -33,70 +33,41 @@ import dev.huecoder.md3agent.feature.onboarding.SurveyAnswers
 import dev.huecoder.md3agent.feature.onboarding.reveal
 
 @Composable
-fun GoalsPage(answers: SurveyAnswers, onToggle: (Goal) -> Unit) {
-    PageScaffold(
-        title = stringResource(R.string.onboarding_goals_title),
-        body = stringResource(R.string.onboarding_pick_several),
-        hint = stringResource(R.string.onboarding_survey_hint),
-    ) {
-        Goal.entries.forEachIndexed { index, goal ->
-            ChoiceCard(
-                icon = goal.icon,
-                label = stringResource(goal.label),
-                selected = goal in answers.goals,
-                onClick = { onToggle(goal) },
-                modifier = Modifier.reveal(minOf(2 + index, LAST_CARD_ORDER)),
-            )
-        }
-    }
-}
+fun GoalsPage(answers: SurveyAnswers, onToggle: (Goal) -> Unit) = MultiChoicePage(
+    title = R.string.onboarding_goals_title,
+    options = Goal.entries,
+    icon = { it.icon },
+    label = { it.label },
+    selected = { it in answers.goals },
+    onToggle = onToggle,
+)
 
 @Composable
-fun ExperiencePage(answers: SurveyAnswers, onToggle: (Experience) -> Unit) {
-    PageScaffold(
-        title = stringResource(R.string.onboarding_experience_title),
-        body = stringResource(R.string.onboarding_experience_body),
-        hint = stringResource(R.string.onboarding_survey_hint),
-    ) {
-        Experience.entries.forEachIndexed { index, item ->
-            ChoiceCard(
-                icon = item.icon,
-                label = stringResource(item.label),
-                selected = item in answers.experience,
-                onClick = { onToggle(item) },
-                modifier = Modifier.reveal(minOf(2 + index, LAST_CARD_ORDER)),
-            )
-        }
-    }
-}
+fun ExperiencePage(answers: SurveyAnswers, onToggle: (Experience) -> Unit) = MultiChoicePage(
+    title = R.string.onboarding_experience_title,
+    options = Experience.entries,
+    icon = { it.icon },
+    label = { it.label },
+    selected = { it in answers.experience },
+    onToggle = onToggle,
+)
 
 @Composable
-fun PlacesPage(answers: SurveyAnswers, onToggle: (Place) -> Unit) {
-    PageScaffold(
-        title = stringResource(R.string.onboarding_places_title),
-        body = stringResource(R.string.onboarding_pick_several),
-        hint = stringResource(R.string.onboarding_survey_hint),
-    ) {
-        Place.entries.forEachIndexed { index, place ->
-            ChoiceCard(
-                icon = place.icon,
-                label = stringResource(place.label),
-                selected = place in answers.places,
-                onClick = { onToggle(place) },
-                modifier = Modifier.reveal(minOf(2 + index, LAST_CARD_ORDER)),
-            )
-        }
-    }
-}
+fun PlacesPage(answers: SurveyAnswers, onToggle: (Place) -> Unit) = MultiChoicePage(
+    title = R.string.onboarding_places_title,
+    options = Place.entries,
+    icon = { it.icon },
+    label = { it.label },
+    selected = { it in answers.places },
+    onToggle = onToggle,
+)
 
 @Composable
 fun ModePage(state: OnboardingState, onChoose: (ModePreset) -> Unit) {
     val recommended = state.recommended
     PageScaffold(
         title = stringResource(R.string.onboarding_mode_title),
-        body = recommended?.let { stringResource(R.string.onboarding_mode_body_recommended, stringResource(it.titleRes)) }
-            ?: stringResource(R.string.onboarding_mode_body_none),
-        hint = stringResource(R.string.onboarding_mode_hint),
+        body = stringResource(R.string.onboarding_mode_body_none).takeIf { recommended == null },
     ) {
         ModePreset.entries.forEachIndexed { index, preset ->
             ChoiceCard(
@@ -105,8 +76,30 @@ fun ModePage(state: OnboardingState, onChoose: (ModePreset) -> Unit) {
                 summary = stringResource(preset.summaryRes),
                 tag = stringResource(R.string.onboarding_mode_recommended).takeIf { preset == recommended },
                 selected = preset == state.preset,
-                dimmed = state.preset != null,
                 onClick = { onChoose(preset) },
+                modifier = Modifier.reveal(minOf(2 + index, LAST_CARD_ORDER)),
+            )
+        }
+    }
+}
+
+@Composable
+private fun <T> MultiChoicePage(
+    @StringRes title: Int,
+    options: List<T>,
+    icon: (T) -> ImageVector,
+    label: (T) -> Int,
+    selected: (T) -> Boolean,
+    onToggle: (T) -> Unit,
+) {
+    PageScaffold(title = stringResource(title)) {
+        options.forEachIndexed { index, option ->
+            ChoiceCard(
+                icon = icon(option),
+                label = stringResource(label(option)),
+                selected = selected(option),
+                onClick = { onToggle(option) },
+                multiple = true,
                 modifier = Modifier.reveal(minOf(2 + index, LAST_CARD_ORDER)),
             )
         }

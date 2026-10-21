@@ -25,7 +25,6 @@ import com.composables.icons.materialsymbols.roundedfilled.Check_circle
 import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.assistant.AssistantRole
 import dev.huecoder.md3agent.feature.onboarding.PageScaffold
-import dev.huecoder.md3agent.feature.onboarding.SettingsHint
 import dev.huecoder.md3agent.feature.onboarding.reveal
 import dev.huecoder.md3agent.feature.onboarding.sims.ScreenScene
 
@@ -45,17 +44,10 @@ fun AssistantPage() {
                 Icon(MaterialSymbols.RoundedFilled.Check_circle, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
                 Text(stringResource(R.string.onboarding_assistant_ready), style = MaterialTheme.typography.titleMedium)
             }
-            Text(
-                stringResource(R.string.assistant_invoke_system_hint),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.reveal(4),
-            )
         } else {
             Button(onClick = { AssistantRole.openSystemPicker(context) }, modifier = Modifier.fillMaxWidth().reveal(3)) {
                 Text(stringResource(R.string.onboarding_assistant_choose))
             }
         }
-        SettingsHint(modifier = Modifier.reveal(5))
     }
 }

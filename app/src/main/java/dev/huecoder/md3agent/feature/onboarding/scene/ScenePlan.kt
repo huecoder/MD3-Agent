@@ -22,7 +22,7 @@ class PoseBlend(val from: ScenePose, val to: ScenePose, val fraction: Float) {
 
 object ScenePlan {
     val topShape = AgentShape.COOKIE_9
-    val bottomShape = AgentShape.COOKIE_6
+    val bottomShapes = listOf(AgentShape.COOKIE_6, AgentShape.COOKIE_7, AgentShape.COOKIE_4)
 
     private class Slot(val center: Offset, val size: Float, val parallax: Float)
 
@@ -55,7 +55,7 @@ object ScenePlan {
     private const val FAR = 0.3f
     private const val NEAR = 0.6f
     private const val TURN_PER_SCENERY = 0.9f
-    private const val CALM_INTENSITY = 0.32f
+    private const val CALM_INTENSITY = 0.4f
     private const val FULL_INTENSITY = 1f
     private val TOP_COLORS = listOf(SceneColor.PRIMARY, SceneColor.TERTIARY, SceneColor.SECONDARY)
     private val BOTTOM_COLORS = listOf(SceneColor.TERTIARY, SceneColor.SECONDARY, SceneColor.PRIMARY)

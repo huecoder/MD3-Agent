@@ -14,8 +14,8 @@ enum class OnboardingStep(val calm: Boolean) {
     PROVIDER(calm = true),
     ASSISTANT(calm = true),
     PERMISSIONS(calm = true),
-    FIRST_AGENT(calm = false),
-    DONE(calm = false),
+    FIRST_AGENT(calm = true),
+    DONE(calm = true),
 }
 
 data class FlowFacts(

@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Arrow_upward
@@ -36,7 +37,7 @@ import dev.huecoder.md3agent.ui.components.AgentAvatar
 import kotlinx.coroutines.delay
 
 @Composable
-fun AskScene(modifier: Modifier = Modifier) {
+fun AskScene(modifier: Modifier = Modifier, height: Dp = CHAT_HEIGHT) {
     val question = stringResource(R.string.onboarding_scene_ask_question)
     val answer = stringResource(R.string.onboarding_scene_ask_answer)
     var asked by remember { mutableIntStateOf(0) }
@@ -57,7 +58,7 @@ fun AskScene(modifier: Modifier = Modifier) {
         }
     }
 
-    SceneFrame(modifier, height = CHAT_HEIGHT) {
+    SceneFrame(modifier, height = height) {
         Column(Modifier.fillMaxSize().padding(12.dp), verticalArrangement = Arrangement.SpaceBetween) {
             Column(Modifier.fillMaxWidth().graphicsLayer { alpha = fade.value }, verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 if (asked > 0) {

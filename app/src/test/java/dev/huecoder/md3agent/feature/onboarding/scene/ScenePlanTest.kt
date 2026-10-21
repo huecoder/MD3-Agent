@@ -1,6 +1,7 @@
 package dev.huecoder.md3agent.feature.onboarding.scene
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
@@ -38,5 +39,12 @@ class ScenePlanTest {
     @Test
     fun `calm steps draw fainter outlines`() {
         assertTrue(ScenePlan.pose(0, calm = true).intensity < ScenePlan.pose(0, calm = false).intensity)
+    }
+
+    @Test
+    fun `the bottom shape has several different rounded forms to morph through`() {
+        assertTrue(ScenePlan.bottomShapes.size >= 3)
+        assertEquals(ScenePlan.bottomShapes.size, ScenePlan.bottomShapes.toSet().size)
+        assertFalse(ScenePlan.topShape in ScenePlan.bottomShapes)
     }
 }

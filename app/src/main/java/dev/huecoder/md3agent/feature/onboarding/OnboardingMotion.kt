@@ -14,6 +14,9 @@ object OnboardingMotion {
     val FLING_MIN = 700.dp
     val NUDGE = 36.dp
     val ContentPadding = 24.dp
+    val SectionGap = 24.dp
+    val TextGap = 12.dp
+    val ItemGap = 12.dp
     val BarHeight = 56.dp
     const val DEPART_MILLIS = 480
 }

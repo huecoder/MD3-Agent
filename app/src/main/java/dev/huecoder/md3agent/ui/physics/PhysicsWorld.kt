@@ -88,10 +88,24 @@ class PhysicsWorld(private val pixelsPerMeter: Float, gravity: Double = CARTOON_
         return addBody(center, Geometry.createPolygon(*hull), material)
     }
 
-    fun addOutline(center: Offset, parts: List<List<Offset>>, size: Float, material: Material, isStatic: Boolean = false, isBullet: Boolean = false): Body =
+    fun addOutline(
+        center: Offset,
+        parts: List<List<Offset>>,
+        size: Float,
+        material: Material,
+        isStatic: Boolean = false,
+        isBullet: Boolean = false,
+        lockRotation: Boolean = false,
+    ): Body =
         Body().apply {
             addParts(parts, size, material)
-            setMass(if (isStatic) MassType.INFINITE else MassType.NORMAL)
+            setMass(
+                when {
+                    isStatic -> MassType.INFINITE
+                    lockRotation -> MassType.FIXED_ANGULAR_VELOCITY
+                    else -> MassType.NORMAL
+                },
+            )
             setBullet(isBullet)
             translate(center.x.meters, center.y.meters)
             world.addBody(this)

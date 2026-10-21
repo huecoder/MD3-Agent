@@ -45,7 +45,7 @@ import dev.huecoder.md3agent.data.settings.ModelSelection
 import dev.huecoder.md3agent.feature.models.ModelPickerSheet
 import dev.huecoder.md3agent.feature.onboarding.ChoiceCard
 import dev.huecoder.md3agent.feature.onboarding.ConnectResult
-import dev.huecoder.md3agent.feature.onboarding.HINT_ORDER
+import dev.huecoder.md3agent.feature.onboarding.LATE_ORDER
 import dev.huecoder.md3agent.feature.onboarding.OnboardingState
 import dev.huecoder.md3agent.feature.onboarding.PageScaffold
 import dev.huecoder.md3agent.feature.onboarding.reveal
@@ -98,14 +98,12 @@ fun ProviderPage(
                     icon = MaterialSymbols.Rounded.Key,
                     label = stringResource(R.string.onboarding_provider_has_key),
                     selected = branch == KeyBranch.HAS,
-                    dimmed = branch != null,
                     onClick = { branch = KeyBranch.HAS },
                 )
                 ChoiceCard(
                     icon = MaterialSymbols.Rounded.Open_in_new,
                     label = stringResource(R.string.onboarding_provider_no_key),
                     selected = branch == KeyBranch.NONE,
-                    dimmed = branch != null,
                     onClick = { branch = KeyBranch.NONE },
                 )
             }
@@ -118,6 +116,7 @@ fun ProviderPage(
                     }
                     if (it == KeyBranch.HAS) {
                         SecretField(value = key, onValueChange = { value -> key = value }, label = stringResource(R.string.onboarding_provider_key_label))
+                        Text(stringResource(R.string.onboarding_provider_privacy), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                             TextButton(onClick = { scope.launch { clipboard.pastedText()?.let { pasted -> key = pasted } } }) {
                                 Icon(MaterialSymbols.Rounded.Content_paste, contentDescription = null, modifier = Modifier.size(18.dp))
@@ -139,7 +138,7 @@ fun ProviderPage(
                             modifier = Modifier.fillMaxWidth(),
                         ) { Text(stringResource(if (status == ConnectStatus.Checking) R.string.onboarding_provider_checking else R.string.onboarding_provider_connect)) }
                         (status as? ConnectStatus.Unverified)?.let {
-                            Text(stringResource(R.string.onboarding_provider_unverified, it.reason), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                            Text(stringResource(R.string.onboarding_provider_unverified, it.reason), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
                         }
                     } else {
                         KeySteps(detailed = state.needs.keyHelpInDetail)
@@ -152,14 +151,8 @@ fun ProviderPage(
                 }
             }
         }
-        Text(
-            stringResource(R.string.onboarding_provider_privacy),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.reveal(HINT_ORDER),
-        )
         if (state.providerName == null) {
-            TextButton(onClick = onLater, modifier = Modifier.reveal(HINT_ORDER)) { Text(stringResource(R.string.onboarding_provider_later)) }
+            TextButton(onClick = onLater, modifier = Modifier.reveal(LATE_ORDER)) { Text(stringResource(R.string.onboarding_provider_later)) }
         }
     }
 

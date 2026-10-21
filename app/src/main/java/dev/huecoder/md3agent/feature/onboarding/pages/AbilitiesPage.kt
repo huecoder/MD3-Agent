@@ -20,15 +20,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.feature.onboarding.OnboardingMotion
-import dev.huecoder.md3agent.feature.onboarding.SettingsHint
 import dev.huecoder.md3agent.feature.onboarding.reveal
 import dev.huecoder.md3agent.feature.onboarding.sims.AskScene
 import dev.huecoder.md3agent.feature.onboarding.sims.CodeScene
 import dev.huecoder.md3agent.feature.onboarding.sims.MemoryScene
 import dev.huecoder.md3agent.feature.onboarding.sims.PhoneScene
+import dev.huecoder.md3agent.feature.onboarding.sims.SCENE_HEIGHT
 import dev.huecoder.md3agent.feature.onboarding.sims.ScreenScene
 
 private enum class Ability(@StringRes val title: Int, @StringRes val caption: Int) {
@@ -44,18 +45,12 @@ fun AbilitiesPage() {
     val list = rememberLazyListState()
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(OnboardingMotion.SectionGap),
     ) {
         Text(
             stringResource(R.string.onboarding_abilities_title),
             style = MaterialTheme.typography.headlineLargeEmphasized,
             modifier = Modifier.padding(horizontal = OnboardingMotion.ContentPadding).reveal(0),
-        )
-        Text(
-            stringResource(R.string.onboarding_abilities_body),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = OnboardingMotion.ContentPadding).reveal(1),
         )
         @OptIn(ExperimentalFoundationApi::class)
         LazyRow(
@@ -63,11 +58,10 @@ fun AbilitiesPage() {
             flingBehavior = rememberSnapFlingBehavior(list),
             contentPadding = PaddingValues(horizontal = OnboardingMotion.ContentPadding),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.reveal(2),
+            modifier = Modifier.reveal(1),
         ) {
             items(Ability.entries) { ability -> AbilityCard(ability) }
         }
-        SettingsHint(modifier = Modifier.padding(horizontal = OnboardingMotion.ContentPadding).reveal(3))
     }
 }
 
@@ -76,15 +70,15 @@ private fun AbilityCard(ability: Ability) {
     Surface(shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surfaceContainer, modifier = Modifier.width(CARD_WIDTH)) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             when (ability) {
-                Ability.ASK -> AskScene()
+                Ability.ASK -> AskScene(height = SCENE_HEIGHT)
                 Ability.SCREEN -> ScreenScene()
                 Ability.PHONE -> PhoneScene()
                 Ability.MEMORY -> MemoryScene()
                 Ability.CODE -> CodeScene()
             }
             Column(Modifier.padding(horizontal = 6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(stringResource(ability.title), style = MaterialTheme.typography.titleMedium)
-                Text(stringResource(ability.caption), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(ability.title), style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(stringResource(ability.caption), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
     }

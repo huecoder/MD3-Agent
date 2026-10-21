@@ -5,6 +5,8 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 
+const val LATE_ORDER = 6
+
 val LocalPageOffset = compositionLocalOf<() -> Float> { { 0f } }
 
 @Composable

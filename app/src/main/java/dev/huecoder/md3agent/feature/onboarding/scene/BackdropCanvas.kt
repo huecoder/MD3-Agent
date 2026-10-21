@@ -77,10 +77,11 @@ private fun DrawScope.drawBottom(scene: BackdropScene, stage: SceneStage, blend:
     val recoil = scene.hitAxis * (scene.squash * SceneMotion.BOTTOM_RECOIL_SHARE * stage.base)
     withTransform({
         translate(stage.bottomCenter.x + recoil.x, stage.bottomCenter.y + recoil.y)
+        rotate(Math.toDegrees(scene.bottomAngle.toDouble()).toFloat(), Offset.Zero)
         scale(stage.bottomSize, stage.bottomSize, Offset.Zero)
         translate(-CENTER, -CENTER)
     }) {
-        drawPath(scene.path(ScenePlan.bottomShape), color.copy(alpha = SceneMotion.BOTTOM_ALPHA * blend.intensity), style = outline(strokeWidth / stage.bottomSize))
+        drawPath(scene.bottomPath, color.copy(alpha = SceneMotion.BOTTOM_ALPHA * blend.intensity), style = outline(strokeWidth / stage.bottomSize))
     }
 }
 
@@ -94,11 +95,10 @@ private fun DrawScope.drawTop(scene: BackdropScene, stage: SceneStage, blend: Po
         rotate(-axisDegrees, Offset.Zero)
         translate(-scene.hitPoint.x, -scene.hitPoint.y)
         translate(scene.topX, scene.topY)
-        rotate(Math.toDegrees(scene.topAngle.toDouble()).toFloat(), Offset.Zero)
         scale(stage.topSize, stage.topSize, Offset.Zero)
         translate(-CENTER, -CENTER)
     }) {
-        drawPath(scene.path(ScenePlan.topShape), color.copy(alpha = blend.intensity), style = outline(strokeWidth / stage.topSize))
+        drawPath(scene.path(ScenePlan.topShape), color.copy(alpha = SceneMotion.TOP_ALPHA * blend.intensity), style = outline(strokeWidth / stage.topSize))
     }
 }
 
