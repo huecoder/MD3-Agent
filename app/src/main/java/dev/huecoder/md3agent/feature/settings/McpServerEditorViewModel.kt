@@ -32,6 +32,8 @@ data class McpServerForm(
     val headers: List<HeaderEntry> = emptyList(),
     val enabled: Boolean = true,
     val oauth: McpOAuthSession? = null,
+    val iconKey: String? = null,
+    val colorKey: String? = null,
 ) {
     val urlError: UiText?
         get() = if (url.isBlank() || url.trim().toHttpUrlOrNull() != null) null else UiText.Resource(R.string.mcp_url_invalid)
@@ -47,6 +49,8 @@ data class McpServerForm(
         headers = headers.filter { it.name.isNotBlank() },
         enabled = enabled,
         oauth = oauth,
+        iconKey = iconKey,
+        colorKey = colorKey,
     )
 }
 
@@ -85,7 +89,7 @@ class McpServerEditorViewModel(
             val existing = settings.current().tools.mcpServers.firstOrNull { it.id == serverId }
             draft.load(
                 existing?.let {
-                    McpServerForm(it.id, isNew = false, name = it.name, url = it.url, apiKey = it.apiKey, headers = it.headers, enabled = it.enabled, oauth = it.oauth)
+                    McpServerForm(it.id, isNew = false, name = it.name, url = it.url, apiKey = it.apiKey, headers = it.headers, enabled = it.enabled, oauth = it.oauth, iconKey = it.iconKey, colorKey = it.colorKey)
                 } ?: McpServerForm(id = settings.newProviderId(), isNew = true),
             )
             settings.settings.map { current -> current.tools.mcpServers.firstOrNull { it.id == draft.current?.id }?.oauth }

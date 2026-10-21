@@ -28,6 +28,7 @@ import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Delete
+import com.composables.icons.materialsymbols.rounded.Hub
 import com.composables.icons.materialsymbols.rounded.Key
 import com.composables.icons.materialsymbols.rounded.Power_settings_new
 import com.composables.icons.materialsymbols.rounded.Verified_user
@@ -35,7 +36,12 @@ import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.mcp.auth.SignInStatus
 import dev.huecoder.md3agent.ui.components.FormField
 import dev.huecoder.md3agent.ui.components.SaveAction
+import dev.huecoder.md3agent.ui.components.LookSheet
 import dev.huecoder.md3agent.ui.components.SettingsScaffold
+import dev.huecoder.md3agent.ui.components.colors
+import dev.huecoder.md3agent.ui.components.glyph
+import dev.huecoder.md3agent.ui.components.icon
+import dev.huecoder.md3agent.ui.components.tint
 import dev.huecoder.md3agent.ui.components.appViewModel
 import dev.huecoder.md3agent.ui.text.asString
 
@@ -48,6 +54,7 @@ fun McpServerEditorScreen(serverId: String?, onDone: () -> Unit) {
     val signInStatus by viewModel.signInStatus.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var headersOpen by rememberSaveable { mutableStateOf(false) }
+    var picking by rememberSaveable { mutableStateOf(false) }
 
     SettingsScaffold(
         title = stringResource(if (form?.isNew == false) R.string.mcp_server_title else R.string.mcp_server_title_new),
@@ -90,6 +97,19 @@ fun McpServerEditorScreen(serverId: String?, onDone: () -> Unit) {
                     }
                 }
                 card { shape ->
+                    val server = current.toServer()
+                    val colors = server.tint.colors()
+                    SettingCard(
+                        icon = server.icon,
+                        title = stringResource(R.string.mcp_server_look),
+                        summary = stringResource(R.string.mcp_server_look_summary),
+                        badgeContainer = colors.container,
+                        badgeContent = colors.content,
+                        shape = shape,
+                        onClick = { picking = true },
+                    )
+                }
+                card { shape ->
                     SwitchCard(
                         icon = MaterialSymbols.Rounded.Power_settings_new,
                         title = stringResource(R.string.mcp_server_enabled),
@@ -114,6 +134,17 @@ fun McpServerEditorScreen(serverId: String?, onDone: () -> Unit) {
                         )
                     }
                 }
+            }
+            if (picking) {
+                val server = current.toServer()
+                LookSheet(
+                    glyph = server.glyph,
+                    tint = server.tint,
+                    fallback = MaterialSymbols.Rounded.Hub,
+                    onGlyph = { glyph -> viewModel.edit { it.copy(iconKey = glyph.key) } },
+                    onTint = { tint -> viewModel.edit { it.copy(colorKey = tint.key) } },
+                    onDismiss = { picking = false },
+                )
             }
             CardGroup { headersCard(current.headers, headersOpen, { headersOpen = !headersOpen }) { headers -> viewModel.edit { it.copy(headers = headers) } } }
         }

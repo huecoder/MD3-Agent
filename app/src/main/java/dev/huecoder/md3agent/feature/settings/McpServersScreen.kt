@@ -49,6 +49,7 @@ import dev.huecoder.md3agent.mcp.McpServerState
 import dev.huecoder.md3agent.mcp.McpTool
 import dev.huecoder.md3agent.ui.components.SectionHeader
 import dev.huecoder.md3agent.ui.components.SettingsScaffold
+import dev.huecoder.md3agent.ui.components.McpServerBadge
 import dev.huecoder.md3agent.ui.components.ShapeBadge
 import dev.huecoder.md3agent.ui.components.ToolCatalog
 import dev.huecoder.md3agent.ui.components.appViewModel
@@ -153,7 +154,7 @@ internal fun ServerGroup(
             shapes = ListItemDefaults.segmentedShapes(0, if (open) count else 1),
             colors = groupedListColors(),
             modifier = if (tools.isNotEmpty()) Modifier.semantics { stateDescription = foldState } else Modifier,
-            leadingContent = { ShapeBadge(MaterialSymbols.Rounded.Hub) },
+            leadingContent = { McpServerBadge(server) },
             supportingContent = { ServerStatus(server, state, toolSettings) },
             trailingContent = {
                 Row(verticalAlignment = Alignment.CenterVertically) {

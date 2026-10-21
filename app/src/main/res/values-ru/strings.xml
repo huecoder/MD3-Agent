@@ -1069,4 +1069,6 @@
     <string name="home_folder_edit">Изменить папку</string>
     <string name="home_folders">Папки</string>
     <string name="home_menu">Меню</string>
+    <string name="mcp_server_look">Иконка и цвет</string>
+    <string name="mcp_server_look_summary">Видны рядом с сервером в списках</string>
 </resources>

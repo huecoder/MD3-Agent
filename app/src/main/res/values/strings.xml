@@ -1065,4 +1065,6 @@
     <string name="home_folder_edit">Edit folder</string>
     <string name="home_folders">Folders</string>
     <string name="home_menu">Menu</string>
+    <string name="mcp_server_look">Icon and color</string>
+    <string name="mcp_server_look_summary">Shown next to the server in lists</string>
 </resources>
