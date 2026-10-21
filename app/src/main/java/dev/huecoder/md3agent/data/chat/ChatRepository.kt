@@ -160,13 +160,14 @@ class ChatRepository(
 
     suspend fun moveToFolder(chatIds: Collection<String>, folderId: String?) = chatDao.moveToFolder(chatIds.toList(), folderId)
 
-    suspend fun createFolder(name: String): FolderEntity {
-        val folder = FolderEntity(id = UUID.randomUUID().toString(), name = name.trim(), createdAt = clock())
+    suspend fun createFolder(name: String, look: FolderLook): FolderEntity {
+        val folder = FolderEntity(id = UUID.randomUUID().toString(), name = name.trim(), createdAt = clock(), iconKey = look.glyph?.key, colorKey = look.tint.key)
         folderDao.insert(folder)
         return folder
     }
 
-    suspend fun renameFolder(folderId: String, name: String) = folderDao.rename(folderId, name.trim())
+    suspend fun updateFolder(folderId: String, name: String, look: FolderLook) =
+        folderDao.update(folderId, name.trim(), look.glyph?.key, look.tint.key)
 
     suspend fun deleteFolder(folderId: String) = folderDao.delete(folderId)
 

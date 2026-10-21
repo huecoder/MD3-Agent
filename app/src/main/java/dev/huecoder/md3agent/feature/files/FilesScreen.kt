@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.ListItemDefaults
@@ -41,6 +42,8 @@ import dev.huecoder.md3agent.data.files.ViewableFile
 import dev.huecoder.md3agent.feature.chat.lightbox.LightboxHost
 import dev.huecoder.md3agent.feature.chat.lightbox.LocalLightbox
 import dev.huecoder.md3agent.feature.main.MainNavBarClearance
+import dev.huecoder.md3agent.feature.main.MainTab
+import dev.huecoder.md3agent.feature.main.ScrollToTopOnReselect
 import dev.huecoder.md3agent.ui.components.SectionHeader
 import dev.huecoder.md3agent.ui.components.ShapeBadge
 import dev.huecoder.md3agent.ui.components.appViewModel
@@ -61,7 +64,10 @@ fun FilesScreen(onOpenFolder: (LibraryRoot) -> Unit, onOpenMedia: () -> Unit) {
             modifier = Modifier.nestedScroll(topBarScroll.nestedScrollConnection),
             topBar = { MediumFlexibleTopAppBar(title = { Text(stringResource(R.string.files_title)) }, scrollBehavior = topBarScroll) },
         ) { padding ->
+            val listState = rememberLazyListState()
+            ScrollToTopOnReselect(MainTab.FILES, listState)
             LazyColumn(
+                state = listState,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = padding.calculateTopPadding(), bottom = MainNavBarClearance),
                 verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),

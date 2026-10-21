@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
@@ -37,6 +38,8 @@ import dev.huecoder.md3agent.App
 import dev.huecoder.md3agent.BuildConfig
 import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.feature.main.MainNavBarClearance
+import dev.huecoder.md3agent.feature.main.MainTab
+import dev.huecoder.md3agent.feature.main.ScrollToTopOnReselect
 import dev.huecoder.md3agent.data.settings.EmbeddingKind
 import dev.huecoder.md3agent.assistant.AssistantRole
 import dev.huecoder.md3agent.data.settings.AppSettings
@@ -119,7 +122,10 @@ fun SettingsScreen(destinations: SettingsDestinations) {
                 )
             }
         }
+        val listState = rememberLazyListState()
+        ScrollToTopOnReselect(MainTab.SETTINGS, listState)
         LazyColumn(
+            state = listState,
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = padding.calculateTopPadding(), bottom = MainNavBarClearance),
             verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),

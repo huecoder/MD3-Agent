@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import dev.huecoder.md3agent.conversation.ChatActivity
 import dev.huecoder.md3agent.conversation.ConversationRunner
 import dev.huecoder.md3agent.data.chat.ChatRepository
+import dev.huecoder.md3agent.data.chat.FolderLook
 import dev.huecoder.md3agent.data.db.ChatSummary
 import dev.huecoder.md3agent.data.settings.AgentSettings
 import dev.huecoder.md3agent.data.db.FolderEntity
@@ -48,8 +49,6 @@ data class HomeUiState(
     val groups: List<ChatGroup> = emptyList(),
     val folders: List<FolderEntity> = emptyList(),
     val filter: ChatFilter = ChatFilter.All,
-    val hasArchive: Boolean = false,
-    val hasTrash: Boolean = false,
     val swipeRight: SwipeAction = SwipeAction.TRASH,
     val swipeLeft: SwipeAction = SwipeAction.ARCHIVE,
     val selection: Set<String> = emptySet(),
@@ -70,9 +69,10 @@ class HomeViewModel(
     private val chats: ChatRepository,
     private val settings: SettingsRepository,
     runner: ConversationRunner,
+    initialFilter: ChatFilter = ChatFilter.All,
     private val zone: () -> ZoneId = ZoneId::systemDefault,
 ) : ViewModel() {
-    private val filter = MutableStateFlow<ChatFilter>(ChatFilter.All)
+    private val filter = MutableStateFlow(initialFilter)
     private val _notices = Channel<HomeNotice>(Channel.BUFFERED)
     private var rangeBase: Set<String>? = null
 
@@ -107,8 +107,6 @@ class HomeViewModel(
             groups = group(visible),
             folders = folders,
             filter = shown,
-            hasArchive = all.any { it.archivedAt != null && it.trashedAt == null },
-            hasTrash = all.any { it.trashedAt != null },
             swipeRight = current.ui.swipeRight,
             swipeLeft = current.ui.swipeLeft,
             selection = filters.selection.intersect(visible.map { it.id }.toSet()),
@@ -182,18 +180,18 @@ class HomeViewModel(
         viewModelScope.launch { chats.moveToFolder(chatIds, folderId) }
     }
 
-    fun createFolder(name: String, moving: Set<String> = emptySet()) {
+    fun createFolder(name: String, look: FolderLook, moving: Set<String> = emptySet()) {
         if (name.isBlank()) return
         selection.update { emptySet() }
         viewModelScope.launch {
-            val folder = chats.createFolder(name)
+            val folder = chats.createFolder(name, look)
             if (moving.isNotEmpty()) chats.moveToFolder(moving, folder.id)
         }
     }
 
-    fun renameFolder(folderId: String, name: String) {
+    fun updateFolder(folderId: String, name: String, look: FolderLook) {
         if (name.isBlank()) return
-        viewModelScope.launch { chats.renameFolder(folderId, name) }
+        viewModelScope.launch { chats.updateFolder(folderId, name, look) }
     }
 
     fun deleteFolder(folderId: String) {

@@ -33,7 +33,10 @@ import dev.huecoder.md3agent.data.chat.ChatShape
 import dev.huecoder.md3agent.data.chat.ChatTint
 import dev.huecoder.md3agent.ui.components.ChatBadge
 import dev.huecoder.md3agent.ui.components.SectionHeader
-import dev.huecoder.md3agent.ui.components.colors
+import dev.huecoder.md3agent.ui.components.GlyphGrid
+import dev.huecoder.md3agent.ui.components.Option
+import dev.huecoder.md3agent.ui.components.OptionGrid
+import dev.huecoder.md3agent.ui.components.TintGrid
 import dev.huecoder.md3agent.ui.components.icon
 import dev.huecoder.md3agent.ui.components.polygon
 import dev.huecoder.md3agent.ui.haptics.rememberHaptics
@@ -54,22 +57,9 @@ fun ChatLookSheet(look: ChatLook, onChange: (ChatLook) -> Unit, onDismiss: () ->
                 ChatBadge(look, size = PREVIEW_SIZE)
             }
             SectionHeader(stringResource(R.string.chat_look_icon))
-            OptionGrid {
-                ChatGlyph.entries.forEach { glyph ->
-                    Option(selected = glyph == look.glyph, onClick = { pick(look.copy(glyph = glyph)) }) {
-                        Icon(glyph.icon, contentDescription = glyph.key, modifier = Modifier.size(24.dp))
-                    }
-                }
-            }
+            GlyphGrid(look.glyph) { pick(look.copy(glyph = it)) }
             SectionHeader(stringResource(R.string.chat_look_color))
-            OptionGrid {
-                ChatTint.entries.forEach { tint ->
-                    val colors = tint.colors()
-                    Option(selected = tint == look.tint, onClick = { pick(look.copy(tint = tint)) }, container = colors.container) {
-                        Icon(look.glyph.icon, contentDescription = tint.key, tint = colors.content, modifier = Modifier.size(20.dp))
-                    }
-                }
-            }
+            TintGrid(look.tint, look.glyph.icon) { pick(look.copy(tint = it)) }
             SectionHeader(stringResource(R.string.chat_look_shape))
             OptionGrid(Modifier.padding(bottom = 24.dp)) {
                 ChatShape.entries.forEach { shape ->
@@ -93,34 +83,4 @@ fun ChatLookSheet(look: ChatLook, onChange: (ChatLook) -> Unit, onDismiss: () ->
     }
 }
 
-@Composable
-private fun OptionGrid(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
-    FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = modifier.fillMaxWidth(),
-    ) { content() }
-}
-
-@Composable
-private fun Option(
-    selected: Boolean,
-    onClick: () -> Unit,
-    container: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
-    content: @Composable () -> Unit,
-) {
-    Surface(
-        onClick = onClick,
-        shape = CircleShape,
-        color = container,
-        contentColor = MaterialTheme.colorScheme.onSurface,
-        border = if (selected) BorderStroke(SELECTED_BORDER, MaterialTheme.colorScheme.primary) else null,
-        modifier = Modifier.size(OPTION_SIZE).semantics { this.selected = selected },
-    ) {
-        Box(contentAlignment = Alignment.Center) { content() }
-    }
-}
-
 private val PREVIEW_SIZE = 72.dp
-private val OPTION_SIZE = 48.dp
-private val SELECTED_BORDER = 3.dp

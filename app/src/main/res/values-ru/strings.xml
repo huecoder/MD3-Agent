@@ -1066,4 +1066,7 @@
     <string name="update_prompt_changelog">Что нового на GitHub</string>
     <string name="update_prompt_install">Обновить</string>
     <string name="update_prompt_later">Позже</string>
+    <string name="home_folder_edit">Изменить папку</string>
+    <string name="home_folders">Папки</string>
+    <string name="home_menu">Меню</string>
 </resources>

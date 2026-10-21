@@ -143,8 +143,8 @@ interface FolderDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(folder: FolderEntity)
 
-    @Query("UPDATE folders SET name = :name WHERE id = :id")
-    suspend fun rename(id: String, name: String)
+    @Query("UPDATE folders SET name = :name, iconKey = :iconKey, colorKey = :colorKey WHERE id = :id")
+    suspend fun update(id: String, name: String, iconKey: String?, colorKey: String?)
 
     @Query("DELETE FROM folders WHERE id = :id")
     suspend fun delete(id: String)

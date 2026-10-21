@@ -1062,4 +1062,7 @@
     <string name="update_prompt_changelog">What\'s new on GitHub</string>
     <string name="update_prompt_install">Update</string>
     <string name="update_prompt_later">Later</string>
+    <string name="home_folder_edit">Edit folder</string>
+    <string name="home_folders">Folders</string>
+    <string name="home_menu">Menu</string>
 </resources>

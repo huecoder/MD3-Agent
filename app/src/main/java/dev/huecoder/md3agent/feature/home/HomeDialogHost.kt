@@ -10,7 +10,7 @@ sealed interface HomeDialog {
     data class Move(val chatIds: Set<String>) : HomeDialog
     data class NewFolder(val moving: Set<String> = emptySet()) : HomeDialog
     data class FolderMenu(val folderId: String) : HomeDialog
-    data class RenameFolder(val folderId: String) : HomeDialog
+    data class EditFolder(val folderId: String) : HomeDialog
     data class DeleteForever(val chatIds: Set<String>) : HomeDialog
     data object EmptyTrash : HomeDialog
 }
@@ -42,29 +42,23 @@ fun HomeDialogHost(dialog: HomeDialog?, state: HomeUiState, viewModel: HomeViewM
             onNewFolder = { onChange(HomeDialog.NewFolder(dialog.chatIds)) },
             onDismiss = dismiss,
         )
-        is HomeDialog.NewFolder -> NameDialog(
-            title = stringResource(R.string.home_folder_new),
-            label = stringResource(R.string.home_folder_name),
-            initial = "",
-            confirmLabel = stringResource(R.string.home_folder_create),
-            onConfirm = { viewModel.createFolder(it, dialog.moving); dismiss() },
+        is HomeDialog.NewFolder -> FolderEditorSheet(
+            folder = null,
+            onSave = { name, look -> viewModel.createFolder(name, look, dialog.moving); dismiss() },
             onDismiss = dismiss,
         )
         is HomeDialog.FolderMenu -> folder(dialog.folderId)?.let { target ->
             FolderActionsSheet(
                 folder = target,
-                onRename = { onChange(HomeDialog.RenameFolder(target.id)) },
+                onEdit = { onChange(HomeDialog.EditFolder(target.id)) },
                 onDelete = { viewModel.deleteFolder(target.id); dismiss() },
                 onDismiss = dismiss,
             )
         }
-        is HomeDialog.RenameFolder -> folder(dialog.folderId)?.let { target ->
-            NameDialog(
-                title = stringResource(R.string.home_folder_rename),
-                label = stringResource(R.string.home_folder_name),
-                initial = target.name,
-                confirmLabel = stringResource(R.string.settings_save),
-                onConfirm = { viewModel.renameFolder(target.id, it); dismiss() },
+        is HomeDialog.EditFolder -> folder(dialog.folderId)?.let { target ->
+            FolderEditorSheet(
+                folder = target,
+                onSave = { name, look -> viewModel.updateFolder(target.id, name, look); dismiss() },
                 onDismiss = dismiss,
             )
         }

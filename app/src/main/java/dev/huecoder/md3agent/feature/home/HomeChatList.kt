@@ -36,6 +36,8 @@ import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.data.chat.ChatLook
 import dev.huecoder.md3agent.ui.components.ChatBadge
 import dev.huecoder.md3agent.feature.main.MainNavBarClearance
+import dev.huecoder.md3agent.feature.main.MainTab
+import dev.huecoder.md3agent.feature.main.ScrollToTopOnReselect
 import dev.huecoder.md3agent.conversation.ChatActivity
 import dev.huecoder.md3agent.ui.components.WorkingBadge
 import dev.huecoder.md3agent.data.db.ChatSummary
@@ -69,6 +71,7 @@ fun ChatList(
     header: @Composable () -> Unit,
 ) {
     val listState = rememberLazyListState()
+    ScrollToTopOnReselect(MainTab.CHATS, listState)
     val scope = rememberCoroutineScope()
     val chatIds = groups.flatMap { group -> group.chats.map { it.id } }.toSet()
     val isChat by rememberUpdatedState<(Any) -> Boolean> { key -> key in chatIds }

@@ -8,6 +8,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.rememberDrawerState
+import androidx.compose.runtime.CompositionLocalProvider
+import dev.huecoder.md3agent.feature.home.ChatFilter
+import dev.huecoder.md3agent.feature.home.FolderEditorSheet
+import dev.huecoder.md3agent.feature.home.HomeViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshotFlow
@@ -50,6 +58,7 @@ fun MainScreen(
     onOpenMessage: (chatId: String, messageId: String) -> Unit,
     onOpenFolder: (LibraryRoot) -> Unit,
     onOpenMedia: () -> Unit,
+    onOpenCollection: (ChatFilter) -> Unit,
     settingsDestinations: SettingsDestinations,
 ) {
     val container = (LocalContext.current.applicationContext as App).container
@@ -60,6 +69,15 @@ fun MainScreen(
     val haptics = rememberHaptics()
     val tab = MainTab.entries[pager.targetPage]
     val open = { target: MainTab -> scope.launch { pager.animateScrollToPage(target.ordinal) } }
+    val home = appViewModel { HomeViewModel(it.chats, it.settings, it.conversations) }
+    val homeState by home.state.collectAsStateWithLifecycle()
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    var creatingFolder by remember { mutableStateOf(false) }
+    val reselects = remember { MutableSharedFlow<MainTab>(extraBufferCapacity = 1) }
+    val openFromDrawer = { filter: ChatFilter ->
+        scope.launch { drawerState.close() }
+        onOpenCollection(filter)
+    }
     val updatePrompt = appViewModel { UpdatePromptViewModel(it.updates, it.settings) }
     val updateOffer by updatePrompt.offer.collectAsStateWithLifecycle()
     var expanded by rememberSaveable { mutableStateOf(true) }
@@ -86,23 +104,55 @@ fun MainScreen(
 
     updateOffer?.let { UpdatePromptDialog(it, updatePrompt::dismiss) }
 
-    Box(Modifier.fillMaxSize().nestedScroll(collapseOnScroll)) {
-        HorizontalPager(state = pager, key = { MainTab.entries[it] }, modifier = Modifier.fillMaxSize().bottomEdgeFade()) { page ->
-            when (MainTab.entries[page]) {
-                MainTab.CHATS -> HomeScreen(onOpenChat = onOpenChat, onOpenMessage = onOpenMessage, onOpenSettings = { open(MainTab.SETTINGS) })
-                MainTab.FILES -> FilesScreen(onOpenFolder = onOpenFolder, onOpenMedia = onOpenMedia)
-                MainTab.SETTINGS -> SettingsScreen(destinations = settingsDestinations)
+    CompositionLocalProvider(LocalTabReselects provides reselects) {
+        ModalNavigationDrawer(
+            drawerState = drawerState,
+            gesturesEnabled = drawerState.isOpen,
+            drawerContent = {
+                ChatsDrawer(
+                    folders = homeState.folders,
+                    onFolder = { openFromDrawer(ChatFilter.Folder(it.id)) },
+                    onNewFolder = {
+                        scope.launch { drawerState.close() }
+                        creatingFolder = true
+                    },
+                    onArchive = { openFromDrawer(ChatFilter.Archive) },
+                    onTrash = { openFromDrawer(ChatFilter.Trash) },
+                )
+            },
+        ) {
+            Box(Modifier.fillMaxSize().nestedScroll(collapseOnScroll)) {
+                HorizontalPager(state = pager, key = { MainTab.entries[it] }, modifier = Modifier.fillMaxSize().bottomEdgeFade()) { page ->
+                    when (MainTab.entries[page]) {
+                        MainTab.CHATS -> HomeScreen(
+                            onOpenChat = onOpenChat,
+                            onOpenMessage = onOpenMessage,
+                            onOpenSettings = { open(MainTab.SETTINGS) },
+                            onOpenDrawer = { scope.launch { drawerState.open() } },
+                        )
+                        MainTab.FILES -> FilesScreen(onOpenFolder = onOpenFolder, onOpenMedia = onOpenMedia)
+                        MainTab.SETTINGS -> SettingsScreen(destinations = settingsDestinations)
+                    }
+                }
+                MainNavBar(
+                    selected = tab,
+                    expanded = expanded,
+                    onSelect = { target -> if (target == tab) reselects.tryEmit(target) else open(target) },
+                    onNewChat = {
+                        haptics.tap()
+                        if (hasProvider) onOpenChat(null) else open(MainTab.SETTINGS)
+                    },
+                    modifier = Modifier.align(Alignment.BottomEnd).navigationBarsPadding().padding(end = 16.dp, bottom = 16.dp),
+                )
             }
         }
-        MainNavBar(
-            selected = tab,
-            expanded = expanded,
-            onSelect = { open(it) },
-            onNewChat = {
-                haptics.tap()
-                if (hasProvider) onOpenChat(null) else open(MainTab.SETTINGS)
-            },
-            modifier = Modifier.align(Alignment.BottomEnd).navigationBarsPadding().padding(end = 16.dp, bottom = 16.dp),
+    }
+
+    if (creatingFolder) {
+        FolderEditorSheet(
+            folder = null,
+            onSave = { name, look -> home.createFolder(name, look); creatingFolder = false },
+            onDismiss = { creatingFolder = false },
         )
     }
 }

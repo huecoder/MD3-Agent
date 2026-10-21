@@ -55,6 +55,8 @@ import dev.huecoder.md3agent.feature.settings.VoiceProviderEditorScreen
 import dev.huecoder.md3agent.feature.settings.VoiceSettingsScreen
 import dev.huecoder.md3agent.ui.haptics.clickHaptics
 import androidx.compose.ui.Modifier
+import dev.huecoder.md3agent.feature.home.ChatFilter
+import dev.huecoder.md3agent.feature.home.HomeScreen
 
 @Composable
 fun AppNavHost(chatToOpen: String?, onChatOpened: () -> Unit, target: LaunchTarget?, onTargetHandled: () -> Unit) {
@@ -103,6 +105,14 @@ private fun AppNavGraph(start: Any, chatToOpen: String?, onChatOpened: () -> Uni
                 onOpenMessage = { chatId, messageId -> navController.navigate(ChatRoute(chatId, focusMessageId = messageId)) },
                 onOpenFolder = { root -> navController.navigate(FolderRoute(root.name)) },
                 onOpenMedia = { navController.navigate(MediaRoute) },
+                onOpenCollection = { filter ->
+                    when (filter) {
+                        is ChatFilter.Folder -> navController.navigate(ChatCollectionRoute(CollectionKind.FOLDER, filter.id))
+                        ChatFilter.Archive -> navController.navigate(ChatCollectionRoute(CollectionKind.ARCHIVE))
+                        ChatFilter.Trash -> navController.navigate(ChatCollectionRoute(CollectionKind.TRASH))
+                        ChatFilter.All -> Unit
+                    }
+                },
                 settingsDestinations = SettingsDestinations(
                     models = { navController.navigate(ModelsRoute) },
                     appearance = { navController.navigate(AppearanceRoute) },
@@ -122,6 +132,20 @@ private fun AppNavGraph(start: Any, chatToOpen: String?, onChatOpened: () -> Uni
                     mode = { navController.navigate(ModeRoute) },
                     editAgent = { navController.navigate(AgentEditorRoute(it)) },
                 ),
+            )
+        }
+        screen<ChatCollectionRoute>(navController) { entry ->
+            val route = entry.toRoute<ChatCollectionRoute>()
+            HomeScreen(
+                onOpenChat = { navController.navigate(ChatRoute(it)) },
+                onOpenMessage = { chatId, messageId -> navController.navigate(ChatRoute(chatId, focusMessageId = messageId)) },
+                onOpenSettings = navController::popBackStack,
+                collection = when (route.kind) {
+                    CollectionKind.FOLDER -> ChatFilter.Folder(route.folderId.orEmpty())
+                    CollectionKind.ARCHIVE -> ChatFilter.Archive
+                    CollectionKind.TRASH -> ChatFilter.Trash
+                },
+                onBack = navController::popBackStack,
             )
         }
         screen<ChatRoute>(navController) { entry ->

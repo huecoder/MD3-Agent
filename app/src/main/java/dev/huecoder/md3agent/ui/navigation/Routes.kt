@@ -79,3 +79,9 @@ data class FolderRoute(val root: String, val path: String = "", val fromChats: B
 
 @Serializable
 data object MediaRoute
+
+@Serializable
+enum class CollectionKind { FOLDER, ARCHIVE, TRASH }
+
+@Serializable
+data class ChatCollectionRoute(val kind: CollectionKind, val folderId: String? = null)

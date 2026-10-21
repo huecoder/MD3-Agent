@@ -35,10 +35,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.Close
+import com.composables.icons.materialsymbols.rounded.Menu
 import com.composables.icons.materialsymbols.rounded.Select_all
 import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.feature.models.ModelPickerSheet
 import dev.huecoder.md3agent.ui.avatar.AgentLook
+import dev.huecoder.md3agent.ui.components.BackButton
 import dev.huecoder.md3agent.ui.components.appViewModel
 
 @Composable
@@ -46,8 +48,11 @@ fun HomeScreen(
     onOpenChat: (chatId: String?) -> Unit,
     onOpenMessage: (chatId: String, messageId: String) -> Unit,
     onOpenSettings: () -> Unit,
+    collection: ChatFilter? = null,
+    onBack: () -> Unit = {},
+    onOpenDrawer: () -> Unit = {},
 ) {
-    val viewModel = appViewModel { HomeViewModel(it.chats, it.settings, it.conversations) }
+    val viewModel = appViewModel { HomeViewModel(it.chats, it.settings, it.conversations, collection ?: ChatFilter.All) }
     val state by viewModel.state.collectAsStateWithLifecycle()
     var pickingModel by remember { mutableStateOf(false) }
     val topBarScroll = TopAppBarDefaults.pinnedScrollBehavior()
@@ -73,16 +78,20 @@ fun HomeScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    val title = if (state.isSelecting) {
-                        pluralStringResource(R.plurals.home_selected, state.selection.size, state.selection.size)
-                    } else {
-                        stringResource(R.string.home_title)
+                    val title = when {
+                        state.isSelecting -> pluralStringResource(R.plurals.home_selected, state.selection.size, state.selection.size)
+                        collection is ChatFilter.Folder -> state.folders.firstOrNull { it.id == collection.id }?.name.orEmpty()
+                        collection == ChatFilter.Archive -> stringResource(R.string.home_archive)
+                        collection == ChatFilter.Trash -> stringResource(R.string.home_trash)
+                        else -> stringResource(R.string.home_title)
                     }
-                    Text(title)
+                    Text(title, maxLines = 1)
                 },
                 navigationIcon = {
-                    if (state.isSelecting) {
-                        BarAction(MaterialSymbols.Rounded.Close, R.string.home_selection_close, viewModel::clearSelection)
+                    when {
+                        state.isSelecting -> BarAction(MaterialSymbols.Rounded.Close, R.string.home_selection_close, viewModel::clearSelection)
+                        collection != null -> BackButton(onBack)
+                        else -> BarAction(MaterialSymbols.Rounded.Menu, R.string.home_menu, onOpenDrawer)
                     }
                 },
                 actions = {
@@ -98,7 +107,7 @@ fun HomeScreen(
                         TextButton(onClick = { dialog = HomeDialog.EmptyTrash }, enabled = state.visibleIds.isNotEmpty(), modifier = Modifier.padding(end = 8.dp)) {
                             Text(stringResource(R.string.home_empty_trash))
                         }
-                    } else if (state.hasProvider) {
+                    } else if (state.hasProvider && collection == null) {
                         DefaultAgentButton(
                             look = AgentLook.of(state.agents.active),
                             onClick = { pickingModel = true },
@@ -139,16 +148,13 @@ fun HomeScreen(
                     onSelectRange = viewModel::selectRange,
                     onRangeEnd = viewModel::endRange,
                     header = {
-                        HomeFilters(
+                        if (collection == null) HomeFilters(
                             onOpenChat = onOpenChat,
                             onOpenMessage = onOpenMessage,
                             folders = state.folders,
                             filter = state.filter,
-                            showArchive = state.hasArchive,
-                            showTrash = state.hasTrash,
                             onFilter = viewModel::setFilter,
                             onFolderMenu = { dialog = HomeDialog.FolderMenu(it.id) },
-                            onNewFolder = { dialog = HomeDialog.NewFolder() },
                         )
                     },
                 )
