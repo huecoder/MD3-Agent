@@ -19,7 +19,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import androidx.navigation.NavBackStackEntry
-import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -76,6 +75,7 @@ private fun AppNavGraph(start: Any, chatToOpen: String?, onChatOpened: () -> Uni
     val container = (LocalContext.current.applicationContext as App).container
     val scope = rememberCoroutineScope()
     val navController = rememberNavController()
+    val backMotion = rememberBackMotion(navController)
     var homeRequest by remember { mutableStateOf<LaunchTarget?>(null) }
     LaunchedEffect(chatToOpen) {
         val chatId = chatToOpen ?: return@LaunchedEffect
@@ -91,13 +91,15 @@ private fun AppNavGraph(start: Any, chatToOpen: String?, onChatOpened: () -> Uni
     NavHost(
         navController = navController,
         startDestination = start,
-        modifier = Modifier.clickHaptics(),
+        modifier = Modifier.backStage(backMotion).clickHaptics(),
         enterTransition = NavTransitions.enter,
         exitTransition = NavTransitions.exit,
         popEnterTransition = NavTransitions.popEnter,
         popExitTransition = NavTransitions.popExit,
+        predictivePopEnterTransition = NavTransitions.predictivePopEnter,
+        predictivePopExitTransition = NavTransitions.predictivePopExit,
     ) {
-        screen<HomeRoute>(navController) {
+        screen<HomeRoute>(backMotion) {
             MainScreen(
                 request = homeRequest,
                 onRequestHandled = { homeRequest = null },
@@ -134,7 +136,7 @@ private fun AppNavGraph(start: Any, chatToOpen: String?, onChatOpened: () -> Uni
                 ),
             )
         }
-        screen<ChatCollectionRoute>(navController) { entry ->
+        screen<ChatCollectionRoute>(backMotion) { entry ->
             val route = entry.toRoute<ChatCollectionRoute>()
             HomeScreen(
                 onOpenChat = { navController.navigate(ChatRoute(it)) },
@@ -148,7 +150,7 @@ private fun AppNavGraph(start: Any, chatToOpen: String?, onChatOpened: () -> Uni
                 onBack = navController::popBackStack,
             )
         }
-        screen<ChatRoute>(navController) { entry ->
+        screen<ChatRoute>(backMotion) { entry ->
             val route = entry.toRoute<ChatRoute>()
             ChatScreen(
                 chatId = route.chatId,
@@ -157,23 +159,23 @@ private fun AppNavGraph(start: Any, chatToOpen: String?, onChatOpened: () -> Uni
                 onOpenChat = { navController.navigate(ChatRoute(it)) },
             )
         }
-        screen<ProviderEditorRoute>(navController) { entry ->
+        screen<ProviderEditorRoute>(backMotion) { entry ->
             ProviderEditorScreen(providerId = entry.toRoute<ProviderEditorRoute>().providerId, onDone = navController::popBackStack)
         }
-        screen<AgentsRoute>(navController) {
+        screen<AgentsRoute>(backMotion) {
             AgentsScreen(onBack = navController::popBackStack, onEditAgent = { navController.navigate(AgentEditorRoute(it)) })
         }
-        screen<AgentEditorRoute>(navController) { entry ->
+        screen<AgentEditorRoute>(backMotion) { entry ->
             AgentEditorScreen(agentId = entry.toRoute<AgentEditorRoute>().agentId, onDone = navController::popBackStack)
         }
-        screen<ModeRoute>(navController) {
+        screen<ModeRoute>(backMotion) {
             ModeScreen(
                 onBack = navController::popBackStack,
                 onRetakeSurvey = { navController.navigate(OnboardingRoute(retake = true)) },
                 onRetakeOnboarding = { navController.navigate(OnboardingRoute(replay = true)) },
             )
         }
-        screen<OnboardingRoute>(navController) { entry ->
+        screen<OnboardingRoute>(backMotion) { entry ->
             val route = entry.toRoute<OnboardingRoute>()
             OnboardingScreen(
                 retake = route.retake,
@@ -188,25 +190,25 @@ private fun AppNavGraph(start: Any, chatToOpen: String?, onChatOpened: () -> Uni
                 },
             )
         }
-        screen<MemorySettingsRoute>(navController) { MemorySettingsScreen(onBack = navController::popBackStack) }
-        screen<NetworkSettingsRoute>(navController) { NetworkSettingsScreen(onBack = navController::popBackStack) }
-        screen<ToolSettingsRoute>(navController) { ToolSettingsScreen(onBack = navController::popBackStack) }
-        screen<RemindersRoute>(navController) { RemindersScreen(onBack = navController::popBackStack) }
-        screen<DeviceAccessRoute>(navController) { DeviceAccessScreen(onBack = navController::popBackStack) }
-        screen<NotificationSettingsRoute>(navController) { NotificationSettingsScreen(onBack = navController::popBackStack) }
-        screen<AssistantInvokeRoute>(navController) { AssistantInvokeSettingsScreen(onBack = navController::popBackStack) }
-        screen<PhoneUseRoute>(navController) { PhoneUseSettingsScreen(onBack = navController::popBackStack) }
-        screen<AppearanceRoute>(navController) { AppearanceScreen(onBack = navController::popBackStack) }
-        screen<ChatSettingsRoute>(navController) { ChatSettingsScreen(onBack = navController::popBackStack) }
-        screen<AboutRoute>(navController) {
+        screen<MemorySettingsRoute>(backMotion) { MemorySettingsScreen(onBack = navController::popBackStack) }
+        screen<NetworkSettingsRoute>(backMotion) { NetworkSettingsScreen(onBack = navController::popBackStack) }
+        screen<ToolSettingsRoute>(backMotion) { ToolSettingsScreen(onBack = navController::popBackStack) }
+        screen<RemindersRoute>(backMotion) { RemindersScreen(onBack = navController::popBackStack) }
+        screen<DeviceAccessRoute>(backMotion) { DeviceAccessScreen(onBack = navController::popBackStack) }
+        screen<NotificationSettingsRoute>(backMotion) { NotificationSettingsScreen(onBack = navController::popBackStack) }
+        screen<AssistantInvokeRoute>(backMotion) { AssistantInvokeSettingsScreen(onBack = navController::popBackStack) }
+        screen<PhoneUseRoute>(backMotion) { PhoneUseSettingsScreen(onBack = navController::popBackStack) }
+        screen<AppearanceRoute>(backMotion) { AppearanceScreen(onBack = navController::popBackStack) }
+        screen<ChatSettingsRoute>(backMotion) { ChatSettingsScreen(onBack = navController::popBackStack) }
+        screen<AboutRoute>(backMotion) {
             AboutScreen(
                 onBack = navController::popBackStack,
                 onSecret = { navController.navigate(PlaygroundRoute) },
             )
         }
-        screen<PlaygroundRoute>(navController) { PlaygroundScreen() }
-        screen<MediaRoute>(navController) { MediaScreen(onBack = navController::popBackStack) }
-        screen<FolderRoute>(navController) { entry ->
+        screen<PlaygroundRoute>(backMotion) { PlaygroundScreen() }
+        screen<MediaRoute>(backMotion) { MediaScreen(onBack = navController::popBackStack) }
+        screen<FolderRoute>(backMotion) { entry ->
             val route = entry.toRoute<FolderRoute>()
             FolderScreen(
                 location = route.toLocation(),
@@ -214,28 +216,28 @@ private fun AppNavGraph(start: Any, chatToOpen: String?, onChatOpened: () -> Uni
                 onBack = navController::popBackStack,
             )
         }
-        screen<ModelsRoute>(navController) {
+        screen<ModelsRoute>(backMotion) {
             ModelsScreen(
                 onBack = navController::popBackStack,
                 onEditProvider = { navController.navigate(ProviderEditorRoute(it)) },
             )
         }
-        screen<VoiceSettingsRoute>(navController) {
+        screen<VoiceSettingsRoute>(backMotion) {
             VoiceSettingsScreen(
                 onBack = navController::popBackStack,
                 onEditProvider = { navController.navigate(VoiceProviderEditorRoute(it)) },
             )
         }
-        screen<McpServersRoute>(navController) {
+        screen<McpServersRoute>(backMotion) {
             McpServersScreen(
                 onBack = navController::popBackStack,
                 onEditServer = { navController.navigate(McpServerEditorRoute(it)) },
             )
         }
-        screen<McpServerEditorRoute>(navController) { entry ->
+        screen<McpServerEditorRoute>(backMotion) { entry ->
             McpServerEditorScreen(serverId = entry.toRoute<McpServerEditorRoute>().serverId, onDone = navController::popBackStack)
         }
-        screen<VoiceProviderEditorRoute>(navController) { entry ->
+        screen<VoiceProviderEditorRoute>(backMotion) { entry ->
             VoiceProviderEditorScreen(providerId = entry.toRoute<VoiceProviderEditorRoute>().providerId, onDone = navController::popBackStack)
         }
     }
@@ -252,6 +254,6 @@ private fun LibraryLocation.toRoute() = FolderRoute(root.name, segments.joinToSt
 private const val PATH_SEPARATOR = "/"
 
 private inline fun <reified T : Any> NavGraphBuilder.screen(
-    navController: NavController,
+    motion: BackMotion,
     crossinline content: @Composable (NavBackStackEntry) -> Unit,
-) = composable<T> { entry -> BackPreviewCard(entry, navController) { content(entry) } }
+) = composable<T> { entry -> BackScreen(entry, motion) { content(entry) } }

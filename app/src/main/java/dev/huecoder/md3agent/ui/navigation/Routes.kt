@@ -1,5 +1,6 @@
 package dev.huecoder.md3agent.ui.navigation
 
+import androidx.annotation.Keep
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -80,6 +81,7 @@ data class FolderRoute(val root: String, val path: String = "", val fromChats: B
 @Serializable
 data object MediaRoute
 
+@Keep
 @Serializable
 enum class CollectionKind { FOLDER, ARCHIVE, TRASH }
 

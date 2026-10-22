@@ -31,4 +31,10 @@ internal object NavTransitions {
     val popExit: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
         ExitTransition.KeepUntilTransitionsFinished
     }
+
+    val predictivePopEnter: AnimatedContentTransitionScope<NavBackStackEntry>.(swipeEdge: Int) -> EnterTransition = { EnterTransition.None }
+
+    val predictivePopExit: AnimatedContentTransitionScope<NavBackStackEntry>.(swipeEdge: Int) -> ExitTransition = {
+        ExitTransition.KeepUntilTransitionsFinished
+    }
 }
