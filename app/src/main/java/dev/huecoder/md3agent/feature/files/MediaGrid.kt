@@ -79,7 +79,7 @@ internal fun MediaGrid(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun MediaTile(
+internal fun MediaTile(
     image: ViewableFile,
     selected: Boolean,
     selecting: Boolean,
@@ -105,7 +105,7 @@ private fun MediaTile(
 }
 
 @Composable
-private fun SelectionMark(selected: Boolean, modifier: Modifier = Modifier) {
+internal fun SelectionMark(selected: Boolean, modifier: Modifier = Modifier) {
     val colors = MaterialTheme.colorScheme
     Box(
         modifier = modifier

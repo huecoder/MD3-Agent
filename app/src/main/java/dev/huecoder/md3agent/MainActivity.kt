@@ -10,6 +10,7 @@ import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.huecoder.md3agent.ui.avatar.ProvideAgentLook
 import dev.huecoder.md3agent.ui.haptics.ProvideHaptics
+import dev.huecoder.md3agent.ui.keyboard.KeyboardGuard
 import dev.huecoder.md3agent.ui.locale.AppLocale
 import dev.huecoder.md3agent.ui.navigation.AppNavHost
 import dev.huecoder.md3agent.ui.navigation.LaunchTarget
@@ -35,6 +36,7 @@ class MainActivity : ComponentActivity() {
             AssistantTheme {
                 ProvideAgentLook {
                     ProvideHaptics {
+                        KeyboardGuard()
                         AppNavHost(
                             chatToOpen = chatToOpen,
                             onChatOpened = { pendingChatId.value = null },

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="greetings_any">
+        <item>¿En qué puedo ayudarte?</item>
+        <item>¿Qué tienes en mente?</item>
+        <item>¿En qué trabajamos?</item>
+        <item>Pregúntame lo que quieras</item>
+        <item>¿Por dónde empezamos?</item>
+        <item>¿Qué necesitas?</item>
+        <item>Cuando quieras</item>
+        <item>¿Qué hacemos?</item>
+        <item>¿Tienes alguna duda?</item>
+        <item>Vamos a resolver algo</item>
+    </string-array>
+    <string-array name="greetings_morning">
+        <item>¡Buenos días! ¿En qué puedo ayudarte?</item>
+        <item>¡Buenos días! ¿Cuál es el plan de hoy?</item>
+        <item>Día nuevo, ¿ideas nuevas?</item>
+        <item>¿Primero el café y luego las preguntas?</item>
+        <item>¡Buenos días! ¿Por dónde empezamos?</item>
+        <item>¡A despertar! ¿Qué tal?</item>
+        <item>Un día nuevo. ¿Qué hacemos?</item>
+        <item>¡Buenos días! Cuando quieras</item>
+        <item>¡Buenos días! ¿Algún plan para hoy?</item>
+        <item>¡Madrugando! ¿Qué necesitas?</item>
+    </string-array>
+    <string-array name="greetings_day">
+        <item>¡Buenas tardes! ¿En qué puedo ayudarte?</item>
+        <item>¡Hola! ¿Cómo va el día?</item>
+        <item>¿Qué tienes para esta tarde?</item>
+        <item>Un descanso a mediodía. ¿Qué tal?</item>
+        <item>¡Buenas tardes! ¿Qué abordamos?</item>
+        <item>¿Día movido? Déjame ayudarte</item>
+        <item>¿Alguna duda para la hora de comer?</item>
+        <item>¡Buen día! ¿Qué tal?</item>
+        <item>Hagamos que la tarde cuente</item>
+        <item>¿Qué te puedo quitar de encima?</item>
+    </string-array>
+    <string-array name="greetings_evening">
+        <item>¡Buenas noches! ¿En qué puedo ayudarte?</item>
+        <item>¡Buenas noches! ¿Qué tienes en mente?</item>
+        <item>¿Qué tal ha ido el día?</item>
+        <item>¿Relajándote o arrancando?</item>
+        <item>¡Buenas noches! ¿Qué hacemos?</item>
+        <item>¿Planes para esta noche? Hablemos</item>
+        <item>¿Sigues en pie? ¿Qué necesitas?</item>
+        <item>¿Hora de relajarse o de crear?</item>
+        <item>¡Hola, buenas noches! ¿Qué tal?</item>
+        <item>¿Qué vamos a resolver esta noche?</item>
+    </string-array>
+    <string-array name="greetings_night">
+        <item>¿Sigues despierto? ¿Qué tienes en mente?</item>
+        <item>¿Pensamientos de madrugada?</item>
+        <item>¿No puedes dormir? Hablemos</item>
+        <item>Modo noctámbulo: ¿en qué te ayudo?</item>
+        <item>La noche es joven. ¿Qué tal?</item>
+        <item>¿Trasnochando?</item>
+        <item>Horas tranquilas. ¿Qué tienes en mente?</item>
+        <item>Es tarde. ¿Cuál es el plan?</item>
+        <item>Las ideas de medianoche son bienvenidas</item>
+        <item>¿Bien despierto? ¿Qué hacemos?</item>
+    </string-array>
+</resources>

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.huecoder.md3agent.conversation.ChatActivity
 import dev.huecoder.md3agent.conversation.ConversationRunner
+import dev.huecoder.md3agent.data.chat.ChatDraft
 import dev.huecoder.md3agent.data.chat.ChatRepository
 import dev.huecoder.md3agent.data.chat.FolderLook
 import dev.huecoder.md3agent.data.db.ChatSummary
@@ -29,7 +30,12 @@ import java.time.ZoneId
 
 enum class ChatAge { TODAY, YESTERDAY, THIS_WEEK, EARLIER }
 
-data class ChatGroup(val age: ChatAge, val chats: List<ChatSummary>)
+data class ChatEntry(val chat: ChatSummary, val draft: ChatDraft?) {
+    val id: String get() = chat.id
+    val sortedAt: Long get() = maxOf(chat.updatedAt, draft?.savedAt ?: 0L)
+}
+
+data class ChatGroup(val age: ChatAge, val chats: List<ChatEntry>)
 
 sealed interface ChatFilter {
     data object All : ChatFilter
@@ -78,7 +84,9 @@ class HomeViewModel(
 
     val notices: Flow<HomeNotice> = _notices.receiveAsFlow()
     private val selection = MutableStateFlow<Set<String>>(emptySet())
-    private val summaries = chats.observeSummaries()
+    private val entries = combine(chats.observeSummaries(), chats.observeDrafts()) { summaries, drafts ->
+        summaries.map { ChatEntry(it, drafts[it.id]) }.sortedByDescending(ChatEntry::sortedAt)
+    }
 
     private val filters = combine(filter, selection, ::Filters)
 
@@ -95,14 +103,14 @@ class HomeViewModel(
     }
 
     val state: StateFlow<HomeUiState> = combine(
-        summaries,
+        entries,
         chats.observeFolders(),
         filters,
         settings.settings,
         runner.activity,
     ) { all, folders, filters, current, activity ->
         val shown = filters.filter.takeUnless { it is ChatFilter.Folder && folders.none { folder -> folder.id == it.id } } ?: ChatFilter.All
-        val visible = all.filter { chat -> chat.belongsTo(shown) }
+        val visible = all.filter { entry -> entry.chat.belongsTo(shown) }
         HomeUiState(
             groups = group(visible),
             folders = folders,
@@ -206,10 +214,10 @@ class HomeViewModel(
         ChatFilter.Trash -> trashedAt != null
     }
 
-    private fun group(summaries: List<ChatSummary>): List<ChatGroup> {
+    private fun group(entries: List<ChatEntry>): List<ChatGroup> {
         val today = LocalDate.now(zone())
-        return summaries
-            .groupBy { ageOf(it.updatedAt, today) }
+        return entries
+            .groupBy { ageOf(it.sortedAt, today) }
             .toSortedMap()
             .map { (age, items) -> ChatGroup(age, items) }
     }

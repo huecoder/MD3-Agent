@@ -1,5 +1,6 @@
 package dev.huecoder.md3agent.feature.chat
 
+import dev.huecoder.md3agent.ui.components.AppBottomSheet
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,7 +15,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.toShape
@@ -49,7 +49,7 @@ fun ChatLookSheet(look: ChatLook, onChange: (ChatLook) -> Unit, onDismiss: () ->
         haptics.tick()
         onChange(updated)
     }
-    ModalBottomSheet(onDismissRequest = onDismiss, modifier = Modifier.clickHaptics()) {
+    AppBottomSheet(onDismissRequest = onDismiss, modifier = Modifier.clickHaptics()) {
         Column(
             modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).navigationBarsPadding(),
         ) {

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="greetings_any">
+        <item>Ada yang bisa kubantu?</item>
+        <item>Apa yang kamu pikirkan?</item>
+        <item>Kita kerjakan apa?</item>
+        <item>Tanyakan apa saja</item>
+        <item>Mulai dari mana?</item>
+        <item>Kamu butuh apa?</item>
+        <item>Siap kapan pun kamu mau</item>
+        <item>Kita mau apa nih?</item>
+        <item>Ada pertanyaan?</item>
+        <item>Yuk, selesaikan sesuatu</item>
+    </string-array>
+    <string-array name="greetings_morning">
+        <item>Selamat pagi! Ada yang bisa kubantu?</item>
+        <item>Pagi! Apa rencana hari ini?</item>
+        <item>Hari baru, ide baru?</item>
+        <item>Kopi dulu, baru bertanya?</item>
+        <item>Selamat pagi! Mulai dari mana?</item>
+        <item>Bangun, bangun! Ada apa?</item>
+        <item>Hari baru. Kita ngapain?</item>
+        <item>Pagi! Siap kapan pun kamu mau</item>
+        <item>Selamat pagi! Ada rencana hari ini?</item>
+        <item>Pagi-pagi sekali! Kamu butuh apa?</item>
+    </string-array>
+    <string-array name="greetings_day">
+        <item>Selamat siang! Ada yang bisa kubantu?</item>
+        <item>Hai! Bagaimana harimu?</item>
+        <item>Ada apa sore ini?</item>
+        <item>Jeda tengah hari. Ada apa?</item>
+        <item>Selamat sore! Kita garap apa?</item>
+        <item>Hari yang sibuk? Biar kubantu</item>
+        <item>Ada pertanyaan saat istirahat makan siang?</item>
+        <item>Halo! Ada apa?</item>
+        <item>Yuk, buat sore ini berarti</item>
+        <item>Apa yang bisa kuringankan dari bebanmu?</item>
+    </string-array>
+    <string-array name="greetings_evening">
+        <item>Selamat malam! Ada yang bisa kubantu?</item>
+        <item>Malam! Apa yang kamu pikirkan?</item>
+        <item>Bagaimana harimu?</item>
+        <item>Mau santai atau mulai bekerja?</item>
+        <item>Selamat malam! Kita ngapain?</item>
+        <item>Ada rencana malam ini? Ayo ngobrol</item>
+        <item>Masih semangat? Kamu butuh apa?</item>
+        <item>Waktunya santai atau waktunya membangun?</item>
+        <item>Hai, selamat malam! Ada apa?</item>
+        <item>Malam ini kita cari tahu apa?</item>
+    </string-array>
+    <string-array name="greetings_night">
+        <item>Belum tidur? Apa yang kamu pikirkan?</item>
+        <item>Pikiran tengah malam?</item>
+        <item>Susah tidur? Ayo ngobrol</item>
+        <item>Mode burung hantu: ada yang bisa kubantu?</item>
+        <item>Malam masih panjang. Ada apa?</item>
+        <item>Begadang?</item>
+        <item>Jam-jam sunyi. Apa yang kamu pikirkan?</item>
+        <item>Sudah larut. Apa rencananya?</item>
+        <item>Ide tengah malam selalu disambut</item>
+        <item>Masih melek? Kita ngapain?</item>
+    </string-array>
+</resources>

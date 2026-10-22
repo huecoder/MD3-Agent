@@ -1,18 +1,11 @@
 package dev.huecoder.md3agent.feature.files
 
-import android.widget.Toast
 import androidx.activity.compose.BackHandler
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -28,15 +21,12 @@ import dev.huecoder.md3agent.feature.chat.lightbox.LocalLightbox
 import dev.huecoder.md3agent.ui.components.SettingsScaffold
 import dev.huecoder.md3agent.ui.components.appViewModel
 import dev.huecoder.md3agent.ui.files.shareFiles
-import dev.huecoder.md3agent.ui.haptics.clickHaptics
-import dev.huecoder.md3agent.ui.text.resolve
 
 @Composable
 fun MediaScreen(onBack: () -> Unit) {
     val viewModel = appViewModel(key = "files-media") { MediaViewModel(it.library) }
     val media by viewModel.media.collectAsStateWithLifecycle()
     val selection by viewModel.selection.collectAsStateWithLifecycle()
-    val error by viewModel.errors.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var confirmingDelete by remember { mutableStateOf(false) }
     val selecting = selection.isNotEmpty()
@@ -45,12 +35,7 @@ fun MediaScreen(onBack: () -> Unit) {
         viewModel.refresh()
         onPauseOrDispose { }
     }
-    LaunchedEffect(error) {
-        error?.let {
-            Toast.makeText(context, it.resolve(context), Toast.LENGTH_LONG).show()
-            viewModel.consumeError()
-        }
-    }
+    MediaErrorToasts(viewModel)
     BackHandler(enabled = selecting, onBack = viewModel::clearSelection)
 
     LightboxHost {
@@ -80,17 +65,10 @@ fun MediaScreen(onBack: () -> Unit) {
     }
 
     if (confirmingDelete) {
-        AlertDialog(
-            modifier = Modifier.clickHaptics(),
-            onDismissRequest = { confirmingDelete = false },
-            title = { Text(stringResource(R.string.files_delete_title, selection.size)) },
-            text = { Text(stringResource(R.string.files_media_delete_body)) },
-            confirmButton = {
-                TextButton(onClick = { viewModel.deleteSelected(); confirmingDelete = false }) {
-                    Text(stringResource(R.string.files_delete), color = MaterialTheme.colorScheme.error)
-                }
-            },
-            dismissButton = { TextButton(onClick = { confirmingDelete = false }) { Text(stringResource(R.string.home_delete_chat_cancel)) } },
+        MediaDeleteDialog(
+            count = selection.size,
+            onConfirm = { viewModel.deleteSelected(); confirmingDelete = false },
+            onDismiss = { confirmingDelete = false },
         )
     }
 }

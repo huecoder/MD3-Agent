@@ -11,6 +11,12 @@ import java.util.Locale
 enum class AppLanguage(val tag: String, val nativeName: String) {
     RUSSIAN("ru", "Русский"),
     ENGLISH("en", "English"),
+    SPANISH("es", "Español"),
+    PORTUGUESE("pt-BR", "Português"),
+    VIETNAMESE("vi", "Tiếng Việt"),
+    INDONESIAN("id", "Bahasa Indonesia"),
+    TURKISH("tr", "Türkçe"),
+    GERMAN("de", "Deutsch"),
     ;
 
     val locale: Locale get() = Locale.forLanguageTag(tag)
@@ -18,7 +24,7 @@ enum class AppLanguage(val tag: String, val nativeName: String) {
     fun next(step: Int): AppLanguage = entries[(ordinal + step).mod(entries.size)]
 
     companion object {
-        fun of(locale: Locale): AppLanguage = entries.firstOrNull { it.tag == locale.language } ?: ENGLISH
+        fun of(locale: Locale): AppLanguage = entries.firstOrNull { it.locale.language == locale.language } ?: ENGLISH
     }
 }
 

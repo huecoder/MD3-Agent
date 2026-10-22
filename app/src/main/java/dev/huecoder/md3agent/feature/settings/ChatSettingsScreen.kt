@@ -2,6 +2,7 @@ package dev.huecoder.md3agent.feature.settings
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -14,8 +15,12 @@ import com.composables.icons.materialsymbols.rounded.Auto_awesome
 import com.composables.icons.materialsymbols.rounded.Autorenew
 import com.composables.icons.materialsymbols.rounded.Data_usage
 import com.composables.icons.materialsymbols.rounded.Numbers
+import com.composables.icons.materialsymbols.rounded.Pie_chart
+import com.composables.icons.materialsymbols.rounded.Web_asset
 import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.data.settings.AttachMenuStyle
+import dev.huecoder.md3agent.data.settings.ChatHeaderStyle
+import dev.huecoder.md3agent.data.settings.ContextDisplay
 import dev.huecoder.md3agent.ui.components.DropdownOption
 import dev.huecoder.md3agent.ui.components.SectionHeader
 import dev.huecoder.md3agent.ui.components.SettingsScaffold
@@ -26,11 +31,38 @@ fun ChatSettingsScreen(onBack: () -> Unit) {
     val viewModel = appViewModel { SettingsViewModel(it.settings) }
     val settings by viewModel.settings.collectAsStateWithLifecycle()
     val attachMenus = attachMenuOptions()
+    val headerStyles = ChatHeaderStyle.entries.map { DropdownOption(it, stringResource(it.label)) }
+    val contextDisplays = ContextDisplay.entries.map { DropdownOption(it, stringResource(it.label)) }
 
     SettingsScaffold(stringResource(R.string.settings_chat), onBack) { padding ->
         val current = settings ?: return@SettingsScaffold
         Column(Modifier.settingsPage(padding)) {
-            SectionHeader(stringResource(R.string.chat_settings_section_replies), topPadding = 8.dp)
+            SectionHeader(stringResource(R.string.chat_settings_section_header), topPadding = 8.dp)
+            ChatHeaderPreview(current.chat, Modifier.padding(bottom = 12.dp))
+            CardGroup {
+                card { shape ->
+                    MenuCard(
+                        icon = MaterialSymbols.Rounded.Web_asset,
+                        title = stringResource(R.string.chat_settings_header_style),
+                        options = headerStyles,
+                        selected = current.chat.header,
+                        onSelect = { style -> viewModel.updateChat { it.copy(header = style) } },
+                        shape = shape,
+                    )
+                }
+                card { shape ->
+                    MenuCard(
+                        icon = MaterialSymbols.Rounded.Pie_chart,
+                        title = stringResource(R.string.chat_settings_context_display),
+                        options = contextDisplays,
+                        selected = current.chat.contextDisplay,
+                        onSelect = { display -> viewModel.updateChat { it.copy(contextDisplay = display) } },
+                        shape = shape,
+                    )
+                }
+            }
+
+            SectionHeader(stringResource(R.string.chat_settings_section_replies))
             CardGroup {
                 card { shape ->
                     SwitchCard(
@@ -103,4 +135,19 @@ private val AttachMenuStyle.label: Int
     get() = when (this) {
         AttachMenuStyle.COMPACT -> R.string.chat_attach_menu_compact
         AttachMenuStyle.PANEL -> R.string.chat_attach_menu_panel
+    }
+
+@get:StringRes
+private val ChatHeaderStyle.label: Int
+    get() = when (this) {
+        ChatHeaderStyle.COMPACT -> R.string.chat_header_compact
+        ChatHeaderStyle.CLASSIC -> R.string.chat_header_classic
+    }
+
+@get:StringRes
+private val ContextDisplay.label: Int
+    get() = when (this) {
+        ContextDisplay.NUMBERS -> R.string.chat_context_display_numbers
+        ContextDisplay.RING -> R.string.chat_context_display_ring
+        ContextDisplay.MENU -> R.string.chat_context_display_menu
     }

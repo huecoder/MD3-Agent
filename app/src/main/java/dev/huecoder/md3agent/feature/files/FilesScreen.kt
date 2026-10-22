@@ -1,6 +1,6 @@
 package dev.huecoder.md3agent.feature.files
 
-import androidx.compose.foundation.clickable
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -22,19 +22,25 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil3.compose.AsyncImage
 import com.composables.icons.materialsymbols.MaterialSymbols
+import com.composables.icons.materialsymbols.rounded.Close
+import com.composables.icons.materialsymbols.rounded.Delete
 import com.composables.icons.materialsymbols.rounded.Folder
+import com.composables.icons.materialsymbols.rounded.Select_all
+import com.composables.icons.materialsymbols.rounded.Share
 import com.composables.icons.materialsymbols.rounded.Smart_toy
 import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.data.files.LibraryRoot
@@ -48,21 +54,45 @@ import dev.huecoder.md3agent.ui.components.SectionHeader
 import dev.huecoder.md3agent.ui.components.ShapeBadge
 import dev.huecoder.md3agent.ui.components.appViewModel
 import dev.huecoder.md3agent.ui.components.groupedListColors
+import dev.huecoder.md3agent.ui.files.shareFiles
 
 @Composable
 fun FilesScreen(onOpenFolder: (LibraryRoot) -> Unit, onOpenMedia: () -> Unit) {
     val viewModel = appViewModel(key = "files-media") { MediaViewModel(it.library) }
     val media by viewModel.media.collectAsStateWithLifecycle()
+    val selection by viewModel.selection.collectAsStateWithLifecycle()
+    val selecting = selection.isNotEmpty()
+    val context = LocalContext.current
+    var confirmingDelete by remember { mutableStateOf(false) }
     val topBarScroll = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     LifecycleResumeEffect(viewModel) {
         viewModel.refresh()
         onPauseOrDispose { }
     }
+    MediaErrorToasts(viewModel)
+    BackHandler(enabled = selecting, onBack = viewModel::clearSelection)
 
     LightboxHost {
         Scaffold(
             modifier = Modifier.nestedScroll(topBarScroll.nestedScrollConnection),
-            topBar = { MediumFlexibleTopAppBar(title = { Text(stringResource(R.string.files_title)) }, scrollBehavior = topBarScroll) },
+            topBar = {
+                MediumFlexibleTopAppBar(
+                    title = {
+                        Text(if (selecting) pluralStringResource(R.plurals.home_selected, selection.size, selection.size) else stringResource(R.string.files_title))
+                    },
+                    navigationIcon = {
+                        if (selecting) BarAction(MaterialSymbols.Rounded.Close, R.string.home_selection_close, viewModel::clearSelection)
+                    },
+                    actions = {
+                        if (selecting) {
+                            BarAction(MaterialSymbols.Rounded.Select_all, R.string.home_select_all, viewModel::selectAll)
+                            BarAction(MaterialSymbols.Rounded.Share, R.string.files_share) { context.shareFiles(viewModel.selectedFiles) }
+                            BarAction(MaterialSymbols.Rounded.Delete, R.string.files_delete) { confirmingDelete = true }
+                        }
+                    },
+                    scrollBehavior = topBarScroll,
+                )
+            },
         ) { padding ->
             val listState = rememberLazyListState()
             ScrollToTopOnReselect(MainTab.FILES, listState)
@@ -78,7 +108,7 @@ fun FilesScreen(onOpenFolder: (LibraryRoot) -> Unit, onOpenMedia: () -> Unit) {
                         if (!media.isNullOrEmpty()) TextButton(onClick = onOpenMedia) { Text(stringResource(R.string.files_media_all)) }
                     }
                 }
-                item(key = "media-strip") { MediaStrip(media) }
+                item(key = "media-strip") { MediaStrip(media, selection, viewModel::toggle) }
                 item(key = "folders-header") { SectionHeader(stringResource(R.string.files_folders)) }
                 item(key = "mine") {
                     RootRow(MaterialSymbols.Rounded.Folder, R.string.files_root_mine, R.string.files_root_mine_summary, index = 0) { onOpenFolder(LibraryRoot.MINE) }
@@ -89,10 +119,18 @@ fun FilesScreen(onOpenFolder: (LibraryRoot) -> Unit, onOpenMedia: () -> Unit) {
             }
         }
     }
+
+    if (confirmingDelete) {
+        MediaDeleteDialog(
+            count = selection.size,
+            onConfirm = { viewModel.deleteSelected(); confirmingDelete = false },
+            onDismiss = { confirmingDelete = false },
+        )
+    }
 }
 
 @Composable
-private fun MediaStrip(media: List<ViewableFile>?) {
+private fun MediaStrip(media: List<ViewableFile>?, selection: Set<String>, onToggle: (ViewableFile) -> Unit) {
     val lightbox = LocalLightbox.current
     val recent = media.orEmpty().take(STRIP_SIZE)
     if (media != null && recent.isEmpty()) {
@@ -106,14 +144,13 @@ private fun MediaStrip(media: List<ViewableFile>?) {
     }
     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         itemsIndexed(recent, key = { _, image -> image.file.path }) { index, image ->
-            AsyncImage(
-                model = image.file,
-                contentDescription = image.name,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .size(THUMB_SIZE)
-                    .clip(MaterialTheme.shapes.large)
-                    .clickable { lightbox?.show(media.orEmpty(), index) },
+            MediaTile(
+                image = image,
+                selected = image.file.path in selection,
+                selecting = selection.isNotEmpty(),
+                onClick = { if (selection.isEmpty()) lightbox?.show(media.orEmpty(), index) else onToggle(image) },
+                onLongClick = { onToggle(image) },
+                modifier = Modifier.size(THUMB_SIZE),
             )
         }
     }

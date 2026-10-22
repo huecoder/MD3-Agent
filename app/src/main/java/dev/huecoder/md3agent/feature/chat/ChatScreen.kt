@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -25,6 +26,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -62,11 +64,13 @@ import dev.huecoder.md3agent.assistant.AttachMenuLayer
 import dev.huecoder.md3agent.assistant.AttachMenuState
 import dev.huecoder.md3agent.assistant.AttachPage
 import dev.huecoder.md3agent.data.settings.AttachMenuStyle
+import dev.huecoder.md3agent.data.settings.ChatHeaderStyle
 import dev.huecoder.md3agent.data.settings.TypingStyle
 import dev.huecoder.md3agent.conversation.ApprovalDecision
 import dev.huecoder.md3agent.feature.chat.lightbox.LightboxHost
 import dev.huecoder.md3agent.ui.components.AgentAvatar
 import dev.huecoder.md3agent.ui.components.appViewModel
+import dev.huecoder.md3agent.ui.navigation.SlideBackHandler
 import dev.huecoder.md3agent.ui.text.UiText
 import dev.huecoder.md3agent.ui.text.asString
 import dev.huecoder.md3agent.ui.text.resolve
@@ -85,6 +89,7 @@ fun ChatScreen(chatId: String?, onBack: () -> Unit, onOpenChat: (String) -> Unit
     val viewModel = appViewModel(key = "chat-$chatId") { ChatViewModel(chatId, focusMessageId, it.chats, it.conversations, it.attachments, it.approvals, it.prompts, it.settings, it.modelCatalog, it.applicationScope, it::newSpeechSynthesizer) }
     val state by viewModel.state.collectAsStateWithLifecycle()
     val error by viewModel.errors.collectAsStateWithLifecycle()
+    val speechError by viewModel.speechError.collectAsStateWithLifecycle()
     val speakingId by viewModel.speakingId.collectAsStateWithLifecycle()
     val prompt by viewModel.pendingPrompt.collectAsStateWithLifecycle()
     val snackbarHost = remember { SnackbarHostState() }
@@ -150,7 +155,10 @@ fun ChatScreen(chatId: String?, onBack: () -> Unit, onOpenChat: (String) -> Unit
             },
         )
     }
-    BackHandler(enabled = attachMenu.isOpen) { attachMenu.back() }
+    SlideBackHandler(enabled = attachMenu.isOpen, back = attachMenu.slide) {
+        attachMenu.back()
+        if (attachMenu.isOpen) attachMenu.slide.release()
+    }
     BackHandler(enabled = editingId != null && !attachMenu.isOpen) { finishEdit() }
     val dictationModel = appViewModel(key = "dictation-$chatId") { DictationViewModel(it.newVoiceRecorder(), it.transcriptions, it.settings) }
     val askMicrophone = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -172,6 +180,8 @@ fun ChatScreen(chatId: String?, onBack: () -> Unit, onOpenChat: (String) -> Unit
         }
     }
 
+    speechError?.let { SpeechErrorDialog(it, onDismiss = viewModel::consumeSpeechError) }
+
     if (pickingModel) {
         ModelPickerSheet(
             model = state.selection,
@@ -190,20 +200,25 @@ fun ChatScreen(chatId: String?, onBack: () -> Unit, onOpenChat: (String) -> Unit
     ProvideAgentLook(state.agentId) {
         LightboxHost {
             Box(Modifier.fillMaxSize()) {
+                val compactHeader = state.header == ChatHeaderStyle.COMPACT
+                val headerClearance = if (compactHeader) compactHeaderHeight() else 0.dp
+                val topBar: @Composable (Modifier) -> Unit = { barModifier ->
+                    ChatTopBar(
+                        title = state.title.asString(),
+                        state = state,
+                        onBack = onBack,
+                        onPickModel = { pickingModel = true },
+                        onOpenContext = { showingContext = true },
+                        onRename = viewModel::rename,
+                        onDelete = { viewModel.delete(); onBack() },
+                        onLookChange = viewModel::setLook,
+                        modifier = barModifier,
+                    )
+                }
                 Scaffold(
-                    topBar = {
-                        ChatTopBar(
-                            title = state.title.asString(),
-                            state = state,
-                            onBack = onBack,
-                            onPickModel = { pickingModel = true },
-                            onOpenContext = { showingContext = true },
-                            onRename = viewModel::rename,
-                            onDelete = { viewModel.delete(); onBack() },
-                            onLookChange = viewModel::setLook,
-                        )
-                    },
+                    topBar = { if (!compactHeader) topBar(Modifier) },
                     snackbarHost = { SnackbarHost(snackbarHost) },
+                    contentWindowInsets = if (compactHeader) WindowInsets(0) else ScaffoldDefaults.contentWindowInsets,
                 ) { padding ->
                     Box(Modifier.fillMaxSize().padding(top = padding.calculateTopPadding()).imePadding().knockoutArea(knockout)) {
                         val isEmpty = state.messages.isEmpty()
@@ -219,6 +234,7 @@ fun ChatScreen(chatId: String?, onBack: () -> Unit, onOpenChat: (String) -> Unit
                                 onSend = viewModel::send,
                                 onApproval = viewModel::respondToApproval,
                                 bottomPadding = composerHeight + COMPOSER_GAP,
+                                topPadding = headerClearance,
                                 scrollButtonPadding = composerHeight,
                                 focusItemId = state.focusItemId,
                                 onFocusShown = viewModel::focusShown,
@@ -231,7 +247,7 @@ fun ChatScreen(chatId: String?, onBack: () -> Unit, onOpenChat: (String) -> Unit
                         }
                         if (isEmpty || handoff.isActive) {
                             EmptyConversation(
-                                Modifier.align(Alignment.Center),
+                                Modifier.align(Alignment.Center).padding(top = headerClearance),
                                 interactive = isEmpty,
                                 typing = typingAttention,
                                 listeningLevel = dictation.listeningLevel(),
@@ -282,6 +298,7 @@ fun ChatScreen(chatId: String?, onBack: () -> Unit, onOpenChat: (String) -> Unit
                                 )
                             }
                         }
+                        if (compactHeader) topBar(Modifier.align(Alignment.TopCenter))
                     }
                 }
                 AttachMenuLayer(
@@ -314,6 +331,7 @@ fun MessageList(
     onApproval: (ToolCallUi, ApprovalDecision) -> Unit,
     modifier: Modifier = Modifier.fillMaxSize(),
     bottomPadding: Dp = ComposerClearance,
+    topPadding: Dp = 0.dp,
     scrollButtonPadding: Dp = bottomPadding,
     focusItemId: String? = null,
     onFocusShown: () -> Unit = {},
@@ -359,7 +377,7 @@ fun MessageList(
             state = listState,
             reverseLayout = true,
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = bottomPadding),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp + topPadding, bottom = bottomPadding),
             verticalArrangement = Arrangement.spacedBy(20.dp, Alignment.Bottom),
         ) {
             items(messages.asReversed(), key = { it.id }) { item ->

@@ -9,11 +9,19 @@ data class ChatSettings(
     val autoTitle: Boolean = true,
     val autoRetry: Boolean = false,
     val attachMenu: AttachMenuStyle = AttachMenuStyle.COMPACT,
+    val header: ChatHeaderStyle = ChatHeaderStyle.COMPACT,
+    val contextDisplay: ContextDisplay = ContextDisplay.NUMBERS,
     val typing: TypingStyle = TypingStyle(),
 )
 
 @Serializable
 enum class AttachMenuStyle { COMPACT, PANEL }
+
+@Serializable
+enum class ChatHeaderStyle { COMPACT, CLASSIC }
+
+@Serializable
+enum class ContextDisplay { NUMBERS, RING, MENU }
 
 @Serializable
 enum class TypingMode { FADE, TYPEWRITER, RAW }

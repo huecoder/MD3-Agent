@@ -1,5 +1,6 @@
 package dev.huecoder.md3agent.feature.models
 
+import dev.huecoder.md3agent.ui.components.AppBottomSheet
 import androidx.annotation.PluralsRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,7 +21,6 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Surface
@@ -104,7 +104,7 @@ fun OptionPickerSheet(tabs: List<PickerPage>, initialTab: Int, onDismiss: () -> 
     val previews = (LocalContext.current.applicationContext as App).container.voicePreviews
     DisposableEffect(previews) { onDispose { previews.stop() } }
 
-    ModalBottomSheet(
+    AppBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = MaterialTheme.colorScheme.surfaceContainerLow,

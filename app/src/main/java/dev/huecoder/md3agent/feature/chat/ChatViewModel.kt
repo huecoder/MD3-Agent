@@ -24,7 +24,9 @@ import dev.huecoder.md3agent.data.files.ViewableFile
 import dev.huecoder.md3agent.data.settings.AgentProfile
 import dev.huecoder.md3agent.data.settings.AgentSettings
 import dev.huecoder.md3agent.data.settings.AttachMenuStyle
+import dev.huecoder.md3agent.data.settings.ChatHeaderStyle
 import dev.huecoder.md3agent.data.settings.ChatSettings
+import dev.huecoder.md3agent.data.settings.ContextDisplay
 import dev.huecoder.md3agent.data.models.ModelCatalog
 import dev.huecoder.md3agent.data.settings.ModelSelection
 import dev.huecoder.md3agent.llm.models.ModelFamily
@@ -67,6 +69,8 @@ data class ChatUiState(
     val showTokenUsage: Boolean = false,
     val showContext: Boolean = false,
     val attachMenu: AttachMenuStyle = AttachMenuStyle.COMPACT,
+    val header: ChatHeaderStyle = ChatHeaderStyle.COMPACT,
+    val contextDisplay: ContextDisplay = ContextDisplay.NUMBERS,
     val contextTokens: Int? = null,
     val contextLimit: Int = ContextMeter.DEFAULT_LIMIT,
     val typing: TypingStyle = TypingStyle(),
@@ -105,11 +109,15 @@ class ChatViewModel(
     private val chatId = MutableStateFlow(initialChatId)
     private val pendingFocus = MutableStateFlow(focusMessageId)
     private val _errors = MutableStateFlow<UiText?>(null)
-    private val pending = MutableStateFlow(PendingAttachments())
+    private val _speechError = MutableStateFlow<String?>(null)
+    private val pending = MutableStateFlow(PendingAttachments(items = restoredAttachments(initialChatId)))
+    private var draftText = chats.draft(initialChatId).text
     private val pendingSelection = MutableStateFlow<ModelSelection?>(null)
     private val pendingAgentId = MutableStateFlow<String?>(null)
 
     val errors: StateFlow<UiText?> = _errors.asStateFlow()
+
+    val speechError: StateFlow<String?> = _speechError.asStateFlow()
 
     private val appSettings = settings.settings
     private val voice = appSettings.map { it.voice }.stateIn(viewModelScope, SharingStarted.Eagerly, VoiceSettings())
@@ -148,7 +156,7 @@ class ChatViewModel(
             state.map { it.messages.lastOrNull() as? ChatItem.Reply }.filterNotNull().distinctUntilChanged().collect(narration::onLatest)
         }
         viewModelScope.launch {
-            speaker.failures.collect { _errors.value = UiText.Resource(R.string.voice_speak_failed, listOf(it)) }
+            speaker.failures.collect { _speechError.value = it }
         }
     }
 
@@ -173,6 +181,7 @@ class ChatViewModel(
                 }
             } catch (e: NoModelConfiguredException) {
                 pending.update { it.copy(items = attached + it.items) }
+                persistDraft()
                 _errors.value = UiText.Resource(R.string.chat_error_no_model)
             }
         }
@@ -204,9 +213,17 @@ class ChatViewModel(
         viewModelScope.launch { chats.fork(id, reply.id, title)?.let { onForked(it.id) } }
     }
 
-    fun draft(): String = chats.draft(chatId.value)
+    fun draft(): String = draftText
 
-    fun saveDraft(text: String) = chats.saveDraft(chatId.value, text)
+    fun saveDraft(text: String) {
+        draftText = text
+        persistDraft()
+    }
+
+    private fun persistDraft() = chats.saveDraft(chatId.value, draftText, pending.value.items)
+
+    private fun restoredAttachments(id: String?): List<Attachment> =
+        chats.draft(id).attachments.filter { attachments.file(it).exists() }
 
     fun rename(title: String) {
         val id = chatId.value ?: return
@@ -239,6 +256,8 @@ class ChatViewModel(
         showTokenUsage = chat.showTokenUsage,
         showContext = chat.showContext,
         attachMenu = chat.attachMenu,
+        header = chat.header,
+        contextDisplay = chat.contextDisplay,
         typing = chat.typing,
     )
 
@@ -270,6 +289,7 @@ class ChatViewModel(
         try {
             val attachment = importer(source)
             pending.update { it.copy(items = it.items + attachment) }
+            persistDraft()
         } catch (e: AttachmentTooLargeException) {
             _errors.value = UiText.Resource(R.string.chat_attachment_too_large, listOf(e.limitMb))
         } catch (e: IOException) {
@@ -285,6 +305,7 @@ class ChatViewModel(
 
     fun removeAttachment(attachment: Attachment) {
         pending.update { it.copy(items = it.items - attachment) }
+        persistDraft()
         viewModelScope.launch { attachments.delete(listOf(attachment)) }
     }
 
@@ -333,6 +354,10 @@ class ChatViewModel(
         _errors.value = null
     }
 
+    fun consumeSpeechError() {
+        _speechError.value = null
+    }
+
     private fun buildState(id: String, chat: ChatEntity?, branch: ChatBranch, draft: StreamingDraft?, focus: String?): ChatUiState {
         val items = ChatTimeline.build(branch.messages, draft, branch.versions)
         return ChatUiState(
@@ -353,8 +378,6 @@ class ChatViewModel(
 
     override fun onCleared() {
         speaker.stop()
-        val unsent = pending.value.items
-        if (unsent.isNotEmpty()) appScope.launch { attachments.delete(unsent) }
     }
 
     private data class PendingAttachments(val items: List<Attachment> = emptyList(), val importing: Int = 0)

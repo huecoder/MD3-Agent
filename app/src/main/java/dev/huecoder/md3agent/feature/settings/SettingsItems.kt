@@ -17,6 +17,8 @@ val SETTINGS_ITEMS: List<SettingsItem> = listOf(
 
     SettingsItem(SettingsPage.MEMORY, R.string.memory_section_search),
 
+    SettingsItem(SettingsPage.CHAT, R.string.chat_settings_header_style, R.string.chat_settings_section_header),
+    SettingsItem(SettingsPage.CHAT, R.string.chat_settings_context_display, R.string.chat_settings_section_header),
     SettingsItem(SettingsPage.CHAT, R.string.chat_settings_show_tokens, R.string.chat_settings_section_replies),
     SettingsItem(SettingsPage.CHAT, R.string.chat_settings_show_context, R.string.chat_settings_section_replies),
     SettingsItem(SettingsPage.CHAT, R.string.chat_settings_auto_title, R.string.chat_settings_section_replies),

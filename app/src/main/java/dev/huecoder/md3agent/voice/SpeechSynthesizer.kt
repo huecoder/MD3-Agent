@@ -135,7 +135,13 @@ class ProviderSpeechSynthesizer(
     }
 
     private suspend fun fetchAudio(request: Request): PreparedSpeech =
-        withTempFile(".$RESPONSE_FORMAT") { target -> PreparedSpeech.Audio(httpClients.current().fetchToFile(request, target)) }
+        withTempFile(".$RESPONSE_FORMAT") { target -> PreparedSpeech.Audio(rejectTextBody(httpClients.current().fetchToFile(request, target))) }
+
+    private fun rejectTextBody(file: File): File {
+        val first = file.inputStream().use { it.read() }
+        if (first.toChar() in TEXT_BODY_STARTS) throw ProviderException.MalformedResponse("The voice service sent text instead of audio: " + file.readText().take(ERROR_TEXT_CHARS))
+        return file
+    }
 
     private suspend fun gemini(text: String): PreparedSpeech = withContext(Dispatchers.IO) {
         val body = buildJsonObject {
@@ -170,15 +176,25 @@ class ProviderSpeechSynthesizer(
 
     override suspend fun play(speech: PreparedSpeech) {
         if (speech !is PreparedSpeech.Audio) return
+        if (speech.file.length() < MIN_AUDIO_BYTES) {
+            speech.file.delete()
+            return
+        }
         try {
             suspendCancellableCoroutine { continuation ->
-                val media = MediaPlayer().apply {
-                    setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ASSISTANT).setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build())
-                    setDataSource(speech.file.absolutePath)
-                    setOnCompletionListener { if (continuation.isActive) continuation.resume(Unit) }
-                    setOnErrorListener { _, _, _ -> if (continuation.isActive) continuation.resume(Unit); true }
-                    prepare()
-                    start()
+                val media = MediaPlayer()
+                try {
+                    media.apply {
+                        setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ASSISTANT).setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build())
+                        setDataSource(speech.file.absolutePath)
+                        setOnCompletionListener { if (continuation.isActive) continuation.resume(Unit) }
+                        setOnErrorListener { _, _, _ -> if (continuation.isActive) continuation.resume(Unit); true }
+                        prepare()
+                        start()
+                    }
+                } catch (e: IOException) {
+                    media.release()
+                    throw IOException("The audio from the voice service could not be played (${speech.file.length()} bytes): ${e.message}", e)
                 }
                 player = media
                 continuation.invokeOnCancellation { media.stop() }
@@ -201,6 +217,9 @@ class ProviderSpeechSynthesizer(
         const val ELEVENLABS_SPEECH_PATH = "text-to-speech"
         const val RESPONSE_FORMAT = "mp3"
         const val FILE_PREFIX = "speech"
+        const val MIN_AUDIO_BYTES = 1024L
+        const val ERROR_TEXT_CHARS = 300
+        const val TEXT_BODY_STARTS = "{<["
         val JSON = "application/json".toMediaType()
     }
 }

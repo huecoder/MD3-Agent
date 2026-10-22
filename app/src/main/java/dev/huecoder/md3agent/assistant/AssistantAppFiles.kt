@@ -24,7 +24,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.selection.toggleable
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
@@ -53,7 +52,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.composables.icons.materialsymbols.MaterialSymbols
-import com.composables.icons.materialsymbols.rounded.Check
 import com.composables.icons.materialsymbols.rounded.Chevron_right
 import com.composables.icons.materialsymbols.rounded.Description
 import dev.huecoder.md3agent.R
@@ -64,6 +62,7 @@ import dev.huecoder.md3agent.data.files.LibraryLocation
 import dev.huecoder.md3agent.data.files.LibraryRoot
 import dev.huecoder.md3agent.data.files.ViewableFile
 import dev.huecoder.md3agent.feature.files.EntryIcon
+import dev.huecoder.md3agent.feature.files.SelectionMark
 import dev.huecoder.md3agent.feature.files.details
 import dev.huecoder.md3agent.feature.settings.CHOICE_HEIGHT
 import dev.huecoder.md3agent.feature.settings.Choice
@@ -196,15 +195,8 @@ private fun FileTile(file: ViewableFile, selected: Boolean, onToggle: () -> Unit
         } else {
             DocumentLabel(file)
         }
-        if (selected) {
-            Box(Modifier.fillMaxSize().background(colors.primary.copy(alpha = SELECTED_TINT)))
-            Box(
-                Modifier.align(Alignment.TopEnd).padding(6.dp).size(MARK_SIZE).clip(CircleShape).background(colors.primary),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(MaterialSymbols.Rounded.Check, contentDescription = null, tint = colors.onPrimary, modifier = Modifier.size(MARK_ICON_SIZE))
-            }
-        }
+        if (selected) Box(Modifier.fillMaxSize().background(colors.primary.copy(alpha = SELECTED_TINT)))
+        SelectionMark(selected, Modifier.align(Alignment.TopEnd).padding(MARK_MARGIN))
     }
 }
 
@@ -277,5 +269,4 @@ private const val PAGE_HEIGHT_FRACTION = 0.8f
 private const val SELECTED_TINT = 0.4f
 private val GRID_CELL = 104.dp
 private val GRID_GAP = 8.dp
-private val MARK_SIZE = 24.dp
-private val MARK_ICON_SIZE = 16.dp
+private val MARK_MARGIN = 6.dp

@@ -31,6 +31,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -40,6 +41,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -56,6 +58,9 @@ import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.data.files.FileLibrary
 import dev.huecoder.md3agent.data.files.ViewableFile
 import dev.huecoder.md3agent.ui.components.ShapeBadge
+import dev.huecoder.md3agent.ui.navigation.SlideBack
+import dev.huecoder.md3agent.ui.navigation.SlideEdge
+import dev.huecoder.md3agent.ui.navigation.slideBack
 import kotlin.math.roundToInt
 
 internal enum class AttachPage { SOURCES, APP_FILES }
@@ -67,6 +72,7 @@ internal class AttachMenuState {
     var page by mutableStateOf(AttachPage.SOURCES)
         private set
     val files = AppFilesState()
+    val slide = SlideBack()
     private var firstPage = AttachPage.SOURCES
 
     fun open(first: AttachPage = AttachPage.SOURCES) {
@@ -99,6 +105,7 @@ internal class AttachMenuState {
 internal fun AttachMenuLayer(menu: AttachMenuState, library: FileLibrary, onSource: (AttachSource) -> Unit, onPickFiles: (List<ViewableFile>) -> Unit) {
     val spatial = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()
     val effects = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+    LaunchedEffect(menu.isOpen) { if (menu.isOpen) menu.slide.reset() }
     Box(Modifier.fillMaxSize()) {
         MenuScrim(visible = menu.isOpen, onDismiss = menu::close)
         AnimatedVisibility(
@@ -135,10 +142,11 @@ private fun AttachPanel(menu: AttachMenuState, library: FileLibrary, onSource: (
 
     Surface(
         shape = RoundedCornerShape(topStart = PANEL_CORNER, topEnd = PANEL_CORNER),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
         contentColor = MaterialTheme.colorScheme.onSurface,
         modifier = Modifier
             .fillMaxWidth()
+            .slideBack(menu.slide, SlideEdge.BOTTOM)
             .offset { IntOffset(0, dragged.roundToInt()) }
             .draggable(
                 state = rememberDraggableState { delta -> dragged = (dragged + delta).coerceAtLeast(0f) },
@@ -187,13 +195,14 @@ private fun SourcesPage(onSource: (AttachSource) -> Unit, onAppFiles: () -> Unit
 
 @Composable
 private fun SourceTile(icon: ImageVector, @StringRes label: Int, onClick: () -> Unit, modifier: Modifier) {
+    val badge = primaryBadge()
     Surface(onClick = onClick, shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainerHighest, modifier = modifier) {
         Column(
             Modifier.fillMaxWidth().padding(vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            ShapeBadge(icon)
+            ShapeBadge(icon, containerColor = badge.container, contentColor = badge.content)
             Text(stringResource(label), style = MaterialTheme.typography.labelLarge, maxLines = 1)
         }
     }
@@ -202,13 +211,14 @@ private fun SourceTile(icon: ImageVector, @StringRes label: Int, onClick: () -> 
 @Composable
 private fun AppFilesEntry(onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
+    val badge = tertiaryBadge()
     Surface(onClick = onClick, shape = MaterialTheme.shapes.large, color = colors.surfaceContainerHighest, modifier = Modifier.fillMaxWidth()) {
         Row(
             Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            ShapeBadge(MaterialSymbols.Rounded.Folder, containerColor = colors.tertiaryContainer, contentColor = colors.onTertiaryContainer)
+            ShapeBadge(MaterialSymbols.Rounded.Folder, containerColor = badge.container, contentColor = badge.content)
             Column(Modifier.weight(1f)) {
                 Text(stringResource(R.string.assistant_attach_app_files), style = MaterialTheme.typography.titleMedium)
                 Text(stringResource(R.string.assistant_attach_app_files_hint), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
@@ -217,6 +227,21 @@ private fun AppFilesEntry(onClick: () -> Unit) {
         }
     }
 }
+
+private class BadgeColors(val container: Color, val content: Color)
+
+@Composable
+private fun primaryBadge(): BadgeColors = with(MaterialTheme.colorScheme) {
+    brighter(BadgeColors(primary, onPrimary), BadgeColors(primaryContainer, onPrimaryContainer))
+}
+
+@Composable
+private fun tertiaryBadge(): BadgeColors = with(MaterialTheme.colorScheme) {
+    brighter(BadgeColors(tertiary, onTertiary), BadgeColors(tertiaryContainer, onTertiaryContainer))
+}
+
+private fun brighter(first: BadgeColors, second: BadgeColors) =
+    if (first.container.luminance() >= second.container.luminance()) first else second
 
 private const val SCRIM_ALPHA = 0.4f
 private const val DISMISS_VELOCITY = 1_200f

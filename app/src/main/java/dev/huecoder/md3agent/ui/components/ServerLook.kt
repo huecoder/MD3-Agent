@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,7 +42,7 @@ fun McpServerBadge(server: McpServer, modifier: Modifier = Modifier, size: Dp = 
 @Composable
 fun LookSheet(glyph: ChatGlyph?, tint: ChatTint, fallback: ImageVector, onGlyph: (ChatGlyph) -> Unit, onTint: (ChatTint) -> Unit, onDismiss: () -> Unit) {
     val colors = tint.colors()
-    ModalBottomSheet(onDismissRequest = onDismiss, modifier = Modifier.clickHaptics()) {
+    AppBottomSheet(onDismissRequest = onDismiss, modifier = Modifier.clickHaptics()) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).navigationBarsPadding(), verticalArrangement = Arrangement.spacedBy(0.dp)) {
             Box(Modifier.fillMaxWidth().padding(bottom = 8.dp), contentAlignment = Alignment.Center) {
                 ShapeBadge(glyph?.icon ?: fallback, size = 72.dp, containerColor = colors.container, contentColor = colors.content)

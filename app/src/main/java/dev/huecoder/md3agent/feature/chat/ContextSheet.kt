@@ -1,5 +1,6 @@
 package dev.huecoder.md3agent.feature.chat
 
+import dev.huecoder.md3agent.ui.components.AppBottomSheet
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,7 +17,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,8 +39,8 @@ import kotlin.math.roundToInt
 fun ContextSheet(meter: ContextMeter, load: suspend () -> ContextBreakdown?, onDismiss: () -> Unit) {
     val breakdown by produceState<ContextBreakdown?>(null, meter.used) { value = load() ?: ContextBreakdown(emptyList()) }
     val slices = breakdown?.slices.orEmpty()
-    val palette = chartPalette()
-    ModalBottomSheet(onDismissRequest = onDismiss, modifier = Modifier.clickHaptics()) {
+    val palette = chartPalette(slices.size)
+    AppBottomSheet(onDismissRequest = onDismiss, modifier = Modifier.clickHaptics()) {
         Column(
             modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp).navigationBarsPadding(),
             verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -57,7 +57,7 @@ fun ContextSheet(meter: ContextMeter, load: suspend () -> ContextBreakdown?, onD
                     )
                 }
             }
-            Column {
+            Column(Modifier.heightIn(min = ROW_HEIGHT * RESERVED_ROWS)) {
                 val total = breakdown?.tokens ?: 0
                 slices.forEachIndexed { index, slice ->
                     SliceRow(
@@ -96,6 +96,7 @@ private fun percentOf(tokens: Int, total: Int): Int =
 private const val PERCENT_BASE = 100f
 private val PIE_SIZE = 200.dp
 private val ROW_HEIGHT = 44.dp
+private const val RESERVED_ROWS = 4
 private val SWATCH = 12.dp
 private val PERCENT_WIDTH = 48.dp
 private val BOTTOM_SPACE = 8.dp

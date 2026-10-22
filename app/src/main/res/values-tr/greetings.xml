@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="greetings_any">
+        <item>Nasıl yardımcı olabilirim?</item>
+        <item>Aklında ne var?</item>
+        <item>Ne üzerinde çalışalım?</item>
+        <item>Bana istediğini sor</item>
+        <item>Nereden başlayalım?</item>
+        <item>Neye ihtiyacın var?</item>
+        <item>Sen hazır olunca hazırım</item>
+        <item>Ne yapıyoruz?</item>
+        <item>Bir sorun mu var?</item>
+        <item>Hadi bir şeyleri halledelim</item>
+    </string-array>
+    <string-array name="greetings_morning">
+        <item>Günaydın! Nasıl yardımcı olabilirim?</item>
+        <item>Günaydın! Bugünün planı ne?</item>
+        <item>Yeni gün, yeni fikirler?</item>
+        <item>Önce kahve, sonra sorular mı?</item>
+        <item>Günaydın! Nereden başlayalım?</item>
+        <item>Kalk bakalım! Ne var ne yok?</item>
+        <item>Yeni bir gün. Ne yapalım?</item>
+        <item>Günaydın! Sen hazır olunca hazırım</item>
+        <item>Günaydın! Bugün için bir planın var mı?</item>
+        <item>Erkenden başladın! Neye ihtiyacın var?</item>
+    </string-array>
+    <string-array name="greetings_day">
+        <item>Tünaydın! Nasıl yardımcı olabilirim?</item>
+        <item>Selam! Gün nasıl geçiyor?</item>
+        <item>Bu öğleden sonra ne var?</item>
+        <item>Öğle arası. Ne var ne yok?</item>
+        <item>İyi günler! Neyi halledelim?</item>
+        <item>Yoğun bir gün mü? Yardım edeyim</item>
+        <item>Öğle arasında aklına takılan bir şey var mı?</item>
+        <item>İyi günler! Ne var ne yok?</item>
+        <item>Öğleden sonrayı verimli geçirelim</item>
+        <item>Senin üzerinden neyi alabilirim?</item>
+    </string-array>
+    <string-array name="greetings_evening">
+        <item>İyi akşamlar! Nasıl yardımcı olabilirim?</item>
+        <item>İyi akşamlar! Aklında ne var?</item>
+        <item>Günün nasıl geçti?</item>
+        <item>Yavaşlıyor musun, yoksa yeni mi başlıyorsun?</item>
+        <item>İyi akşamlar! Ne yapalım?</item>
+        <item>Akşam planın var mı? Konuşalım</item>
+        <item>Hâlâ ayakta mısın? Neye ihtiyacın var?</item>
+        <item>Dinlenme zamanı mı, üretme zamanı mı?</item>
+        <item>Selam, iyi akşamlar! Ne var ne yok?</item>
+        <item>Bu akşam neyi çözüyoruz?</item>
+    </string-array>
+    <string-array name="greetings_night">
+        <item>Hâlâ uyanık mısın? Aklında ne var?</item>
+        <item>Gece düşünceleri mi?</item>
+        <item>Uyuyamıyor musun? Konuşalım</item>
+        <item>Gece kuşu modu: nasıl yardımcı olabilirim?</item>
+        <item>Gece daha genç. Ne var ne yok?</item>
+        <item>Gece yarısı mesaisi mi?</item>
+        <item>Sessiz saatler. Aklında ne var?</item>
+        <item>Geç oldu. Plan ne?</item>
+        <item>Gece yarısı fikirlerine hoş geldin</item>
+        <item>Gözün açık mı? Ne yapıyoruz?</item>
+    </string-array>
+</resources>

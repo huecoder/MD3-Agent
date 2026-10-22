@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="greetings_any">
+        <item>Como posso ajudar?</item>
+        <item>No que você está pensando?</item>
+        <item>No que vamos trabalhar?</item>
+        <item>Pergunte o que quiser</item>
+        <item>Por onde começamos?</item>
+        <item>Do que você precisa?</item>
+        <item>Quando você quiser</item>
+        <item>O que vamos fazer?</item>
+        <item>Tem alguma dúvida?</item>
+        <item>Vamos resolver algo</item>
+    </string-array>
+    <string-array name="greetings_morning">
+        <item>Bom dia! Como posso ajudar?</item>
+        <item>Bom dia! Qual é o plano de hoje?</item>
+        <item>Dia novo, ideias novas?</item>
+        <item>Primeiro o café, depois as perguntas?</item>
+        <item>Bom dia! Por onde começamos?</item>
+        <item>Acordou bem? E aí?</item>
+        <item>Um novo dia. O que vamos fazer?</item>
+        <item>Bom dia! Quando você quiser</item>
+        <item>Bom dia! Algum plano para hoje?</item>
+        <item>Cedo assim! Do que você precisa?</item>
+    </string-array>
+    <string-array name="greetings_day">
+        <item>Boa tarde! Como posso ajudar?</item>
+        <item>Oi! Como está o dia?</item>
+        <item>O que tem para esta tarde?</item>
+        <item>Pausa do meio-dia. E aí?</item>
+        <item>Boa tarde! O que vamos resolver?</item>
+        <item>Dia corrido? Deixa que eu ajudo</item>
+        <item>Alguma dúvida na hora do almoço?</item>
+        <item>Olá! E aí?</item>
+        <item>Vamos fazer a tarde render</item>
+        <item>O que posso tirar das suas costas?</item>
+    </string-array>
+    <string-array name="greetings_evening">
+        <item>Boa noite! Como posso ajudar?</item>
+        <item>Boa noite! No que você está pensando?</item>
+        <item>Como foi o seu dia?</item>
+        <item>Desacelerando ou começando?</item>
+        <item>Boa noite! O que vamos fazer?</item>
+        <item>Planos para a noite? Vamos conversar</item>
+        <item>Ainda de pé? Do que você precisa?</item>
+        <item>Hora de relaxar ou de criar?</item>
+        <item>Oi, boa noite! E aí?</item>
+        <item>O que vamos descobrir esta noite?</item>
+    </string-array>
+    <string-array name="greetings_night">
+        <item>Ainda acordado? No que você está pensando?</item>
+        <item>Pensamentos de madrugada?</item>
+        <item>Sem sono? Vamos conversar</item>
+        <item>Modo coruja: como posso ajudar?</item>
+        <item>A noite é uma criança. E aí?</item>
+        <item>Virando a noite?</item>
+        <item>Horas tranquilas. No que você está pensando?</item>
+        <item>Já é tarde. Qual é o plano?</item>
+        <item>Ideias de meia-noite são bem-vindas</item>
+        <item>Bem acordado? O que vamos fazer?</item>
+    </string-array>
+</resources>

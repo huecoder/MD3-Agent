@@ -2,11 +2,14 @@ package dev.huecoder.md3agent.feature.main
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.DrawerState
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Text
@@ -23,16 +26,26 @@ import dev.huecoder.md3agent.data.chat.look
 import dev.huecoder.md3agent.data.db.FolderEntity
 import dev.huecoder.md3agent.ui.components.FolderBadge
 import dev.huecoder.md3agent.ui.components.SectionHeader
+import dev.huecoder.md3agent.ui.navigation.SlideBackHandler
+import dev.huecoder.md3agent.ui.navigation.SlideEdge
+import dev.huecoder.md3agent.ui.navigation.rememberSlideBack
+import dev.huecoder.md3agent.ui.navigation.slideBack
 
 @Composable
 fun ChatsDrawer(
+    drawerState: DrawerState,
     folders: List<FolderEntity>,
     onFolder: (FolderEntity) -> Unit,
     onNewFolder: () -> Unit,
     onArchive: () -> Unit,
     onTrash: () -> Unit,
 ) {
-    ModalDrawerSheet {
+    val back = rememberSlideBack()
+    SlideBackHandler(enabled = drawerState.targetValue == DrawerValue.Open, back = back) {
+        drawerState.close()
+        back.reset()
+    }
+    ModalDrawerSheet(modifier = Modifier.width(DRAWER_WIDTH).slideBack(back, SlideEdge.START)) {
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 12.dp)) {
             SectionHeader(stringResource(R.string.home_folders), topPadding = 24.dp)
             folders.forEach { folder ->
@@ -69,3 +82,4 @@ fun ChatsDrawer(
 }
 
 private val ICON_SIZE = 28.dp
+private val DRAWER_WIDTH = 300.dp

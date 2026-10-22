@@ -152,10 +152,20 @@
     <string name="provider_header_remove">Remove header</string>
     <string name="provider_header_add">Add header</string>
     <string name="chat_settings_section_replies">Replies</string>
+    <string name="chat_settings_section_header">Chat header</string>
+    <string name="chat_settings_header_style">Header style</string>
+    <string name="chat_header_compact">Compact</string>
+    <string name="chat_header_classic">Classic</string>
+    <string name="chat_settings_context_display">Context display</string>
+    <string name="chat_context_display_numbers">Numbers</string>
+    <string name="chat_context_display_ring">Chart only</string>
+    <string name="chat_context_display_menu">In the menu</string>
+    <string name="chat_header_preview_title">Weekend trip</string>
+    <string name="chat_header_preview_model" translatable="false">claude-sonnet-4-5-20250929</string>
     <string name="chat_settings_show_tokens">Show tokens</string>
     <string name="chat_settings_show_tokens_summary">Tokens used and how much came from the cache, under each reply. The reply time is always shown.</string>
     <string name="chat_settings_show_context">Show context</string>
-    <string name="chat_settings_show_context_summary">A pill in the chat header: tokens in the context out of the model limit.</string>
+    <string name="chat_settings_show_context_summary">Tokens in the context out of the model limit.</string>
     <string name="chat_settings_section_input">Message input</string>
     <string name="chat_settings_attach_menu">Attach menu</string>
     <string name="chat_attach_menu_compact">Compact list</string>
@@ -249,6 +259,7 @@
     <string name="chat_attachment_remove">Remove %1$s</string>
     <string name="common_collapse">Collapse</string>
     <string name="common_expand">Expand</string>
+    <string name="common_close">Close</string>
     <string name="common_back">Back</string>
     <string name="chat_error_unknown">Unknown error</string>
     <string name="chat_error_continue">Continue</string>
@@ -319,7 +330,7 @@
     <string name="chat_thinking">Thinking…</string>
     <string name="chat_speak">Read aloud</string>
     <string name="chat_stop_speaking">Stop reading</string>
-    <string name="voice_speak_failed">Could not read the reply: %1$s</string>
+    <string name="voice_speak_failed_title">Could not read the reply</string>
     <string name="chat_tool_denied_result">Not run: you declined it</string>
     <string name="chat_tool_status_awaiting">Waiting for your approval</string>
     <string name="chat_tool_status_denied">Declined</string>
@@ -451,7 +462,7 @@
     <string name="picture_unavailable">Picture not loaded</string>
     <string name="picker_tab_model">Model</string>
     <string name="picker_tab_agents">Agents</string>
-    <string name="model_search">Search by name, company or id</string>
+    <string name="model_search">Name, company or id</string>
     <string name="common_search_clear">Clear search</string>
     <string name="model_refresh">Refresh the model list</string>
     <string name="model_filters">Filters</string>
@@ -608,6 +619,8 @@
     <string name="home_chat_name">Chat name</string>
     <string name="home_move">Move to group</string>
     <string name="home_move_none">No group</string>
+    <string name="home_draft_label">Draft:</string>
+    <string name="home_draft_attachments">Attachments: %1$d</string>
     <string name="home_select">Select</string>
     <string name="home_select_all">Select all</string>
     <string name="home_selection_close">Cancel selection</string>

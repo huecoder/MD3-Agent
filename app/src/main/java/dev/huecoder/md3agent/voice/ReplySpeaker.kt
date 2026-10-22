@@ -68,7 +68,7 @@ class ReplySpeaker(private val scope: CoroutineScope, private val synthesizerFac
                 throw e
             } catch (e: Exception) {
                 Log.w(TAG, "Speaking a reply failed", e)
-                _failures.trySend(e.message ?: e.javaClass.simpleName)
+                _failures.trySend(SpeechFailure.describe(e))
             } finally {
                 end()
             }

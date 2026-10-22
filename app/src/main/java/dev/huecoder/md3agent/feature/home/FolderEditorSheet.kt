@@ -1,5 +1,6 @@
 package dev.huecoder.md3agent.feature.home
 
+import dev.huecoder.md3agent.ui.components.AppBottomSheet
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -12,10 +13,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,9 +41,8 @@ fun FolderEditorSheet(folder: FolderEntity?, onSave: (name: String, look: Folder
     var name by remember { mutableStateOf(folder?.name.orEmpty()) }
     var look by remember { mutableStateOf(folder?.look ?: FolderLook.Default) }
     val save = { if (name.isNotBlank()) onSave(name.trim(), look) }
-    ModalBottomSheet(
+    AppBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         modifier = Modifier.clickHaptics(),
     ) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).navigationBarsPadding().imePadding()) {

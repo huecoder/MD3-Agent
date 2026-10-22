@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="greetings_any">
+        <item>Wie kann ich helfen?</item>
+        <item>Was beschäftigt dich?</item>
+        <item>Woran arbeiten wir?</item>
+        <item>Frag mich, was du willst</item>
+        <item>Wo fangen wir an?</item>
+        <item>Was brauchst du?</item>
+        <item>Bereit, wenn du es bist</item>
+        <item>Was steht an?</item>
+        <item>Hast du eine Frage?</item>
+        <item>Lass uns etwas erledigen</item>
+    </string-array>
+    <string-array name="greetings_morning">
+        <item>Guten Morgen! Wie kann ich helfen?</item>
+        <item>Morgen! Was ist heute der Plan?</item>
+        <item>Neuer Tag, neue Ideen?</item>
+        <item>Erst Kaffee, dann Fragen?</item>
+        <item>Guten Morgen! Wo fangen wir an?</item>
+        <item>Aufstehen! Was gibt’s?</item>
+        <item>Ein neuer Tag. Was machen wir?</item>
+        <item>Morgen! Bereit, wenn du es bist</item>
+        <item>Guten Morgen! Schon Pläne für heute?</item>
+        <item>Früh dran! Was brauchst du?</item>
+    </string-array>
+    <string-array name="greetings_day">
+        <item>Guten Tag! Wie kann ich helfen?</item>
+        <item>Hey! Wie läuft der Tag?</item>
+        <item>Was steht heute Nachmittag an?</item>
+        <item>Mittagspause. Was gibt’s?</item>
+        <item>Guten Tag! Was packen wir an?</item>
+        <item>Stressiger Tag? Lass mich helfen</item>
+        <item>Eine Frage für die Mittagspause?</item>
+        <item>Hallo! Was gibt’s?</item>
+        <item>Machen wir den Nachmittag produktiv</item>
+        <item>Was kann ich dir abnehmen?</item>
+    </string-array>
+    <string-array name="greetings_evening">
+        <item>Guten Abend! Wie kann ich helfen?</item>
+        <item>Abend! Was beschäftigt dich?</item>
+        <item>Wie war dein Tag?</item>
+        <item>Runterkommen oder durchstarten?</item>
+        <item>Guten Abend! Was machen wir?</item>
+        <item>Pläne für den Abend? Lass uns reden</item>
+        <item>Noch wach? Was brauchst du?</item>
+        <item>Zeit zum Entspannen oder zum Bauen?</item>
+        <item>Hey, guten Abend! Was gibt’s?</item>
+        <item>Was knobeln wir heute Abend aus?</item>
+    </string-array>
+    <string-array name="greetings_night">
+        <item>Noch wach? Was beschäftigt dich?</item>
+        <item>Gedanken mitten in der Nacht?</item>
+        <item>Kannst du nicht schlafen? Lass uns reden</item>
+        <item>Nachteulen-Modus: Wie kann ich helfen?</item>
+        <item>Die Nacht ist jung. Was gibt’s?</item>
+        <item>Nachtschicht?</item>
+        <item>Ruhige Stunden. Was beschäftigt dich?</item>
+        <item>Es ist spät. Was ist der Plan?</item>
+        <item>Ideen um Mitternacht sind willkommen</item>
+        <item>Hellwach? Was machen wir?</item>
+    </string-array>
+</resources>

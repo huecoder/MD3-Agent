@@ -1,5 +1,6 @@
 package dev.huecoder.md3agent.feature.home
 
+import dev.huecoder.md3agent.ui.components.AppBottomSheet
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -11,7 +12,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -54,7 +54,7 @@ fun TrashedChatSheet(
     onAction: (RowAction) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    ModalBottomSheet(onDismissRequest = onDismiss, modifier = Modifier.clickHaptics()) {
+    AppBottomSheet(onDismissRequest = onDismiss, modifier = Modifier.clickHaptics()) {
         Column(Modifier.navigationBarsPadding().padding(bottom = 16.dp)) {
             Text(
                 title,
@@ -72,7 +72,7 @@ fun TrashedChatSheet(
 
 @Composable
 fun FolderActionsSheet(folder: FolderEntity, onEdit: () -> Unit, onDelete: () -> Unit, onDismiss: () -> Unit) {
-    ModalBottomSheet(onDismissRequest = onDismiss, modifier = Modifier.clickHaptics()) {
+    AppBottomSheet(onDismissRequest = onDismiss, modifier = Modifier.clickHaptics()) {
         Column(Modifier.navigationBarsPadding().padding(bottom = 16.dp)) {
             Text(folder.name, style = MaterialTheme.typography.titleMediumEmphasized, modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp))
             SheetAction(MaterialSymbols.Rounded.Edit, stringResource(R.string.home_folder_edit), onEdit)
@@ -110,7 +110,7 @@ fun MoveToFolderSheet(
     onNewFolder: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    ModalBottomSheet(onDismissRequest = onDismiss, modifier = Modifier.clickHaptics()) {
+    AppBottomSheet(onDismissRequest = onDismiss, modifier = Modifier.clickHaptics()) {
         Column(Modifier.navigationBarsPadding().padding(bottom = 16.dp)) {
             Text(stringResource(R.string.home_move), style = MaterialTheme.typography.titleMediumEmphasized, modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp))
             SheetAction(MaterialSymbols.Rounded.Folder_off, stringResource(R.string.home_move_none), { onMove(null) })

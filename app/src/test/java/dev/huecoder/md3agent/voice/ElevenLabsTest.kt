@@ -84,6 +84,16 @@ class ElevenLabsTest {
     }
 
     @Test
+    fun `a json body in place of audio is reported with its text`() = runTest {
+        server.enqueue(MockResponse.Builder().body("""{"detail":{"message":"quota exceeded"}}""").build())
+
+        val failure = runCatching { ProviderSpeechSynthesizer(httpClients, voiceProvider(), temp.newFolder("cache")).prepare("hi") }.exceptionOrNull()
+
+        assertTrue(failure is ProviderException.MalformedResponse)
+        assertTrue(failure!!.message!!.contains("quota exceeded"))
+    }
+
+    @Test
     fun `transcription posts a scribe form and reads the text`() = runTest {
         server.enqueue(MockResponse.Builder().body("""{"language_code":"rus","language_probability":0.99,"text":"  привет мир  ","words":[]}""").build())
         val audio = temp.newFile("rec.ogg").apply { writeBytes(byteArrayOf(9, 9)) }

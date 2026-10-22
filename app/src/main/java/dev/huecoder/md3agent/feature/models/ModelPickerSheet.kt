@@ -1,5 +1,6 @@
 package dev.huecoder.md3agent.feature.models
 
+import dev.huecoder.md3agent.ui.components.AppBottomSheet
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.horizontalScroll
@@ -24,7 +25,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
@@ -79,7 +79,7 @@ fun ModelPickerSheet(
     var tab by rememberSaveable { mutableStateOf(PickerTab.MODEL) }
     val modelListState = rememberLazyListState()
 
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState, containerColor = MaterialTheme.colorScheme.surfaceContainerLow, modifier = Modifier.clickHaptics()) {
+    AppBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState, containerColor = MaterialTheme.colorScheme.surfaceContainerLow, modifier = Modifier.clickHaptics()) {
         Column(Modifier.fillMaxWidth().fillMaxHeight(SHEET_HEIGHT_FRACTION)) {
             if (showsAgents) PickerTabs(tab, onSelect = { tab = it })
             when (if (showsAgents) tab else PickerTab.MODEL) {

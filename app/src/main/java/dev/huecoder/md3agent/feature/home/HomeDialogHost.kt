@@ -18,7 +18,7 @@ sealed interface HomeDialog {
 @Composable
 fun HomeDialogHost(dialog: HomeDialog?, state: HomeUiState, viewModel: HomeViewModel, onChange: (HomeDialog?) -> Unit) {
     val dismiss = { onChange(null) }
-    val chatTitle = { id: String -> state.groups.firstNotNullOfOrNull { group -> group.chats.firstOrNull { it.id == id } }?.title }
+    val chatTitle = { id: String -> state.groups.firstNotNullOfOrNull { group -> group.chats.firstOrNull { it.id == id } }?.chat?.title }
     val folder = { id: String -> state.folders.firstOrNull { it.id == id } }
     when (dialog) {
         null -> Unit

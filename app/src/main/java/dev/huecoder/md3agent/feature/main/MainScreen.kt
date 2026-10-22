@@ -110,6 +110,7 @@ fun MainScreen(
             gesturesEnabled = drawerState.isOpen,
             drawerContent = {
                 ChatsDrawer(
+                    drawerState = drawerState,
                     folders = homeState.folders,
                     onFolder = { openFromDrawer(ChatFilter.Folder(it.id)) },
                     onNewFolder = {

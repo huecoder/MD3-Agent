@@ -17,6 +17,7 @@ import dev.huecoder.md3agent.data.settings.ModelSelection
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import java.util.UUID
 
@@ -194,7 +195,7 @@ class ChatRepository(
     suspend fun purgeExpiredTrash() = deleteForever(chatDao.trashedBefore(clock() - TRASH_RETENTION_MS))
 
     private suspend fun delete(chatId: String) {
-        val attached = messageDao.all(chatId).flatMap { Attachment.decode(it.attachmentsJson) }
+        val attached = messageDao.all(chatId).flatMap { Attachment.decode(it.attachmentsJson) } + drafts.read(chatId).attachments
         chatDao.delete(chatId)
         drafts.forget(chatId)
         releaseUnused(attached)
@@ -212,9 +213,11 @@ class ChatRepository(
         return linked
     }
 
-    fun draft(chatId: String?): String = drafts.read(chatId)
+    fun observeDrafts(): StateFlow<Map<String, ChatDraft>> = drafts.all
 
-    fun saveDraft(chatId: String?, text: String) = drafts.write(chatId, text)
+    fun draft(chatId: String?): ChatDraft = drafts.read(chatId)
+
+    fun saveDraft(chatId: String?, text: String, attached: List<Attachment>) = drafts.write(chatId, text, attached)
 
     suspend fun recoverInterruptedStreams() = messageDao.markInterruptedStreams()
 

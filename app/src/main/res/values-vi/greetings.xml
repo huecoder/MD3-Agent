@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="greetings_any">
+        <item>Mình giúp gì được cho bạn?</item>
+        <item>Bạn đang nghĩ gì vậy?</item>
+        <item>Mình làm gì đây?</item>
+        <item>Cứ hỏi mình bất cứ điều gì</item>
+        <item>Bắt đầu từ đâu nhỉ?</item>
+        <item>Bạn cần gì?</item>
+        <item>Mình sẵn sàng khi bạn cần</item>
+        <item>Hôm nay làm gì nào?</item>
+        <item>Bạn có câu hỏi nào không?</item>
+        <item>Cùng làm gì đó nhé</item>
+    </string-array>
+    <string-array name="greetings_morning">
+        <item>Chào buổi sáng! Mình giúp gì được cho bạn?</item>
+        <item>Chào buổi sáng! Hôm nay có kế hoạch gì?</item>
+        <item>Ngày mới, ý tưởng mới nhé?</item>
+        <item>Cà phê trước, câu hỏi sau nhé?</item>
+        <item>Chào buổi sáng! Bắt đầu từ đâu nhỉ?</item>
+        <item>Dậy sớm thế! Có chuyện gì vậy?</item>
+        <item>Một ngày mới. Mình làm gì đây?</item>
+        <item>Chào buổi sáng! Mình sẵn sàng khi bạn cần</item>
+        <item>Chào buổi sáng! Hôm nay bạn có dự định gì không?</item>
+        <item>Bắt đầu sớm nhỉ! Bạn cần gì?</item>
+    </string-array>
+    <string-array name="greetings_day">
+        <item>Chào buổi chiều! Mình giúp gì được cho bạn?</item>
+        <item>Chào bạn! Ngày hôm nay thế nào?</item>
+        <item>Chiều nay bạn có gì?</item>
+        <item>Giờ nghỉ trưa rồi. Có gì không?</item>
+        <item>Chào buổi chiều! Mình xử lý việc gì đây?</item>
+        <item>Một ngày bận rộn? Để mình giúp</item>
+        <item>Có câu hỏi nào cho giờ nghỉ trưa không?</item>
+        <item>Chào bạn! Có chuyện gì vậy?</item>
+        <item>Cùng làm buổi chiều thật hiệu quả nhé</item>
+        <item>Mình có thể gánh bớt việc gì cho bạn?</item>
+    </string-array>
+    <string-array name="greetings_evening">
+        <item>Chào buổi tối! Mình giúp gì được cho bạn?</item>
+        <item>Chào buổi tối! Bạn đang nghĩ gì vậy?</item>
+        <item>Hôm nay của bạn thế nào?</item>
+        <item>Thư giãn hay bắt đầu làm việc?</item>
+        <item>Chào buổi tối! Mình làm gì đây?</item>
+        <item>Tối nay có kế hoạch gì? Cùng trò chuyện nhé</item>
+        <item>Vẫn còn thức à? Bạn cần gì?</item>
+        <item>Đến lúc thư giãn hay đến lúc sáng tạo?</item>
+        <item>Chào buổi tối! Có chuyện gì vậy?</item>
+        <item>Tối nay mình tìm hiểu chuyện gì đây?</item>
+    </string-array>
+    <string-array name="greetings_night">
+        <item>Vẫn chưa ngủ à? Bạn đang nghĩ gì?</item>
+        <item>Suy nghĩ lúc đêm khuya?</item>
+        <item>Không ngủ được à? Cùng trò chuyện nhé</item>
+        <item>Chế độ cú đêm: mình giúp gì được?</item>
+        <item>Đêm còn dài. Có chuyện gì vậy?</item>
+        <item>Thức khuya làm việc à?</item>
+        <item>Giờ yên tĩnh. Bạn đang nghĩ gì?</item>
+        <item>Khuya rồi. Kế hoạch là gì?</item>
+        <item>Ý tưởng lúc nửa đêm luôn được chào đón</item>
+        <item>Tỉnh táo thế? Mình làm gì đây?</item>
+    </string-array>
+</resources>
