@@ -58,4 +58,10 @@ class MathExtractorTest {
         val result = extract("bad ${'$'}\\oops${'$'} ok ${'$'}x${'$'}") { it.latex != "\\oops" }
         assertEquals("bad ${'$'}\\oops${'$'} ok MATHSLOT0X", result.markdown)
     }
+
+    @Test
+    fun `alt text of a multiline formula is one line`() {
+        val result = extract("${'$'}${'$'}\n\\begin{cases}\n x + y = 5 \\\\\n x - y = 1\n\\end{cases}\n${'$'}${'$'}")
+        assertEquals("\\begin{cases} x + y = 5 \\\\ x - y = 1 \\end{cases}", result.formulas.single().altText)
+    }
 }

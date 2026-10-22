@@ -1,14 +1,25 @@
 package dev.huecoder.md3agent.feature.chat
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.toggleableState
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.style.TextDecoration
@@ -36,6 +47,7 @@ import dev.huecoder.md3agent.ui.math.rememberMathContent
 import dev.huecoder.md3agent.ui.pictures.MarkdownBlock
 import dev.huecoder.md3agent.ui.pictures.MarkdownBlocks
 import dev.huecoder.md3agent.ui.pictures.PictureSyntax
+import org.intellij.markdown.ast.getTextInNode
 
 @Composable
 fun MarkdownContent(text: String, modifier: Modifier = Modifier) {
@@ -98,7 +110,27 @@ private val appMarkdownComponents: MarkdownComponents = markdownComponents(
     image = { model -> InTextPicture(model) },
     paragraph = { model -> FormulaParagraph(model) },
     table = { model -> ChatTable(model) },
+    checkbox = { model -> TaskCheckbox(model) },
 )
+
+@Composable
+private fun TaskCheckbox(model: MarkdownComponentModel) {
+    val checked = model.node.getTextInNode(model.content).contains(CHECKED_MARK, ignoreCase = true)
+    val lineHeight = model.typography.text.lineHeight
+    val lineModifier = if (lineHeight.isSp) Modifier.height(with(LocalDensity.current) { lineHeight.toDp() }) else Modifier
+    Box(lineModifier, contentAlignment = Alignment.CenterStart) {
+        Checkbox(
+            checked = checked,
+            onCheckedChange = null,
+            modifier = Modifier
+                .padding(end = CHECKBOX_GAP)
+                .semantics {
+                    role = Role.Checkbox
+                    toggleableState = ToggleableState(checked)
+                },
+        )
+    }
+}
 
 @Composable
 private fun FormulaParagraph(model: MarkdownComponentModel) {
@@ -145,4 +177,6 @@ private fun appMarkdownTypography(): MarkdownTypography {
     )
 }
 
+private const val CHECKED_MARK = "[x]"
 private val BLOCK_GAP = 8.dp
+private val CHECKBOX_GAP = 4.dp

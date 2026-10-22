@@ -1,6 +1,12 @@
 package dev.huecoder.md3agent.ui.math
 
-data class MathFormula(val latex: String, val isDisplay: Boolean)
+data class MathFormula(val latex: String, val isDisplay: Boolean) {
+    val altText: String get() = latex.replace(WHITESPACE_RUN, " ")
+
+    private companion object {
+        val WHITESPACE_RUN = Regex("\\s+")
+    }
+}
 
 class ExtractedMath(val markdown: String, val formulas: List<MathFormula>)
 

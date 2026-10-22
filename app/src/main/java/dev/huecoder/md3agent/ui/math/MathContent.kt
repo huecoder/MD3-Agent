@@ -67,7 +67,7 @@ class MathContent internal constructor(
         var copied = 0
         slots.forEach { (match, index) ->
             append(text.substring(copied, match.range.first))
-            appendInlineContent(inlineId(index), formulas[index].latex)
+            appendInlineContent(inlineId(index), formulas[index].altText)
             copied = match.range.last + 1
         }
         append(text.substring(copied))
