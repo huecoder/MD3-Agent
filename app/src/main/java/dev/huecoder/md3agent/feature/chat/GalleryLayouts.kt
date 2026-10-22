@@ -35,18 +35,26 @@ internal fun AlbumGrid(count: Int, modifier: Modifier = Modifier, tile: @Composa
 }
 
 @Composable
-internal fun SliderRow(count: Int, modifier: Modifier = Modifier, item: @Composable (index: Int, modifier: Modifier) -> Unit) {
+internal fun SliderRow(
+    count: Int,
+    modifier: Modifier = Modifier,
+    item: @Composable (index: Int, modifier: Modifier, visibility: () -> Float) -> Unit,
+) {
     HorizontalMultiBrowseCarousel(
         state = rememberCarouselState { count },
         preferredItemWidth = SLIDER_ITEM_WIDTH,
         itemSpacing = GALLERY_GAP,
         modifier = modifier.fillMaxWidth().height(SLIDER_HEIGHT),
     ) { index ->
-        item(index, Modifier.fillMaxSize().maskClip(MaterialTheme.shapes.extraLarge))
+        val drawInfo = carouselItemDrawInfo
+        item(index, Modifier.fillMaxSize().maskClip(MaterialTheme.shapes.extraLarge)) {
+            ((drawInfo.size / drawInfo.maxSize - FOCUS_FLOOR) / (1f - FOCUS_FLOOR)).coerceIn(0f, 1f)
+        }
     }
 }
 
 private const val ALBUM_COLUMNS = 2
+private const val FOCUS_FLOOR = 0.8f
 private const val SQUARE_TILE_RATIO = 1f
 private const val WIDE_TILE_RATIO = 2f
 internal val GALLERY_GAP = 4.dp

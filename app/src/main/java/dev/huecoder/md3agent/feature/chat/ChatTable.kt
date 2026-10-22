@@ -178,7 +178,7 @@ private class GridMeasurePolicy(val lines: Int, val columns: Int, val available:
     private fun columnOf(measurables: List<Measurable>, column: Int): List<Measurable> = List(lines) { line -> measurables[line * columns + column] }
 }
 
-private val TABLE_SHAPE = RoundedCornerShape(12.dp)
+private val TABLE_SHAPE = RoundedCornerShape(MARKDOWN_BLOCK_CORNER)
 private val MIN_COLUMN = 72.dp
 private val MAX_COLUMN = 200.dp
 private val CELL_HORIZONTAL_PADDING = 10.dp

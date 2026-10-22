@@ -23,9 +23,11 @@ class SendFilesTool(private val files: DeviceFiles, private val store: Attachmen
         description = "Shows files from the phone to the user right in the chat: images as a picture, an album or a slider, " +
             "other files as cards the user can tap to open. Use it whenever the user wants to see or get a file instead of just naming the path. " +
             "You do not see the files yourself through this tool. " +
+            "Give captions to describe each picture; they are drawn over the pictures. " +
             "For pictures on the web, embed them in your reply as markdown ![description](https://...) instead.",
         parameters = objectSchema(required = listOf("paths")) {
             stringArrayProperty("paths", "File paths, up to $MAX_FILES, in the order to show them")
+            stringArrayProperty("captions", "Optional short captions, one per path in the same order; use an empty string for a file without one")
         },
     )
 
@@ -36,12 +38,14 @@ class SendFilesTool(private val files: DeviceFiles, private val store: Attachmen
         if (paths.isEmpty()) throw ToolArgumentException("Give at least one path in 'paths'")
         if (paths.size > MAX_FILES) throw ToolArgumentException("At most $MAX_FILES files per call")
 
+        val captions = arguments.optionalArray("captions").map { (it as? JsonPrimitive)?.contentOrNull?.trim()?.takeIf(String::isNotEmpty) }
         val sent = mutableListOf<Attachment>()
         val failures = mutableListOf<String>()
-        for (path in paths) {
+        for ((index, path) in paths.withIndex()) {
             val file = files.resolve(path)
             try {
-                sent += files.withLocalCopy(file, settings.access.files, MAX_FILE_BYTES) { store.importLocal(it, forModel = false) }
+                val attachment = files.withLocalCopy(file, settings.access.files, MAX_FILE_BYTES) { store.importLocal(it, forModel = false) }
+                sent += attachment.copy(caption = captions.getOrNull(index))
             } catch (e: CancellationException) {
                 store.delete(sent)
                 throw e

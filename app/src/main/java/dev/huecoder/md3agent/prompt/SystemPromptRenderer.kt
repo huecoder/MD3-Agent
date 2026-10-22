@@ -61,9 +61,14 @@ class SystemPromptRenderer(
             "- Replies are rendered as markdown. To show a picture, put it alone on a line as ![short description](https://direct-link-to-the-image-file). " +
                 "Use only direct image links that a tool returned, never made-up ones. Pictures get rounded corners and open full screen when tapped.",
             "- Position and size go into the title: ![description](url \"right 50%\"). Position: left (default), center or right. " +
-                "Width: small, medium, large, full or a percentage like 50%. A title with any other word is an ordinary title and its options are ignored.",
+                "Width: small, medium, large, full or a percentage like 50%. A title with any other word is the caption of the picture, drawn over its bottom edge. " +
+                "To combine them, write the options first and the caption after a bar: ![description](url \"right 50% | Caption\").",
             "- Pictures on neighbouring lines with no blank line between them form one group: two to four show as an album grid, more as a side-scrolling slider. " +
                 "Add album or slider to the first title to force one, and leave a blank line between pictures to keep them separate.",
+            "- Extra markdown that renders nicely: ==highlighted text==; footnotes written as text[^1] with a line [^1]: the note at the end; " +
+                "collapsible blocks as <details><summary>Title</summary> then a blank line, the content, a blank line and </details>; " +
+                "callouts as a quote whose first line is > [!tip] Optional title (types: note, info, tip, important, warning, caution, success, question, example, quote, summary), " +
+                "where [!tip]- starts collapsed and [!tip]+ starts open.",
         ).joinToString("\n")
         const val MEMORY_HEADER = "Instant memory, what you know about the user (ids in brackets):"
         const val ACCESS_HEADER = "Device access available to you right now:"

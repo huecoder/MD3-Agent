@@ -1041,4 +1041,16 @@
     <string name="home_menu">Menu</string>
     <string name="mcp_server_look">Ikon dan warna</string>
     <string name="mcp_server_look_summary">Ditampilkan di samping server dalam daftar</string>
+    <string name="callout_note">Catatan</string>
+    <string name="callout_info">Info</string>
+    <string name="callout_tip">Tips</string>
+    <string name="callout_important">Penting</string>
+    <string name="callout_warning">Peringatan</string>
+    <string name="callout_caution">Awas</string>
+    <string name="callout_success">Berhasil</string>
+    <string name="callout_question">Pertanyaan</string>
+    <string name="callout_example">Contoh</string>
+    <string name="callout_quote">Kutipan</string>
+    <string name="callout_summary">Ringkasan</string>
+    <string name="details_default_summary">Detail</string>
 </resources>

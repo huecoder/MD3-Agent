@@ -104,4 +104,29 @@ class PictureSyntaxTest {
         assertEquals(PictureAlign.END, options("right left")!!.align)
         assertEquals(0.4f, options("small large")!!.widthShare)
     }
+
+    @Test
+    fun `a title that is not a list of options is the caption`() {
+        val picture = PictureSyntax.line("![x](u \"Left side view\")")!!.single()
+
+        assertEquals("Left side view", picture.caption)
+        assertEquals(PictureOptions.NONE, picture.options)
+    }
+
+    @Test
+    fun `options and a caption share a title after a bar`() {
+        val picture = PictureSyntax.line("![x](u \"right 50% | Evening, 18:40\")")!!.single()
+
+        assertEquals(PictureOptions(PictureAlign.END, 0.5f, null), picture.options)
+        assertEquals("Evening, 18:40", picture.caption)
+        assertEquals("Only caption", PictureSyntax.line("![x](u \"| Only caption\")")!!.single().caption)
+        assertEquals("Rock | Roll", PictureSyntax.line("![x](u \"Rock | Roll\")")!!.single().caption)
+    }
+
+    @Test
+    fun `pure options and empty titles give no caption`() {
+        assertNull(PictureSyntax.line("![x](u \"right\")")!!.single().caption)
+        assertNull(PictureSyntax.line("![x](u \"right |\")")!!.single().caption)
+        assertNull(PictureSyntax.line("![x](u)")!!.single().caption)
+    }
 }

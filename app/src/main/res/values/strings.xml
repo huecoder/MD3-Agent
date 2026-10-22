@@ -1080,4 +1080,16 @@
     <string name="home_menu">Menu</string>
     <string name="mcp_server_look">Icon and color</string>
     <string name="mcp_server_look_summary">Shown next to the server in lists</string>
+    <string name="callout_note">Note</string>
+    <string name="callout_info">Info</string>
+    <string name="callout_tip">Tip</string>
+    <string name="callout_important">Important</string>
+    <string name="callout_warning">Warning</string>
+    <string name="callout_caution">Caution</string>
+    <string name="callout_success">Success</string>
+    <string name="callout_question">Question</string>
+    <string name="callout_example">Example</string>
+    <string name="callout_quote">Quote</string>
+    <string name="callout_summary">Summary</string>
+    <string name="details_default_summary">Details</string>
 </resources>

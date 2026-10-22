@@ -1,12 +1,15 @@
 package dev.huecoder.md3agent.feature.chat
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
@@ -33,28 +36,37 @@ fun MediaGallery(attachments: List<Attachment>, modifier: Modifier = Modifier) {
 
 @Composable
 private fun SingleImage(image: Attachment) {
-    AttachmentImage(
-        image,
-        contentScale = ContentScale.FillWidth,
-        modifier = Modifier
+    Box(
+        Modifier
             .widthIn(max = MEDIA_MAX_WIDTH)
             .fillMaxWidth()
             .heightIn(max = SINGLE_MAX_HEIGHT)
             .clip(MaterialTheme.shapes.extraLarge),
-    )
+    ) {
+        AttachmentImage(image, Modifier.fillMaxWidth(), contentScale = ContentScale.FillWidth)
+        image.caption?.let { CaptionOverlay(it, Modifier.align(Alignment.BottomStart)) }
+    }
 }
 
 @Composable
 private fun Album(images: List<Attachment>) {
     AlbumGrid(images.size, Modifier.widthIn(max = MEDIA_MAX_WIDTH)) { index, tile ->
-        AttachmentImage(images[index], gallery = images, modifier = tile)
+        CaptionedTile(images[index], images, tile)
     }
 }
 
 @Composable
 private fun Slider(images: List<Attachment>) {
-    SliderRow(images.size) { index, item ->
-        AttachmentImage(images[index], gallery = images, modifier = item)
+    SliderRow(images.size) { index, item, visibility ->
+        CaptionedTile(images[index], images, item, visibility)
+    }
+}
+
+@Composable
+private fun CaptionedTile(image: Attachment, gallery: List<Attachment>, modifier: Modifier, captionVisibility: () -> Float = { 1f }) {
+    Box(modifier) {
+        AttachmentImage(image, Modifier.fillMaxSize(), gallery = gallery)
+        image.caption?.let { CaptionOverlay(it, Modifier.align(Alignment.BottomStart), captionVisibility) }
     }
 }
 

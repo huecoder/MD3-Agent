@@ -1,5 +1,8 @@
-package dev.huecoder.md3agent.ui.pictures
+package dev.huecoder.md3agent.ui.markdown
 
+import dev.huecoder.md3agent.ui.pictures.PictureAlign
+import dev.huecoder.md3agent.ui.pictures.PictureGrouping
+import dev.huecoder.md3agent.ui.pictures.PictureOptions
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -11,6 +14,8 @@ class MarkdownBlocksTest {
         when (it) {
             is MarkdownBlock.Text -> "text"
             is MarkdownBlock.Pictures -> "pictures:${it.pictures.size}"
+            is MarkdownBlock.Callout -> "callout:${it.type}"
+            is MarkdownBlock.Details -> "details"
         }
     }
 
@@ -108,5 +113,69 @@ class MarkdownBlocksTest {
     fun `text made only of blank lines is dropped`() {
         assertEquals(listOf("pictures:1"), split("\n\n![a](u)\n\n").shape())
         assertEquals(listOf("pictures:1", "pictures:1"), split("![a](u)\n\n\n![b](u)\n").shape())
+    }
+
+    @Test
+    fun `details keep the summary and split their body`() {
+        val text = "Before\n<details open>\n<summary>**Open** me</summary>\n\nInside\n![a](u)\n\n</details>\nAfter"
+
+        val blocks = split(text)
+
+        assertEquals(listOf("text", "details", "text"), blocks.shape())
+        val details = blocks[1] as MarkdownBlock.Details
+        assertEquals("Open me", details.summary)
+        assertEquals(true, details.isOpen)
+        assertEquals(listOf("text", "pictures:1"), details.body.shape())
+        assertEquals("After", (blocks[2] as MarkdownBlock.Text).markdown.trim())
+    }
+
+    @Test
+    fun `nested details and an unclosed one are understood`() {
+        val nested = split("<details><summary>A</summary>\n<details><summary>B</summary>\nx\n</details>\ny\n</details>").single() as MarkdownBlock.Details
+
+        assertEquals(listOf("details", "text"), nested.body.shape())
+        val open = split("<details>\n<summary>Streaming").single() as MarkdownBlock.Details
+        assertEquals("Streaming", open.summary)
+        assertEquals(emptyList<MarkdownBlock>(), open.body)
+    }
+
+    @Test
+    fun `a quote that starts with a marker is a callout`() {
+        val blocks = split("> [!tip]- Fold *me*\n> first\n>\n> - item\n\nTail")
+
+        assertEquals(listOf("callout:tip", "text"), blocks.shape())
+        val callout = blocks[0] as MarkdownBlock.Callout
+        assertEquals("Fold *me*", callout.title)
+        assertEquals(CalloutFold.CLOSED, callout.fold)
+        assertEquals(CalloutKind.TIP, callout.kind)
+        assertEquals("first\n\n- item", (callout.body.single() as MarkdownBlock.Text).markdown)
+    }
+
+    @Test
+    fun `github alerts and unknown types are callouts without a title`() {
+        val note = split("> [!NOTE]\n> plain").single() as MarkdownBlock.Callout
+        val odd = split("> [!whatever]+\n> x").single() as MarkdownBlock.Callout
+
+        assertEquals(null, note.title)
+        assertEquals(CalloutFold.NONE, note.fold)
+        assertEquals(null, odd.kind)
+        assertEquals(CalloutFold.OPEN, odd.fold)
+    }
+
+    @Test
+    fun `callouts inside code or in the middle of a quote stay plain`() {
+        assertEquals(listOf("text"), split("```\n> [!tip]\n> x\n```").shape())
+        assertEquals(listOf("text"), split("> intro\n> [!tip]\n> x").shape())
+        assertEquals(listOf("text"), split("> [!tip typed halfway").shape())
+    }
+
+    @Test
+    fun `offsets of container bodies point near their place in the text`() {
+        val text = "intro\n\n<details><summary>S</summary>\nbody\n</details>"
+
+        val details = split(text)[1] as MarkdownBlock.Details
+        val body = details.body.single() as MarkdownBlock.Text
+
+        assertEquals(text.indexOf("\nbody"), body.start)
     }
 }

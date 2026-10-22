@@ -1084,4 +1084,16 @@
     <string name="home_menu">Меню</string>
     <string name="mcp_server_look">Иконка и цвет</string>
     <string name="mcp_server_look_summary">Видны рядом с сервером в списках</string>
+    <string name="callout_note">Заметка</string>
+    <string name="callout_info">Информация</string>
+    <string name="callout_tip">Совет</string>
+    <string name="callout_important">Важно</string>
+    <string name="callout_warning">Предупреждение</string>
+    <string name="callout_caution">Осторожно</string>
+    <string name="callout_success">Готово</string>
+    <string name="callout_question">Вопрос</string>
+    <string name="callout_example">Пример</string>
+    <string name="callout_quote">Цитата</string>
+    <string name="callout_summary">Кратко</string>
+    <string name="details_default_summary">Подробности</string>
 </resources>

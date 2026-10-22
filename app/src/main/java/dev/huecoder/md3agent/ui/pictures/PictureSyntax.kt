@@ -59,7 +59,12 @@ data class PictureOptions(
     }
 }
 
-data class Picture(val url: String, val description: String, val options: PictureOptions = PictureOptions.NONE)
+data class Picture(
+    val url: String,
+    val description: String,
+    val options: PictureOptions = PictureOptions.NONE,
+    val caption: String? = null,
+)
 
 object PictureSyntax {
     fun line(line: String): List<Picture>? {
@@ -91,8 +96,23 @@ object PictureSyntax {
         }
         if (text.getOrNull(index) != ')' || destination.first.isEmpty()) return null
         val alt = text.substring(start + 2, altEnd).replace(ESCAPED_BRACKET, "$1")
-        return Picture(destination.first, alt, PictureOptions.parse(title) ?: PictureOptions.NONE) to index + 1
+        val (options, caption) = titleParts(title)
+        return Picture(destination.first, alt, options, caption) to index + 1
     }
+
+    private fun titleParts(title: String?): Pair<PictureOptions, String?> {
+        val whole = title.orEmpty().trim()
+        val separator = whole.indexOf(CAPTION_SEPARATOR)
+        if (separator >= 0) {
+            val before = whole.substring(0, separator)
+            val options = if (before.isBlank()) PictureOptions.NONE else PictureOptions.parse(before)
+            if (options != null) return options to caption(whole.substring(separator + 1))
+        }
+        val options = PictureOptions.parse(whole)
+        return if (options != null) options to null else PictureOptions.NONE to caption(whole)
+    }
+
+    private fun caption(raw: String): String? = raw.trim().replace(ESCAPED_QUOTE, "$1").ifEmpty { null }
 
     private fun closingBracket(text: String, from: Int): Int? {
         var depth = 0
@@ -150,5 +170,7 @@ object PictureSyntax {
     }
 
     private const val MAX_INDENT = 1
+    private const val CAPTION_SEPARATOR = '|'
     private val ESCAPED_BRACKET = Regex("""\\([\[\]])""")
+    private val ESCAPED_QUOTE = Regex("""\\(["'()])""")
 }

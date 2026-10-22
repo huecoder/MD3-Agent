@@ -24,6 +24,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.mikepenz.markdown.coil3.Coil3ImageTransformerImpl
 import com.mikepenz.markdown.compose.components.MarkdownComponentModel
 import com.mikepenz.markdown.compose.components.MarkdownComponents
@@ -31,36 +32,41 @@ import com.mikepenz.markdown.compose.components.markdownComponents
 import com.mikepenz.markdown.compose.elements.highlightedCodeBlock
 import com.mikepenz.markdown.compose.elements.MarkdownImage
 import com.mikepenz.markdown.compose.elements.MarkdownParagraph
+import com.mikepenz.markdown.compose.extendedspans.ExtendedSpans
+import com.mikepenz.markdown.compose.extendedspans.RoundedCornerSpanPainter
 import com.mikepenz.markdown.compose.elements.highlightedCodeFence
 import com.mikepenz.markdown.m3.Markdown
 import com.mikepenz.markdown.m3.markdownColor
 import com.mikepenz.markdown.m3.markdownTypography
 import com.mikepenz.markdown.model.MarkdownAnnotator
 import com.mikepenz.markdown.model.MarkdownColors
+import com.mikepenz.markdown.model.MarkdownDimens
 import com.mikepenz.markdown.model.MarkdownTypography
 import com.mikepenz.markdown.model.markdownAnnotator
+import com.mikepenz.markdown.model.markdownDimens
+import com.mikepenz.markdown.model.markdownExtendedSpans
 import com.mikepenz.markdown.model.State
 import com.mikepenz.markdown.model.rememberMarkdownState
+import dev.huecoder.md3agent.ui.markdown.MarkdownBlock
+import dev.huecoder.md3agent.ui.markdown.MarkdownBlocks
 import dev.huecoder.md3agent.ui.math.LocalMathContent
-import dev.huecoder.md3agent.ui.math.MathContent
-import dev.huecoder.md3agent.ui.math.rememberMathContent
-import dev.huecoder.md3agent.ui.pictures.MarkdownBlock
-import dev.huecoder.md3agent.ui.pictures.MarkdownBlocks
 import dev.huecoder.md3agent.ui.pictures.PictureSyntax
 import org.intellij.markdown.ast.getTextInNode
 
 @Composable
 fun MarkdownContent(text: String, modifier: Modifier = Modifier) {
-    val math = rememberMathContent(text)
-    val blocks = remember(math.markdown) { MarkdownBlocks.split(math.markdown) }
-    MarkdownBlocksContent(blocks, math, modifier) { block ->
+    val reply = rememberReplyMarkdown(text)
+    val blocks = remember(reply.markdown) { MarkdownBlocks.split(reply.markdown) }
+    MarkdownBlocksContent(blocks, reply, modifier) { block ->
         Markdown(
             markdownState = rememberMarkdownState(block.markdown, retainState = true),
             modifier = Modifier.fillMaxWidth(),
             colors = appMarkdownColors(),
             typography = appMarkdownTypography(),
-            annotator = math.annotator(PlainAnnotator),
-            inlineContent = math.inlineContent,
+            dimens = appMarkdownDimens(),
+            extendedSpans = markdownExtendedSpans(roundedSpans),
+            annotator = reply.annotator(PlainAnnotator),
+            inlineContent = reply.inlineContent,
             components = appMarkdownComponents,
             imageTransformer = Coil3ImageTransformerImpl,
         )
@@ -70,39 +76,65 @@ fun MarkdownContent(text: String, modifier: Modifier = Modifier) {
 @Composable
 fun MarkdownBlocksContent(
     blocks: List<MarkdownBlock>,
-    math: MathContent,
+    reply: ReplyMarkdown,
     modifier: Modifier = Modifier,
     text: @Composable (MarkdownBlock.Text) -> Unit,
 ) {
-    CompositionLocalProvider(LocalMathContent provides math) {
-        Column(modifier.fillMaxWidth().then(math.measure), verticalArrangement = Arrangement.spacedBy(BLOCK_GAP)) {
-            blocks.forEachIndexed { index, block ->
-                key(index) {
-                    when (block) {
-                        is MarkdownBlock.Text -> text(block)
-                        is MarkdownBlock.Pictures -> PictureGroupView(block)
-                    }
-                }
+    CompositionLocalProvider(LocalMathContent provides reply.math) {
+        Column(modifier.fillMaxWidth().then(reply.math.measure), verticalArrangement = Arrangement.spacedBy(BLOCK_GAP)) {
+            Blocks(blocks, text)
+            if (reply.footnotes.isNotEmpty()) FootnotesView(reply)
+        }
+    }
+}
+
+@Composable
+private fun Blocks(blocks: List<MarkdownBlock>, text: @Composable (MarkdownBlock.Text) -> Unit) {
+    blocks.forEachIndexed { index, block ->
+        key(index) {
+            when (block) {
+                is MarkdownBlock.Text -> text(block)
+                is MarkdownBlock.Pictures -> PictureGroupView(block)
+                is MarkdownBlock.Callout -> CalloutView(block) { body -> NestedBlocks(body, text) }
+                is MarkdownBlock.Details -> DetailsView(block) { body -> NestedBlocks(body, text) }
             }
         }
     }
 }
 
 @Composable
-fun MarkdownContent(parsed: State, annotator: MarkdownAnnotator, math: MathContent, modifier: Modifier = Modifier) {
+private fun NestedBlocks(blocks: List<MarkdownBlock>, text: @Composable (MarkdownBlock.Text) -> Unit) {
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(BLOCK_GAP)) { Blocks(blocks, text) }
+}
+
+@Composable
+fun MarkdownContent(parsed: State, annotator: MarkdownAnnotator, reply: ReplyMarkdown, modifier: Modifier = Modifier, compact: Boolean = false) {
     Markdown(
         state = parsed,
         modifier = modifier.fillMaxWidth(),
-        colors = appMarkdownColors(),
-        typography = appMarkdownTypography(),
-        annotator = math.annotator(annotator),
-        inlineContent = math.inlineContent,
+        colors = appMarkdownColors(compact),
+        typography = appMarkdownTypography(compact),
+        dimens = appMarkdownDimens(),
+        extendedSpans = markdownExtendedSpans(roundedSpans),
+        annotator = reply.annotator(annotator),
+        inlineContent = reply.inlineContent,
         components = appMarkdownComponents,
         imageTransformer = Coil3ImageTransformerImpl,
     )
 }
 
 val PlainAnnotator: MarkdownAnnotator = markdownAnnotator()
+
+private val roundedSpans: @Composable () -> ExtendedSpans = {
+    remember {
+        ExtendedSpans(
+            RoundedCornerSpanPainter(
+                cornerRadius = INLINE_CORNER,
+                padding = RoundedCornerSpanPainter.TextPaddingValues(horizontal = INLINE_PADDING, vertical = INLINE_PADDING),
+            ),
+        )
+    }
+}
 
 private val appMarkdownComponents: MarkdownComponents = markdownComponents(
     codeFence = highlightedCodeFence,
@@ -111,6 +143,8 @@ private val appMarkdownComponents: MarkdownComponents = markdownComponents(
     paragraph = { model -> FormulaParagraph(model) },
     table = { model -> ChatTable(model) },
     checkbox = { model -> TaskCheckbox(model) },
+    blockQuote = { model -> QuoteBlock(model) },
+    horizontalRule = { RoundedRule() },
 )
 
 @Composable
@@ -148,15 +182,22 @@ private fun InTextPicture(model: MarkdownComponentModel) {
 }
 
 @Composable
-private fun appMarkdownColors(): MarkdownColors = markdownColor(
-    text = MaterialTheme.colorScheme.onSurface,
-    codeBackground = MaterialTheme.colorScheme.surfaceContainerHighest,
-    inlineCodeBackground = MaterialTheme.colorScheme.surfaceContainerHigh,
-)
+private fun appMarkdownColors(compact: Boolean = false): MarkdownColors {
+    val colors = MaterialTheme.colorScheme
+    return markdownColor(
+        text = if (compact) colors.onSurfaceVariant else colors.onSurface,
+        codeBackground = colors.surfaceContainerHighest,
+        inlineCodeBackground = colors.onSurface.copy(alpha = INLINE_CODE_ALPHA),
+    )
+}
 
 @Composable
-private fun appMarkdownTypography(): MarkdownTypography {
+private fun appMarkdownDimens(): MarkdownDimens = markdownDimens(codeBackgroundCornerSize = MARKDOWN_BLOCK_CORNER)
+
+@Composable
+private fun appMarkdownTypography(compact: Boolean = false): MarkdownTypography {
     val typography = MaterialTheme.typography
+    val body = if (compact) typography.bodyMedium else typography.bodyLarge
     return markdownTypography(
         h1 = typography.headlineSmall,
         h2 = typography.titleLarge,
@@ -164,12 +205,12 @@ private fun appMarkdownTypography(): MarkdownTypography {
         h4 = typography.titleSmall,
         h5 = typography.labelLarge,
         h6 = typography.labelMedium,
-        text = typography.bodyLarge,
-        paragraph = typography.bodyLarge,
-        bullet = typography.bodyLarge,
-        list = typography.bodyLarge,
-        ordered = typography.bodyLarge,
-        quote = typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
+        text = body,
+        paragraph = body,
+        bullet = body,
+        list = body,
+        ordered = body,
+        quote = body.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
         table = typography.bodyMedium,
         textLink = TextLinkStyles(
             SpanStyle(color = MaterialTheme.colorScheme.primary, textDecoration = TextDecoration.Underline),
@@ -178,5 +219,8 @@ private fun appMarkdownTypography(): MarkdownTypography {
 }
 
 private const val CHECKED_MARK = "[x]"
+private const val INLINE_CODE_ALPHA = 0.12f
+private val INLINE_CORNER = 8.sp
+private val INLINE_PADDING = 1.sp
 private val BLOCK_GAP = 8.dp
 private val CHECKBOX_GAP = 4.dp

@@ -1041,4 +1041,16 @@
     <string name="home_menu">Menu</string>
     <string name="mcp_server_look">Biểu tượng và màu sắc</string>
     <string name="mcp_server_look_summary">Hiện cạnh máy chủ trong các danh sách</string>
+    <string name="callout_note">Ghi chú</string>
+    <string name="callout_info">Thông tin</string>
+    <string name="callout_tip">Mẹo</string>
+    <string name="callout_important">Quan trọng</string>
+    <string name="callout_warning">Cảnh báo</string>
+    <string name="callout_caution">Thận trọng</string>
+    <string name="callout_success">Thành công</string>
+    <string name="callout_question">Câu hỏi</string>
+    <string name="callout_example">Ví dụ</string>
+    <string name="callout_quote">Trích dẫn</string>
+    <string name="callout_summary">Tóm tắt</string>
+    <string name="details_default_summary">Chi tiết</string>
 </resources>

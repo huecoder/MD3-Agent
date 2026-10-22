@@ -1055,4 +1055,16 @@
     <string name="home_menu">Menü</string>
     <string name="mcp_server_look">Simge ve renk</string>
     <string name="mcp_server_look_summary">Listelerde sunucunun yanında gösterilir</string>
+    <string name="callout_note">Not</string>
+    <string name="callout_info">Bilgi</string>
+    <string name="callout_tip">İpucu</string>
+    <string name="callout_important">Önemli</string>
+    <string name="callout_warning">Uyarı</string>
+    <string name="callout_caution">Dikkat</string>
+    <string name="callout_success">Başarılı</string>
+    <string name="callout_question">Soru</string>
+    <string name="callout_example">Örnek</string>
+    <string name="callout_quote">Alıntı</string>
+    <string name="callout_summary">Özet</string>
+    <string name="details_default_summary">Ayrıntılar</string>
 </resources>

@@ -43,8 +43,8 @@ import com.composables.icons.materialsymbols.rounded.Broken_image
 import dev.huecoder.md3agent.R
 import dev.huecoder.md3agent.data.files.RemoteImages
 import dev.huecoder.md3agent.feature.chat.lightbox.LocalLightbox
+import dev.huecoder.md3agent.ui.markdown.MarkdownBlock
 import dev.huecoder.md3agent.ui.pictures.GroupLayout
-import dev.huecoder.md3agent.ui.pictures.MarkdownBlock
 import dev.huecoder.md3agent.ui.pictures.Picture
 import dev.huecoder.md3agent.ui.pictures.PictureAlign
 import dev.huecoder.md3agent.ui.pictures.PictureSizing
@@ -64,7 +64,7 @@ fun PictureGroupView(block: MarkdownBlock.Pictures, modifier: Modifier = Modifie
             GroupLayout.SLIDER -> SliderRow(
                 block.pictures.size,
                 Modifier.align(alignment).width((maxWidth.value * (options.widthShare ?: 1f)).dp),
-            ) { index, item -> PictureTile(block.pictures[index], item.openOnTap(open, index)) }
+            ) { index, item, visibility -> PictureTile(block.pictures[index], item.openOnTap(open, index), visibility) }
         }
     }
 }
@@ -104,17 +104,19 @@ private fun SinglePicture(picture: Picture, share: Float?, available: Dp, open: 
                 else -> Unit
             }
         }
+        picture.caption?.let { CaptionOverlay(it, Modifier.align(Alignment.BottomStart)) }
     }
 }
 
 @Composable
-private fun PictureTile(picture: Picture, modifier: Modifier) {
+private fun PictureTile(picture: Picture, modifier: Modifier, captionVisibility: () -> Float = { 1f }) {
     var failed by remember(picture.url) { mutableStateOf(false) }
     Box(modifier.background(MaterialTheme.colorScheme.surfaceContainerHighest)) {
         if (failed) {
             UnavailablePicture(picture, Modifier.fillMaxSize())
         } else {
             PictureImage(picture, Modifier.fillMaxSize(), ContentScale.Crop) { state -> if (state is AsyncImagePainter.State.Error) failed = true }
+            picture.caption?.let { CaptionOverlay(it, Modifier.align(Alignment.BottomStart), captionVisibility) }
         }
     }
 }

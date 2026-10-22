@@ -31,6 +31,7 @@ data class Attachment(
     val mimeType: String,
     val sizeBytes: Long,
     val forModel: Boolean = true,
+    val caption: String? = null,
 ) {
     val isImage: Boolean get() = mimeType.startsWith("image/")
 

@@ -1069,4 +1069,16 @@
     <string name="home_menu">Menú</string>
     <string name="mcp_server_look">Icono y color</string>
     <string name="mcp_server_look_summary">Se muestra junto al servidor en las listas</string>
+    <string name="callout_note">Nota</string>
+    <string name="callout_info">Información</string>
+    <string name="callout_tip">Consejo</string>
+    <string name="callout_important">Importante</string>
+    <string name="callout_warning">Advertencia</string>
+    <string name="callout_caution">Precaución</string>
+    <string name="callout_success">Éxito</string>
+    <string name="callout_question">Pregunta</string>
+    <string name="callout_example">Ejemplo</string>
+    <string name="callout_quote">Cita</string>
+    <string name="callout_summary">Resumen</string>
+    <string name="details_default_summary">Detalles</string>
 </resources>
