@@ -224,6 +224,8 @@
     <string name="chat_context_tool_calls">Tool-Aufrufe</string>
     <string name="chat_context_images">Bilder</string>
     <string name="chat_context_estimate">Die Summe ist exakt, die Anteile werden nach Textlänge geschätzt</string>
+    <string name="chat_message_show_more">Mehr anzeigen</string>
+    <string name="chat_message_show_less">Weniger anzeigen</string>
     <string name="chat_scroll_to_bottom">Nach unten scrollen</string>
     <string name="chat_attach_file">Datei anhängen</string>
     <string name="chat_attach_take_photo">Foto aufnehmen</string>

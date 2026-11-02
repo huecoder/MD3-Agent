@@ -91,13 +91,12 @@ fun UserMessage(
                         contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                         modifier = Modifier.widthIn(max = MaxUserBubbleWidth),
                     ) {
-                        SelectionContainer {
-                            Text(
-                                message.content,
-                                style = MaterialTheme.typography.bodyLarge,
-                                modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp),
-                            )
-                        }
+                        FoldableText(
+                            text = message.content,
+                            stateKey = message.id,
+                            fadeColor = MaterialTheme.colorScheme.primaryContainer,
+                            modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp),
+                        )
                     }
                 }
                 AnimatedVisibility(

@@ -224,6 +224,8 @@
     <string name="chat_context_tool_calls">Araç çağrıları</string>
     <string name="chat_context_images">Görseller</string>
     <string name="chat_context_estimate">Toplam kesindir, paylar metin boyutuna göre tahmin edilir</string>
+    <string name="chat_message_show_more">Daha fazla göster</string>
+    <string name="chat_message_show_less">Daha az göster</string>
     <string name="chat_scroll_to_bottom">En alta git</string>
     <string name="chat_attach_file">Dosya ekle</string>
     <string name="chat_attach_take_photo">Fotoğraf çek</string>

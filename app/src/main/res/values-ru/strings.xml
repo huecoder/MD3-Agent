@@ -224,6 +224,8 @@
     <string name="chat_context_tool_calls">Вызовы инструментов</string>
     <string name="chat_context_images">Изображения</string>
     <string name="chat_context_estimate">Сумма точная, доли оценены по размеру текста</string>
+    <string name="chat_message_show_more">Показать полностью</string>
+    <string name="chat_message_show_less">Свернуть</string>
     <string name="chat_scroll_to_bottom">Прокрутить вниз</string>
     <string name="chat_attach_file">Прикрепить файл</string>
     <string name="chat_attach_take_photo">Сфотографировать</string>
