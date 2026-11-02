@@ -24,7 +24,6 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
@@ -32,6 +31,10 @@ import dev.huecoder.md3agent.tools.ChartKind
 import dev.huecoder.md3agent.tools.ChartSpec
 import java.text.DecimalFormat
 import kotlin.math.abs
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.sin
+import kotlin.math.sqrt
 
 @Composable
 fun ChartCard(spec: ChartSpec, modifier: Modifier = Modifier) {
@@ -86,10 +89,11 @@ internal fun PieChart(values: List<Double>, palette: List<Color>, modifier: Modi
             total <= 0 -> drawRing(track, outer, inner)
             shown == 1 -> drawRing(palette[values.indexOfFirst { it > 0 } % palette.size], outer, inner)
             else -> {
+                val middle = (outer + inner) / 2
+                val minSweep = Math.toDegrees((outer - inner) * MIN_SLICE_WIDTH_FRACTION / middle.toDouble()).toFloat()
                 var start = START_ANGLE
-                values.forEachIndexed { index, value ->
-                    val sweep = (value / total * FULL_CIRCLE).toFloat()
-                    if (value > 0) drawSlice(palette[index % palette.size], start, sweep, outer, inner)
+                pieSweeps(values, minSweep).forEachIndexed { index, sweep ->
+                    if (sweep > 0f) drawSlice(palette[index % palette.size], start, sweep, outer, inner)
                     start += sweep
                 }
             }
@@ -112,20 +116,32 @@ private fun DrawScope.drawRing(color: Color, outer: Float, inner: Float) {
 
 private fun DrawScope.drawSlice(color: Color, start: Float, sweep: Float, outer: Float, inner: Float) {
     val thickness = outer - inner
-    val middle = (outer + inner) / 2
-    val gap = thickness * GAP_FRACTION
-    val width = Math.toRadians(sweep.toDouble()).toFloat() * middle
-    val corner = minOf(thickness * CORNER_FRACTION, ((width - gap) / 2).coerceAtLeast(0f))
-    val margin = Math.toDegrees(((corner + gap / 2) / middle).toDouble()).toFloat()
-    val core = (sweep - 2 * margin).coerceAtLeast(MIN_CORE_SWEEP)
-    val coreStart = start + (sweep - core) / 2
+    val chord = inner * sin(Math.toRadians(minOf(sweep, STRAIGHT_ANGLE).toDouble() / 2)).toFloat()
+    val halfGap = minOf(thickness * GAP_FRACTION / 2, chord * MAX_GAP_SHARE)
+    val corner = minOf(thickness * CORNER_FRACTION, thickness / 2, chord - halfGap)
+    val end = start + sweep
+    val outerReach = outer - corner
+    val innerReach = inner + corner
+    val outerTilt = cornerTilt(outerReach, halfGap + corner)
+    val innerTilt = cornerTilt(innerReach, halfGap + corner)
     val shape = Path().apply {
-        arcTo(Rect(center, outer - corner), coreStart, core, forceMoveTo = true)
-        arcTo(Rect(center, inner + corner), coreStart + core, -core, forceMoveTo = false)
+        arcTo(cornerRect(outerReach, start + outerTilt, corner), start - QUARTER_TURN, QUARTER_TURN + outerTilt, forceMoveTo = true)
+        arcTo(Rect(center, outer), start + outerTilt, sweep - 2 * outerTilt, forceMoveTo = false)
+        arcTo(cornerRect(outerReach, end - outerTilt, corner), end - outerTilt, QUARTER_TURN + outerTilt, forceMoveTo = false)
+        arcTo(cornerRect(innerReach, end - innerTilt, corner), end + QUARTER_TURN, QUARTER_TURN - innerTilt, forceMoveTo = false)
+        arcTo(Rect(center, inner), end - innerTilt, -(sweep - 2 * innerTilt), forceMoveTo = false)
+        arcTo(cornerRect(innerReach, start + innerTilt, corner), start + innerTilt + STRAIGHT_ANGLE, QUARTER_TURN - innerTilt, forceMoveTo = false)
         close()
     }
     drawPath(shape, color)
-    if (corner > 0f) drawPath(shape, color, style = Stroke(width = corner * 2, join = StrokeJoin.Round))
+}
+
+private fun cornerTilt(reach: Float, offset: Float): Float =
+    Math.toDegrees(atan2(offset, sqrt(reach * reach - offset * offset)).toDouble()).toFloat()
+
+private fun DrawScope.cornerRect(reach: Float, angle: Float, radius: Float): Rect {
+    val radians = Math.toRadians(angle.toDouble())
+    return Rect(Offset(center.x + reach * cos(radians).toFloat(), center.y + reach * sin(radians).toFloat()), radius)
 }
 
 @Composable
@@ -178,7 +194,10 @@ private const val START_ANGLE = -90f
 private const val DONUT_STROKE_FRACTION = 0.22f
 private const val CORNER_FRACTION = 0.2f
 private const val GAP_FRACTION = 0.12f
-private const val MIN_CORE_SWEEP = 0.1f
+private const val MIN_SLICE_WIDTH_FRACTION = 0.6f
+private const val MAX_GAP_SHARE = 0.35f
+private const val QUARTER_TURN = 90f
+private const val STRAIGHT_ANGLE = 180f
 private const val GOLDEN_ANGLE = 137.508f
 private const val HUE_SECTORS = 6f
 private const val HUE_SECTOR_DEGREES = 60f
