@@ -73,6 +73,7 @@ data class ChatUiState(
     val contextDisplay: ContextDisplay = ContextDisplay.NUMBERS,
     val contextTokens: Int? = null,
     val contextLimit: Int = ContextMeter.DEFAULT_LIMIT,
+    val customContextLimit: Int? = null,
     val typing: TypingStyle = TypingStyle(),
     val isStreaming: Boolean = false,
     val pendingAttachments: List<Attachment> = emptyList(),
@@ -82,7 +83,7 @@ data class ChatUiState(
 ) {
     val isStarted: Boolean get() = chatId != null
 
-    val context: ContextMeter? get() = contextTokens?.takeIf { showContext }?.let { ContextMeter(it, contextLimit) }
+    val context: ContextMeter? get() = contextTokens?.takeIf { showContext }?.let { ContextMeter(it, contextLimit, customContextLimit) }
 
     fun canSend(text: String): Boolean = (text.isNotBlank() || pendingAttachments.isNotEmpty()) && !isImporting
 
@@ -136,7 +137,7 @@ class ChatViewModel(
             if (id == null) {
                 combine(appSettings, pendingSelection, pendingAgentId) { current, chosen, chosenAgentId ->
                     val agent = current.agents.resolve(chosenAgentId)
-                    ChatUiState(agentId = agent.id, agentName = agent.name).withChatSettings(current.chat).withSelection(chosen ?: current.activeSelection)
+                    ChatUiState(agentId = agent.id, agentName = agent.name).withChatSettings(current.chat).withSelection(chosen ?: current.activeSelection, current.chat)
                 }
             } else {
                 combine(chats.observeChat(id), chats.observeBranch(id), runner.drafts, appSettings, pendingFocus) { chat, branch, drafts, current, focus ->
@@ -144,7 +145,7 @@ class ChatViewModel(
                     buildState(id, chat, branch, drafts[id], focus)
                         .copy(agentId = agent.id, agentName = agent.name)
                         .withChatSettings(current.chat)
-                        .withSelection(chat?.selection ?: current.activeSelection)
+                        .withSelection(chat?.selection ?: current.activeSelection, current.chat)
                 }
             }
         }
@@ -208,6 +209,11 @@ class ChatViewModel(
         return runner.previewPrompt(id)?.let { ContextBreakdown.of(it.turns, it.tools, used) }
     }
 
+    fun setContextWindow(tokens: Int?) {
+        val selection = state.value.selection ?: return
+        appScope.launch { settings.updateChat { it.withContextWindow(selection, tokens) } }
+    }
+
     fun fork(reply: ChatItem.Reply, title: String, onForked: (String) -> Unit) {
         val id = chatId.value ?: return
         viewModelScope.launch { chats.fork(id, reply.id, title)?.let { onForked(it.id) } }
@@ -261,15 +267,17 @@ class ChatViewModel(
         typing = chat.typing,
     )
 
-    private suspend fun ChatUiState.withSelection(selection: ModelSelection?): ChatUiState {
+    private suspend fun ChatUiState.withSelection(selection: ModelSelection?, chat: ChatSettings): ChatUiState {
         if (selection == null) return this
         val info = catalog.infoLoaded(selection.providerId, selection.modelId)
+        val customLimit = chat.contextWindow(selection)
         return copy(
             selection = selection,
             modelId = selection.modelId,
             modelFamily = info.family,
             modelName = info.displayName,
-            contextLimit = ContextMeter.limitFor(info.contextLength),
+            contextLimit = ContextMeter.limitFor(customLimit ?: info.contextLength),
+            customContextLimit = customLimit,
         )
     }
 

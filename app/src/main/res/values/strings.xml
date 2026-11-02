@@ -244,6 +244,11 @@
     <string name="chat_context_estimate">The total is exact, the shares are estimated by text size</string>
     <string name="chat_message_show_more">Show more</string>
     <string name="chat_message_show_less">Show less</string>
+    <string name="chat_context_limit_change">Change window size</string>
+    <string name="chat_context_limit_title">Window size</string>
+    <string name="chat_context_limit_label">Tokens, empty for automatic</string>
+    <string name="chat_context_limit_invalid">Use a number like 256k or 262144</string>
+    <string name="chat_context_limit_placeholder" translatable="false">256k</string>
     <string name="chat_context_percent" translatable="false">%1$d%%</string>
     <string name="chat_scroll_to_bottom">Scroll to bottom</string>
     <string name="chat_attach_file">Attach file</string>

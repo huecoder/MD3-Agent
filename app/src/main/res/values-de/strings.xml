@@ -226,6 +226,10 @@
     <string name="chat_context_estimate">Die Summe ist exakt, die Anteile werden nach Textlänge geschätzt</string>
     <string name="chat_message_show_more">Mehr anzeigen</string>
     <string name="chat_message_show_less">Weniger anzeigen</string>
+    <string name="chat_context_limit_change">Fenstergröße ändern</string>
+    <string name="chat_context_limit_title">Fenstergröße</string>
+    <string name="chat_context_limit_label">Tokens, leer für automatisch</string>
+    <string name="chat_context_limit_invalid">Zahl wie 256k oder 262144 eingeben</string>
     <string name="chat_scroll_to_bottom">Nach unten scrollen</string>
     <string name="chat_attach_file">Datei anhängen</string>
     <string name="chat_attach_take_photo">Foto aufnehmen</string>

@@ -225,6 +225,10 @@
     <string name="chat_context_estimate">Totalnya akurat, porsinya diperkirakan dari ukuran teks</string>
     <string name="chat_message_show_more">Tampilkan lebih banyak</string>
     <string name="chat_message_show_less">Tampilkan lebih sedikit</string>
+    <string name="chat_context_limit_change">Ubah ukuran jendela</string>
+    <string name="chat_context_limit_title">Ukuran jendela</string>
+    <string name="chat_context_limit_label">Token, kosongkan untuk otomatis</string>
+    <string name="chat_context_limit_invalid">Gunakan angka seperti 256k atau 262144</string>
     <string name="chat_scroll_to_bottom">Gulir ke bawah</string>
     <string name="chat_attach_file">Lampirkan file</string>
     <string name="chat_attach_take_photo">Ambil foto</string>

@@ -226,6 +226,10 @@
     <string name="chat_context_estimate">Сумма точная, доли оценены по размеру текста</string>
     <string name="chat_message_show_more">Показать полностью</string>
     <string name="chat_message_show_less">Свернуть</string>
+    <string name="chat_context_limit_change">Изменить размер окна</string>
+    <string name="chat_context_limit_title">Размер окна</string>
+    <string name="chat_context_limit_label">Токены, пусто — автоматически</string>
+    <string name="chat_context_limit_invalid">Введите число, например 256k или 262144</string>
     <string name="chat_scroll_to_bottom">Прокрутить вниз</string>
     <string name="chat_attach_file">Прикрепить файл</string>
     <string name="chat_attach_take_photo">Сфотографировать</string>

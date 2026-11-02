@@ -3,7 +3,7 @@ package dev.huecoder.md3agent.feature.chat
 import dev.huecoder.md3agent.data.db.MessageEntity
 import dev.huecoder.md3agent.data.db.MessageRole
 
-data class ContextMeter(val used: Int, val limit: Int) {
+data class ContextMeter(val used: Int, val limit: Int, val custom: Int? = null) {
     val fraction: Float get() = (used.toFloat() / limit).coerceIn(0f, 1f)
 
     companion object {

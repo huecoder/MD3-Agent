@@ -226,6 +226,10 @@
     <string name="chat_context_estimate">Toplam kesindir, paylar metin boyutuna göre tahmin edilir</string>
     <string name="chat_message_show_more">Daha fazla göster</string>
     <string name="chat_message_show_less">Daha az göster</string>
+    <string name="chat_context_limit_change">Pencere boyutunu değiştir</string>
+    <string name="chat_context_limit_title">Pencere boyutu</string>
+    <string name="chat_context_limit_label">Token, otomatik için boş bırak</string>
+    <string name="chat_context_limit_invalid">256k veya 262144 gibi bir sayı gir</string>
     <string name="chat_scroll_to_bottom">En alta git</string>
     <string name="chat_attach_file">Dosya ekle</string>
     <string name="chat_attach_take_photo">Fotoğraf çek</string>

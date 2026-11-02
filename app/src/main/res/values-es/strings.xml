@@ -227,6 +227,10 @@
     <string name="chat_context_estimate">El total es exacto; las proporciones se estiman por el tamaño del texto</string>
     <string name="chat_message_show_more">Mostrar más</string>
     <string name="chat_message_show_less">Mostrar menos</string>
+    <string name="chat_context_limit_change">Cambiar tamaño de la ventana</string>
+    <string name="chat_context_limit_title">Tamaño de la ventana</string>
+    <string name="chat_context_limit_label">Tokens, vacío para automático</string>
+    <string name="chat_context_limit_invalid">Usa un número como 256k o 262144</string>
     <string name="chat_scroll_to_bottom">Ir al final</string>
     <string name="chat_attach_file">Adjuntar archivo</string>
     <string name="chat_attach_take_photo">Hacer foto</string>

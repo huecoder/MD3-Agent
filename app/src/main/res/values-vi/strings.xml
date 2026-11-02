@@ -225,6 +225,10 @@
     <string name="chat_context_estimate">Tổng số là chính xác, các phần được ước tính theo độ dài văn bản</string>
     <string name="chat_message_show_more">Xem thêm</string>
     <string name="chat_message_show_less">Thu gọn</string>
+    <string name="chat_context_limit_change">Đổi kích thước cửa sổ</string>
+    <string name="chat_context_limit_title">Kích thước cửa sổ</string>
+    <string name="chat_context_limit_label">Token, để trống là tự động</string>
+    <string name="chat_context_limit_invalid">Nhập số như 256k hoặc 262144</string>
     <string name="chat_scroll_to_bottom">Cuộn xuống cuối</string>
     <string name="chat_attach_file">Đính kèm tệp</string>
     <string name="chat_attach_take_photo">Chụp ảnh</string>

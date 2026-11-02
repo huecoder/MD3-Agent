@@ -194,7 +194,7 @@ fun ChatScreen(chatId: String?, onBack: () -> Unit, onOpenChat: (String) -> Unit
 
     val contextMeter = state.context
     if (showingContext && contextMeter != null) {
-        ContextSheet(contextMeter, load = viewModel::contextBreakdown, onDismiss = { showingContext = false })
+        ContextSheet(contextMeter, load = viewModel::contextBreakdown, onChangeLimit = viewModel::setContextWindow, onDismiss = { showingContext = false })
     }
 
     ProvideAgentLook(state.agentId) {
