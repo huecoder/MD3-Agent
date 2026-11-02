@@ -22,7 +22,7 @@ class WebSearchTool(private val searcher: WebSearcher) : Tool {
         description = "Searches the web. Returns titles, links and snippets. " +
             "For details, open the relevant link with ${ReadWebpageTool.NAME}. Cite sources in your answer.",
         parameters = objectSchema(required = listOf("query")) {
-            stringProperty("query", "Search query: just the core terms, no filler words")
+            stringProperty("query", "Search query in the user's language: just the core terms, no filler words")
             integerProperty("count", "How many results to return", minimum = 1, maximum = MAX_RESULTS)
         },
     )
