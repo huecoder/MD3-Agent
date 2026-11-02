@@ -87,10 +87,10 @@ interface ChatDao {
     @Query(
         """
         SELECT c.id FROM chats c
-        WHERE c.title LIKE '%' || :query || '%' ESCAPE '\'
+        WHERE c.title GLOB :query
             OR EXISTS (
                 SELECT 1 FROM messages m
-                WHERE m.chatId = c.id AND m.role IN ('USER', 'ASSISTANT') AND m.content LIKE '%' || :query || '%' ESCAPE '\'
+                WHERE m.chatId = c.id AND m.role IN ('USER', 'ASSISTANT') AND m.content GLOB :query
             )
         """,
     )
@@ -127,7 +127,7 @@ interface ChatDao {
         """
         SELECT m.id AS messageId, m.chatId, c.title AS chatTitle, m.role, m.createdAt, m.content
         FROM messages m JOIN chats c ON c.id = m.chatId
-        WHERE c.trashedAt IS NULL AND m.role IN ('USER', 'ASSISTANT') AND m.content LIKE '%' || :query || '%' ESCAPE '\'
+        WHERE c.trashedAt IS NULL AND m.role IN ('USER', 'ASSISTANT') AND m.content GLOB :query
         ORDER BY m.createdAt DESC
         LIMIT :limit
         """,

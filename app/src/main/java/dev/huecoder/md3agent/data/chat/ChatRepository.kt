@@ -35,9 +35,9 @@ class ChatRepository(
 
     fun observeFolders(): Flow<List<FolderEntity>> = folderDao.observeAll()
 
-    suspend fun searchChatIds(query: String): Set<String> = chatDao.search(likePattern(query)).toSet()
+    suspend fun searchChatIds(query: String): Set<String> = chatDao.search(CaseBlindPattern.containing(query)).toSet()
 
-    suspend fun searchMessages(query: String, limit: Int): List<MessageHit> = chatDao.searchMessages(likePattern(query), limit)
+    suspend fun searchMessages(query: String, limit: Int): List<MessageHit> = chatDao.searchMessages(CaseBlindPattern.containing(query), limit)
 
     val trashEvents: SharedFlow<Set<String>> get() = _trashEvents
 
@@ -242,8 +242,6 @@ class ChatRepository(
     )
 
     private var lastTimestamp = 0L
-
-    private fun likePattern(query: String) = query.trim().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
     companion object {
         const val TRASH_RETENTION_MS = 30L * 24 * 60 * 60 * 1000
