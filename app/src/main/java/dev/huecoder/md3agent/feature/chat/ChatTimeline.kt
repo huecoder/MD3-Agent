@@ -157,9 +157,9 @@ object ChatTimeline {
         fun parts(results: Map<String?, MessageEntity>, live: StreamingDraft?): List<ReplyPart> = buildList {
             val isLive = live != null
             if (reasoning.isNotEmpty()) {
-                add(ReplyPart.Work(listOf(WorkStep.Thought(reasoning, isStreaming = isLive && content.isEmpty() && calls.isEmpty()))))
+                add(ReplyPart.Work(listOf(WorkStep.Thought(reasoning, isStreaming = isLive && content.isBlank() && calls.isEmpty()))))
             }
-            if (content.isNotEmpty()) add(ReplyPart.Text(content, isStreaming = isLive, isStopped = row.status == MessageStatus.CANCELLED))
+            if (content.isNotBlank()) add(ReplyPart.Text(content, isStreaming = isLive, isStopped = row.status == MessageStatus.CANCELLED))
             val generated = Attachment.decode(row.attachmentsJson)
             if (generated.isNotEmpty()) add(ReplyPart.Media(generated))
             val shown = calls.filter { it.name != ShowUiTool.NAME }
@@ -178,7 +178,7 @@ object ChatTimeline {
             when {
                 isLive -> Unit
                 row.status == MessageStatus.ERROR -> add(ReplyPart.Error(errorText(row.errorText)))
-                row.status == MessageStatus.COMPLETE && content.isEmpty() && calls.isEmpty() && generated.isEmpty() -> add(ReplyPart.Error(UiText.Resource(R.string.chat_error_empty_response)))
+                row.status == MessageStatus.COMPLETE && content.isBlank() && calls.isEmpty() && generated.isEmpty() -> add(ReplyPart.Error(UiText.Resource(R.string.chat_error_empty_response)))
             }
         }
 

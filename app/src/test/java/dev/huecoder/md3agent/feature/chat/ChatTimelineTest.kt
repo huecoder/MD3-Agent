@@ -96,6 +96,24 @@ class ChatTimelineTest {
     }
 
     @Test
+    fun `whitespace the model sends next to tool calls does not split the work group`() {
+        val read = ToolCall("r1", "read_webpage", """{"url":"https://a.b"}""")
+        val messages = listOf(
+            row(MessageRole.USER, "найди"),
+            row(MessageRole.ASSISTANT, "\n\n", calls = listOf(search)).copy(reasoning = "ищу"),
+            row(MessageRole.TOOL, results, toolCallId = "s1"),
+            row(MessageRole.ASSISTANT, "\n", calls = listOf(read)).copy(reasoning = "читаю"),
+            row(MessageRole.TOOL, "page", toolCallId = "r1"),
+            row(MessageRole.ASSISTANT, "Готово"),
+        )
+
+        val reply = ChatTimeline.build(messages, draft = null)[1] as ChatItem.Reply
+
+        assertEquals(2, reply.parts.size)
+        assertEquals(listOf("s1", "r1"), (reply.parts[0] as ReplyPart.Work).calls.map { it.id })
+    }
+
+    @Test
     fun `reasoning between tool rounds stays in the same work group`() {
         val read = ToolCall("r1", "read_webpage", """{"url":"https://a.b"}""")
         val messages = listOf(
