@@ -1,11 +1,5 @@
 package dev.huecoder.md3agent.feature.chat
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -35,11 +29,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -62,12 +56,13 @@ import com.mikepenz.markdown.compose.MarkdownElement
 import com.mikepenz.markdown.compose.components.MarkdownComponentModel
 import com.mikepenz.markdown.model.parseMarkdown
 import dev.huecoder.md3agent.R
+import dev.huecoder.md3agent.ui.components.Collapsible
+import dev.huecoder.md3agent.ui.components.animateReveal
 import dev.huecoder.md3agent.ui.haptics.rememberHaptics
 import dev.huecoder.md3agent.ui.markdown.CalloutFold
 import dev.huecoder.md3agent.ui.markdown.CalloutKind
 import dev.huecoder.md3agent.ui.markdown.Footnote
 import dev.huecoder.md3agent.ui.markdown.MarkdownBlock
-import dev.huecoder.md3agent.ui.theme.LayoutMotion
 import org.intellij.markdown.MarkdownElementTypes
 import org.intellij.markdown.MarkdownTokenTypes
 
@@ -179,7 +174,7 @@ private fun FoldPanel(
 ) {
     var open by rememberSaveable { mutableStateOf(initiallyOpen) }
     val haptics = rememberHaptics()
-    val turn by animateFloatAsState(if (open) HALF_TURN else 0f, MaterialTheme.motionScheme.fastSpatialSpec(), label = "fold-chevron")
+    val reveal = animateReveal(open || !foldable)
     val border = if (outline == Color.Unspecified) Modifier else Modifier.border(PANEL_OUTLINE_WIDTH, outline, BlockShape)
     Column(modifier.fillMaxWidth().background(container, BlockShape).then(border).clip(BlockShape)) {
         Row(
@@ -205,16 +200,12 @@ private fun FoldPanel(
                     MaterialSymbols.Rounded.Expand_more,
                     contentDescription = stringResource(if (open) R.string.common_collapse else R.string.common_expand),
                     tint = chevron,
-                    modifier = Modifier.rotate(turn),
+                    modifier = Modifier.graphicsLayer { rotationZ = HALF_TURN * reveal.value },
                 )
             }
         }
         if (showBody) {
-            AnimatedVisibility(
-                visible = open || !foldable,
-                enter = expandVertically(LayoutMotion.settle()) + fadeIn(),
-                exit = shrinkVertically(LayoutMotion.settle()) + fadeOut(),
-            ) {
+            Collapsible(reveal) {
                 Box(Modifier.padding(start = PANEL_HORIZONTAL_PADDING, end = PANEL_HORIZONTAL_PADDING, bottom = PANEL_BODY_BOTTOM_PADDING)) { body() }
             }
         }
